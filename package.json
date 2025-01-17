@@ -26,5 +26,6 @@
       "prettier --write",
       "eslint --fix"
     ]
-  }
+  },
+  "packageManager": "yarn@4.6.0"
 }
