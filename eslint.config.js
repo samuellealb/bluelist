@@ -6,11 +6,13 @@ export default defineConfig([
   {
     languageOptions: {
       globals: {
-        browser: true,
-        es2021: true,
+        node: true,
+        process: true,
+        console: true,
       },
+
       parserOptions: {
-        ecmaVersion: 12,
+        ecmaVersion: 2022,
         sourceType: 'module',
       },
     },
@@ -19,13 +21,5 @@ export default defineConfig([
       'no-undef': 'error',
     },
     ignores: ['.gitignore'],
-  },
-  {
-    files: ['commitlint.config.js'],
-    languageOptions: {
-      globals: {
-        node: true,
-      },
-    },
   },
 ]);
