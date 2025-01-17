@@ -1,0 +1,8 @@
+.prettierignore
+/.husky/*
+*.svg
+*.png
+*.jpg
+*.ico
+yarn.lock
+.gitignore
