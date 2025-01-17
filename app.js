@@ -20,6 +20,15 @@ const { data: loginData } = await agent.login({
 const { did, handle, email } = loginData;
 console.log({ did, handle, email });
 
+// Get user feed
+const { data } = await agent.getTimeline({
+  cursor: '...',
+  limit: 30,
+});
+
+const { feed: postsArray, cursor: nextPage } = data;
+console.log(postsArray, nextPage);
+
 // Get user lists
 const { data: listsData } = await agent.app.bsky.graph.getLists({
   actor: did,
