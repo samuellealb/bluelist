@@ -22,8 +22,7 @@ console.log({ did, handle, email });
 
 // Get user feed
 const { data } = await agent.getTimeline({
-  cursor: '...',
-  limit: 30,
+  limit: 3,
 });
 
 const { feed: postsArray, cursor: nextPage } = data;
@@ -32,7 +31,7 @@ console.log(postsArray, nextPage);
 // Get user lists
 const { data: listsData } = await agent.app.bsky.graph.getLists({
   actor: did,
-  limit: 30,
+  limit: 3,
 });
 const lists = listsData.lists.map((list) => list.name);
 console.log(lists);
@@ -40,7 +39,7 @@ console.log(lists);
 // Get a single list
 const { data: singleList } = await agent.app.bsky.graph.getList({
   list: listsData.lists[0].uri,
-  limit: 30,
+  limit: 3,
 });
 console.log(singleList);
 
@@ -73,6 +72,6 @@ console.log(singleList);
 // Get all following users of a user
 const { data: followingData } = await agent.app.bsky.graph.getFollows({
   actor: did,
-  limit: 30,
+  limit: 3,
 });
 console.log(followingData);
