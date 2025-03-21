@@ -6,4 +6,9 @@ export default defineNuxtConfig({
   typescript: {
     typeCheck: true,
   },
+  runtimeConfig: {
+    public: {
+      atpService: 'https://bsky.social',
+    },
+  },
 });
