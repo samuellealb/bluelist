@@ -12,7 +12,7 @@ const port = 3000;
 
 // Create livereload server
 const liveReloadServer = livereload.createServer();
-liveReloadServer.watch(path.join(__dirname, 'dist'));
+liveReloadServer.watch('dist');
 
 // Handle EADDRINUSE error
 liveReloadServer.server.on('error', (err) => {
@@ -26,11 +26,11 @@ liveReloadServer.server.on('error', (err) => {
 app.use(connectLivereload());
 
 // Serve static files from the 'dist' directory
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(__dirname));
 
 // Handle all other routes by serving the index.html file
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(port, () => {
