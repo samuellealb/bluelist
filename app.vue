@@ -10,17 +10,20 @@
     </form>
     <div class="form-info">{{ formInfo }}</div>
     <button @click="displayFeed">Display Feed</button>
-    <button @click="displayLists">Display Lists</button>
-    <button @click="displayFollows">Display Follows</button>
-    <div class="data-display">{{ displayData }}</div>
+    <button @click="fetchLists(true)">Get Lists</button>
+    <button @click="fetchFollows(true)">Get Follows</button>
+    <button @click="curateLists">Curate Lists</button>
+    <div class="data-display" v-html="displayData" />
   </div>
 </template>
 
 <script lang="ts">
 import { AtpAgent } from '@atproto/api';
+import { ref, onMounted } from 'vue';
+import { callListCurator } from './src/lib/openai';
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs';
 import type { ListView } from '@atproto/api/dist/client/types/app/bsky/graph/defs';
-import { ref, onMounted } from 'vue';
+import type { GraphEntity } from './src/types';
 
 export default {
   setup() {
@@ -32,6 +35,8 @@ export default {
     const userDid = ref<string>('');
     const displayData = ref<string>('');
     const accessJwt = ref<string>('');
+    const lists = ref<GraphEntity[]>([]);
+    const follows = ref<GraphEntity[]>([]);
 
     const createAtpAgent = (): void => {
       const service = config.public.atpService || '';
@@ -101,7 +106,7 @@ export default {
       }
     };
 
-    const displayLists = async (): Promise<void> => {
+    const fetchLists = async (display: boolean): Promise<void> => {
       if (!agent.value) {
         displayData.value = 'Agent not created';
         return;
@@ -118,15 +123,22 @@ export default {
         const { lists: listsArray } = data;
         const formattedLists = listsArray.map((list: ListView) => ({
           name: list.name,
-          description: list.description,
+          description: list.description || '',
         }));
-        displayData.value = `Lists: ${JSON.stringify(formattedLists, null, 2)}`;
+        lists.value = formattedLists;
+        if (display) {
+          displayData.value = `Lists: ${JSON.stringify(
+            formattedLists,
+            null,
+            2
+          )}`;
+        }
       } catch (error) {
         displayData.value = `Failed to get lists: ${(error as Error).message}`;
       }
     };
 
-    const displayFollows = async () => {
+    const fetchFollows = async (display: boolean) => {
       if (!agent.value) {
         displayData.value = 'Agent not created';
         return;
@@ -143,16 +155,50 @@ export default {
         );
         const { follows: followsArray } = data;
         const formattedFollows = followsArray.map((follow: ProfileView) => ({
-          name: follow.displayName,
-          description: follow.description,
+          name: follow.displayName || '',
+          description: follow.description || '',
         }));
-        displayData.value = `Follows: ${JSON.stringify(
-          formattedFollows,
-          null,
-          2
-        )}`;
+        follows.value = formattedFollows;
+        if (display) {
+          displayData.value = `Follows: ${JSON.stringify(
+            formattedFollows,
+            null,
+            2
+          )}`;
+        }
       } catch (error) {
         displayData.value = `Failed to get follows: ${
+          (error as Error).message
+        }`;
+      }
+    };
+
+    const curateLists = async () => {
+      if (!agent.value) {
+        displayData.value = 'Agent not created';
+        return;
+      }
+      await fetchFollows(false);
+      await fetchLists(false);
+      if (!follows.value.length || !lists.value.length) {
+        displayData.value = 'No follows or lists to curate';
+        return;
+      }
+      displayData.value = 'Generating...';
+      try {
+        const sanitizedFollows = follows.value.map((follow) => ({ ...follow }));
+        const sanitizedLists = lists.value.map((list) => ({ ...list }));
+        const followsString = JSON.stringify(sanitizedFollows, null, 2);
+        const listsString = JSON.stringify(sanitizedLists, null, 2);
+        const response = await callListCurator(followsString, listsString);
+        const responseString = JSON.stringify(response, null, 2);
+        const responseHtml = responseString
+          .replace(/\*\*(\s|\\n)/g, '</strong>$1')
+          .replace(/\*\*(\w)/g, '<strong>$1')
+          .replace(/\\n/g, '<br>');
+        displayData.value = `Curated Lists: <br> ${responseHtml}`;
+      } catch (error) {
+        displayData.value = `Failed to curate lists: ${
           (error as Error).message
         }`;
       }
@@ -169,8 +215,9 @@ export default {
       loginUser,
       formInfo,
       displayFeed,
-      displayLists,
-      displayFollows,
+      fetchLists,
+      fetchFollows,
+      curateLists,
       displayData,
     };
   },
