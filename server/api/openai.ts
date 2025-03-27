@@ -1,28 +1,84 @@
-import { defineEventHandler } from 'h3';
+import { defineEventHandler, readBody, createError } from 'h3';
 import OpenAI from 'openai';
 
 export default defineEventHandler(async (event) => {
-  const openAI = new OpenAI({ apiKey: process.env['NUXT_OPENAI_API_KEY'] });
+  try {
+    const openAI = new OpenAI({ apiKey: process.env['NUXT_OPENAI_API_KEY'] });
+    const { users, lists } = await readBody(event);
 
-  const { users, lists } = await readBody(event);
+    if (!users || !lists) {
+      throw createError({
+        statusCode: 400,
+        message: 'Missing required data: users and lists are required',
+      });
+    }
 
-  const context: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    {
-      role: 'system',
-      content:
-        'You are a Bluesky list curator. You are responsible for distributing the profiles followed by the user in their existing lists, and responsible for suggesting new lists to organize the profiles. You must respect the following instructions: 1) Any profile can belong to more than one list. 2) Do not add profiles to lists that they do not fit in. Always double check your response to make sure there is no non-existing list being suggested. 3) If in a current iteration there are profiles that do not fit in any existing list, let the user know that. 4) Let the user now which profiles are not in any list. 5) Stick to the existing lists. Do not suggest new lists. This is very important. 6) Read through each profile name, description and posts carfully to determine which list they should be in.  7) Format your response with one topic per list, and one subtopic per profile. The same profile can be a subtopic for multiple list topics, if it fits in more than one lists. 8) Use the following format: **List 1 Name** \n - Profile 1 Name. \n - Profile 2 Name \n \n **List 2 Name** \n - Profile 3 Name \n - Profile 4 Name, and so on. 9) Double check if profiles in the non-fitting section are not in any list. If so, decide whether it should be in the existing list OR in the non-fitting section',
-    },
-    {
-      role: 'user',
-      content: `These are the users I follow: ${users}. These are my existing lists: ${lists}. Please organize the profiles in the lists.`,
-    },
-  ];
+    // Create system prompt with improved formatting instructions
+    const systemPrompt = `You are a Bluesky list curator. Organize the given profiles into the existing lists.
 
-  const response = await openAI.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: context,
-    temperature: 0.1,
-  });
+Format your response with HTML to make it visually appealing. Follow these rules:
+1) Profiles can be in multiple lists if appropriate
+2) Only place profiles in lists they fit in
+3) Use this HTML format:
+   <div class="curated-list">
+     <h2 class="list-title">List Name</h2>
+     <ul class="profile-list">
+       <li class="profile-item"><strong>Profile Name</strong> - Brief reason why they fit (if available)</li>
+     </ul>
+   </div>
+4) At the end, include a section for profiles that don't fit in any list:
+   <div class="unmatched-profiles">
+     <h2 class="list-title">Profiles Without a List</h2>
+     <ul class="profile-list">
+       <li class="profile-item">Profile name</li>
+     </ul>
+     <p class="suggestion">Consider creating new lists for these profiles based on their themes.</p>
+   </div>
 
-  return response.choices[0].message.content;
+Ensure your response is valid HTML within the prescribed format.`;
+
+    const userPrompt = `These are the users I follow: ${users}. These are my existing lists: ${lists}. Please organize the profiles into these lists only.`;
+
+    // Safety check for token limit
+    if (userPrompt.length > 100000) {
+      throw createError({
+        statusCode: 400,
+        message:
+          'Request too large. Please reduce the number of users or lists.',
+      });
+    }
+
+    const response = await openAI.chat.completions.create({
+      model: 'gpt-3.5-turbo-16k', // Using the 16k context model for larger capacity
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.1,
+    });
+
+    return response.choices[0].message.content;
+  } catch (error: unknown) {
+    // Handle OpenAI API specific errors
+    if (
+      error instanceof Error &&
+      (error.name === 'OpenAIError' ||
+        (error as { status?: number }).status === 400)
+    ) {
+      console.error('OpenAI API error:', error);
+
+      throw createError({
+        statusCode: 400,
+        message:
+          'Error processing request with OpenAI. The request may be too large or have invalid content.',
+      });
+    }
+
+    // Handle other errors
+    console.error('Server error:', error);
+    throw createError({
+      statusCode: 500,
+      message: 'An unexpected error occurred',
+    });
+  }
 });
