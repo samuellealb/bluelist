@@ -10,12 +10,16 @@
     </form>
     <div class="form-info">{{ formInfo }}</div>
     <button @click="displayFeed">Display Feed</button>
+    <button @click="displayLists">Display Lists</button>
+    <button @click="displayFollows">Display Follows</button>
     <div class="data-display">{{ displayData }}</div>
   </div>
 </template>
 
 <script lang="ts">
 import { AtpAgent } from '@atproto/api';
+import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs';
+import type { ListView } from '@atproto/api/dist/client/types/app/bsky/graph/defs';
 import { ref, onMounted } from 'vue';
 
 export default {
@@ -25,6 +29,7 @@ export default {
     const identifier = ref<string>('');
     const password = ref<string>('');
     const formInfo = ref<string>('');
+    const userDid = ref<string>('');
     const displayData = ref<string>('');
     const accessJwt = ref<string>('');
 
@@ -42,6 +47,7 @@ export default {
         if (new Date().getTime() < expirationTime) {
           formInfo.value = `Logged in as ${loginData.did} with handle ${loginData.handle} and email ${loginData.email}`;
           accessJwt.value = loginData.accessJwt;
+          userDid.value = loginData.did;
         } else {
           localStorage.removeItem('loginData');
           formInfo.value = 'Session expired. Please log in again.';
@@ -62,6 +68,7 @@ export default {
         const { did, handle, email, accessJwt: token } = loginData;
         formInfo.value = `Logged in as ${did} with handle ${handle} and email ${email}`;
         accessJwt.value = token;
+        userDid.value = did;
 
         const expirationTime = new Date().getTime() + 30 * 60 * 1000;
         localStorage.setItem(
@@ -94,6 +101,63 @@ export default {
       }
     };
 
+    const displayLists = async (): Promise<void> => {
+      if (!agent.value) {
+        displayData.value = 'Agent not created';
+        return;
+      }
+      try {
+        const { data } = await agent.value.app.bsky.graph.getLists(
+          { actor: userDid.value, limit: 15 },
+          {
+            headers: {
+              Authorization: `Bearer ${accessJwt.value}`,
+            },
+          }
+        );
+        const { lists: listsArray } = data;
+        const formattedLists = listsArray.map((list: ListView) => ({
+          name: list.name,
+          description: list.description,
+        }));
+        displayData.value = `Lists: ${JSON.stringify(formattedLists, null, 2)}`;
+      } catch (error) {
+        displayData.value = `Failed to get lists: ${(error as Error).message}`;
+      }
+    };
+
+    const displayFollows = async () => {
+      if (!agent.value) {
+        displayData.value = 'Agent not created';
+        return;
+      }
+
+      try {
+        const { data } = await agent.value.app.bsky.graph.getFollows(
+          { actor: userDid.value, limit: 15 },
+          {
+            headers: {
+              Authorization: `Bearer ${accessJwt.value}`,
+            },
+          }
+        );
+        const { follows: followsArray } = data;
+        const formattedFollows = followsArray.map((follow: ProfileView) => ({
+          name: follow.displayName,
+          description: follow.description,
+        }));
+        displayData.value = `Follows: ${JSON.stringify(
+          formattedFollows,
+          null,
+          2
+        )}`;
+      } catch (error) {
+        displayData.value = `Failed to get follows: ${
+          (error as Error).message
+        }`;
+      }
+    };
+
     onMounted(() => {
       createAtpAgent();
       checkLoginSession();
@@ -105,6 +169,8 @@ export default {
       loginUser,
       formInfo,
       displayFeed,
+      displayLists,
+      displayFollows,
       displayData,
     };
   },
