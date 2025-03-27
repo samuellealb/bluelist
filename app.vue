@@ -49,15 +49,10 @@ export default {
     const checkLoginSession = (): void => {
       const storedData = localStorage.getItem('loginData');
       if (storedData) {
-        const { loginData, expirationTime } = JSON.parse(storedData);
-        if (new Date().getTime() < expirationTime) {
-          formInfo.value = `Logged in as ${loginData.did} with handle ${loginData.handle} and email ${loginData.email}`;
-          accessJwt.value = loginData.accessJwt;
-          userDid.value = loginData.did;
-        } else {
-          localStorage.removeItem('loginData');
-          formInfo.value = 'Session expired. Please log in again.';
-        }
+        const { loginData } = JSON.parse(storedData);
+        formInfo.value = `Logged in as ${loginData.did} with handle ${loginData.handle} and email ${loginData.email}`;
+        accessJwt.value = loginData.accessJwt;
+        userDid.value = loginData.did;
       }
     };
 
@@ -76,11 +71,7 @@ export default {
         accessJwt.value = token;
         userDid.value = did;
 
-        const expirationTime = new Date().getTime() + 30 * 60 * 1000;
-        localStorage.setItem(
-          'loginData',
-          JSON.stringify({ loginData, expirationTime })
-        );
+        localStorage.setItem('loginData', JSON.stringify({ loginData }));
       } catch (error) {
         formInfo.value = `Login failed: ${(error as Error).message}`;
       }
