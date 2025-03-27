@@ -7,13 +7,13 @@ dotenv.config({ path: '.env.local' });
 
 // Create an agent
 const agent = new AtpAgent({
-  service: process.env.ATP_SERVICE,
+  service: process.env.NUXT_ATP_SERVICE,
 });
 
 // Login
 const { data: loginData } = await agent.login({
-  identifier: process.env.BSKY_IDENTIFIER,
-  password: process.env.BSKY_PASSWORD,
+  identifier: process.env.NUXT_BSKY_IDENTIFIER,
+  password: process.env.NUXT_BSKY_PASSWORD,
 });
 
 // Get user info
@@ -25,8 +25,8 @@ const { data } = await agent.getTimeline({
   limit: 3,
 });
 
-const { feed: postsArray, cursor: nextPage } = data;
-console.log(postsArray, nextPage);
+const { feed: postsArrayUser, cursor: nextPage } = data;
+console.log(postsArrayUser, nextPage);
 
 // Get user lists
 const { data: listsData } = await agent.app.bsky.graph.getLists({
@@ -75,3 +75,13 @@ const { data: followingData } = await agent.app.bsky.graph.getFollows({
   limit: 3,
 });
 console.log(followingData);
+
+// Get posts from a single user
+const { data: postsData } = await agent.getAuthorFeed({
+  actor: 'did:plc:z72i7hdynmk6r22z27h6tvur',
+  filter: 'posts_and_author_threads',
+  limit: 30,
+});
+
+const { feed: postsArray } = postsData;
+console.log(postsArray);

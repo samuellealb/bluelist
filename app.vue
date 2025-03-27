@@ -23,6 +23,7 @@ import { ref, onMounted } from 'vue';
 import { callListCurator } from './src/lib/openai';
 import type { ProfileView } from '@atproto/api/dist/client/types/app/bsky/actor/defs';
 import type { ListView } from '@atproto/api/dist/client/types/app/bsky/graph/defs';
+import type { FeedViewPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
 import type { GraphEntity } from './src/types';
 
 export default {
@@ -145,19 +146,48 @@ export default {
       }
 
       try {
-        const { data } = await agent.value.app.bsky.graph.getFollows(
-          { actor: userDid.value, limit: 15 },
-          {
-            headers: {
-              Authorization: `Bearer ${accessJwt.value}`,
-            },
-          }
+        const { data: followsData } =
+          await agent.value.app.bsky.graph.getFollows(
+            { actor: userDid.value, limit: 15 },
+            {
+              headers: {
+                Authorization: `Bearer ${accessJwt.value}`,
+              },
+            }
+          );
+        const { follows: followsArray } = followsData;
+
+        const formattedFollows = await Promise.all(
+          followsArray.map(async (follow: ProfileView) => {
+            if (!agent.value) {
+              throw new Error('Agent not created');
+            }
+            const { data: postsData } = await agent.value.getAuthorFeed(
+              {
+                actor: follow.did,
+                filter: 'posts_and_author_threads',
+                limit: 10,
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${accessJwt.value}`,
+                },
+              }
+            );
+            console.log('postsData: ', postsData);
+            const lastPosts = postsData.feed.map((item: FeedViewPost) => ({
+              content: item.post.record.text,
+            }));
+            const sanitizedLastPosts = lastPosts
+              .map((post) => post.content)
+              .join('; ');
+            return {
+              name: follow.displayName || '',
+              description: follow.description || '',
+              posts: sanitizedLastPosts || '',
+            };
+          })
         );
-        const { follows: followsArray } = data;
-        const formattedFollows = followsArray.map((follow: ProfileView) => ({
-          name: follow.displayName || '',
-          description: follow.description || '',
-        }));
         follows.value = formattedFollows;
         if (display) {
           displayData.value = `Follows: ${JSON.stringify(
