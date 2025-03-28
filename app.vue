@@ -155,6 +155,12 @@ export default {
           2
         )}</pre>`;
       } catch (error) {
+        if ((error as Error).message === 'Token has expired') {
+          formInfo.value = 'Session expired. Please login again.';
+          localStorage.removeItem('loginData');
+          window.location.reload();
+          return;
+        }
         displayData.value = 'Error fetching lists';
         console.error(error);
       }
@@ -195,6 +201,13 @@ export default {
           follows.length
         })</h2><pre>${JSON.stringify(follows, null, 2)}</pre>`;
       } catch (error) {
+        if ((error as Error).message === 'Token has expired') {
+          formInfo.value = 'Session expired. Please login again.';
+          localStorage.removeItem('loginData');
+          window.location.reload();
+          return;
+        }
+
         displayData.value = 'Error fetching follows';
         console.error(error);
       }
