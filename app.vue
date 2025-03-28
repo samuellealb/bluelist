@@ -174,7 +174,7 @@ export default {
         do {
           const { data } = await agent.value.app.bsky.graph.getFollows({
             actor: did.value,
-            limit: 100,
+            limit: 20,
             cursor: cursor,
           });
 
@@ -188,7 +188,7 @@ export default {
           }
 
           cursor = data.cursor;
-        } while (cursor && follows.length < 300);
+        } while (cursor && follows.length < 20);
 
         usersJSON.value = JSON.stringify(follows);
         displayData.value = `<h2>Your Follows (${
@@ -245,7 +245,7 @@ export default {
           }) => ({
             handle: user.handle,
             displayName: user.displayName || user.handle,
-            description: user.description?.substring(0, 100) || '', // Limit description length
+            description: user.description?.substring(0, 20) || '', // Limit description length
           })
         );
 
@@ -255,7 +255,7 @@ export default {
         }));
 
         // Limit the number of users if too many
-        const limitedUsers = simplifiedUsers.slice(0, 100); // Limit to 100 users max
+        const limitedUsers = simplifiedUsers.slice(0, 20); // Limit to 20 users max
 
         const response = await callListCurator(
           JSON.stringify(limitedUsers),

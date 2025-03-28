@@ -135,3 +135,222 @@
   font-size: 0.85rem;
   margin-top: 0.5rem;
 }
+
+/* Enhanced profile card styles */
+.profile-card {
+  background-color: var(--card-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ensure consistent height in grid */
+}
+
+.profile-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.profile-name {
+  margin: 0;
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-dark)
+  );
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.avatar-placeholder.mini {
+  width: 30px;
+  height: 30px;
+  font-size: 0.9rem;
+}
+
+.profile-description {
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  flex: 1;
+}
+
+.profile-lists {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.profile-lists h3 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 0.75rem;
+}
+
+.list-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.list-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.list-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  background-color: rgba(52, 152, 219, 0.1);
+  color: var(--primary-color);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.list-button:hover .list-badge {
+  background-color: rgba(52, 152, 219, 0.2);
+  transform: translateY(-2px);
+}
+
+.list-button:active .list-badge {
+  transform: translateY(0);
+}
+
+.list-reason-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--secondary-color);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 10;
+  pointer-events: none;
+  width: max-content;
+  max-width: 200px;
+}
+
+.list-reason-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--secondary-color) transparent transparent transparent;
+}
+
+.list-button:hover .list-reason-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 10px);
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mini-card {
+  padding: 0.75rem;
+  margin-bottom: 0;
+}
+
+.mini-card .profile-name {
+  font-size: 0.95rem;
+}
+
+/* Container for all profile cards */
+.profile-cards-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Curated lists section */
+.curated-lists-section {
+  margin-bottom: 2.5rem;
+}
+
+.curated-lists-section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 768px) {
+  .profile-cards-container {
+    grid-template-columns: 1fr; /* Single column on mobile */
+  }
+
+  .data-content .profile-grid {
+    grid-template-columns: 1fr; /* Single column for unmatched profiles on mobile */
+  }
+
+  .profile-card {
+    margin-bottom: 1rem;
+  }
+
+  .list-buttons {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .list-button {
+    margin-bottom: 0.5rem;
+  }
+
+  .list-reason-tooltip {
+    max-width: 90vw;
+  }
+}
