@@ -1,16 +1,19 @@
-import { useFetch } from '#app';
+import { $fetch } from 'ofetch';
 
 const callListCurator = async (users: string, lists: string) => {
-  const { data, error } = await useFetch('/api/openai', {
-    method: 'POST',
-    body: { users, lists },
-  });
+  try {
+    const data = await $fetch('/api/openai', {
+      method: 'POST',
+      body: { users, lists },
+    });
 
-  if (error.value) {
-    throw new Error(error.value.message);
+    return data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error('Error calling list curator');
   }
-
-  return data.value;
 };
 
 export { callListCurator };
