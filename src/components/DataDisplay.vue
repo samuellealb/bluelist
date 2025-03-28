@@ -1,9 +1,10 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="data-display">
     <div
       v-if="data && data.trim().length > 0"
       class="data-content"
-      v-html="data"
+      v-html="sanitizedData"
     />
     <div v-else class="no-data">
       <div class="no-data-icon">📊</div>
@@ -16,12 +17,18 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import '~/src/assets/styles/data-display.css';
+import DOMPurify from 'dompurify';
 
 export default defineComponent({
   props: {
     data: {
       type: String,
       required: true,
+    },
+  },
+  computed: {
+    sanitizedData() {
+      return DOMPurify.sanitize(this.data);
     },
   },
 });
