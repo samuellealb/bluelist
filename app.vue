@@ -28,10 +28,6 @@
         </div>
 
         <div class="data-panel card">
-          <div v-if="displayData === 'Generating...'" class="loading-indicator">
-            <div class="spinner" />
-            <span>Processing data...</span>
-          </div>
           <DataDisplay :data="displayData" />
         </div>
       </div>
@@ -66,7 +62,6 @@ export default {
     );
     const did = ref('');
 
-    // Restore session from localStorage if available
     onMounted(() => {
       checkLoginSession();
     });
@@ -79,12 +74,10 @@ export default {
           formInfo.value = `Logged in as ${loginData.handle} with DID ${loginData.did}`;
           did.value = loginData.did;
 
-          // Create agent with stored session data
           agent.value = new AtpAgent({
             service: 'https://bsky.social',
           });
 
-          // Set the session in the agent - use the actual API method
           agent.value.api.setHeader(
             'Authorization',
             `Bearer ${loginData.accessJwt}`
@@ -120,7 +113,6 @@ export default {
           formInfo.value = `Logged in as ${handle} with DID ${userDid} with email ${email}`;
           did.value = userDid;
 
-          // Store login data in localStorage
           localStorage.setItem('loginData', JSON.stringify({ loginData }));
         } else {
           formInfo.value = 'Login Failed';
@@ -131,6 +123,30 @@ export default {
       }
     };
 
+    const displayFeed = async () => {
+      if (!agent.value) {
+        formInfo.value = 'Please login first';
+        return;
+      }
+
+      try {
+        displayData.value = 'loading';
+
+        const { data } = await agent.value.getTimeline({
+          limit: 30,
+        });
+
+        displayData.value = `<h2>Your Timeline</h2><pre>${JSON.stringify(
+          data.feed,
+          null,
+          2
+        )}</pre>`;
+      } catch (error) {
+        displayData.value = 'Error fetching feed';
+        console.error(error);
+      }
+    };
+
     const fetchLists = async () => {
       if (!agent.value) {
         formInfo.value = 'Please login first';
@@ -138,6 +154,7 @@ export default {
       }
 
       try {
+        displayData.value = 'loading';
         const { data } = await agent.value.app.bsky.graph.getLists({
           actor: did.value,
           limit: 50,
@@ -173,10 +190,10 @@ export default {
       }
 
       try {
+        displayData.value = 'loading';
         const follows = [];
         let cursor = undefined;
 
-        // Fetch with pagination
         do {
           const { data } = await agent.value.app.bsky.graph.getFollows({
             actor: did.value,
@@ -213,28 +230,6 @@ export default {
       }
     };
 
-    const displayFeed = async () => {
-      if (!agent.value) {
-        formInfo.value = 'Please login first';
-        return;
-      }
-
-      try {
-        const { data } = await agent.value.getTimeline({
-          limit: 30,
-        });
-
-        displayData.value = `<h2>Your Timeline</h2><pre>${JSON.stringify(
-          data.feed,
-          null,
-          2
-        )}</pre>`;
-      } catch (error) {
-        displayData.value = 'Error fetching feed';
-        console.error(error);
-      }
-    };
-
     const curateLists = async () => {
       if (!usersJSON.value || !listsJSON.value) {
         displayData.value =
@@ -243,13 +238,11 @@ export default {
       }
 
       try {
-        displayData.value = 'Generating...';
+        displayData.value = 'loading';
 
-        // Parse original data
         const follows = JSON.parse(usersJSON.value);
         const lists = JSON.parse(listsJSON.value);
 
-        // Simplify the user data to reduce token count
         const simplifiedUsers = follows.map(
           (user: {
             handle: string;
@@ -258,27 +251,32 @@ export default {
           }) => ({
             handle: user.handle,
             displayName: user.displayName || user.handle,
-            description: user.description?.substring(0, 20) || '', // Limit description length
+            description: user.description?.substring(0, 20) || '',
           })
         );
 
-        // Only send essential list data
         const simplifiedLists = lists.map((list: { name: string }) => ({
           name: list.name,
         }));
 
-        // Limit the number of users if too many
-        const limitedUsers = simplifiedUsers.slice(0, 20); // Limit to 20 users max
+        const limitedUsers = simplifiedUsers.slice(0, 20);
 
         const response = await callListCurator(
           JSON.stringify(limitedUsers),
           JSON.stringify(simplifiedLists)
         );
-        displayData.value = response ?? 'No data available';
+        const parsedResponse = JSON.parse(response);
+        if (parsedResponse.error) {
+          throw new Error(parsedResponse.error);
+        }
+        displayData.value = `<h2>Your Lists</h2><pre>${JSON.stringify(
+          parsedResponse,
+          null,
+          2
+        )}</pre>`;
       } catch (error) {
-        console.error('Error in curateLists:', error);
-        displayData.value =
-          'Error curating lists: Token limit exceeded. Try fetching fewer follows or creating a more focused list.';
+        console.log('Error in curateLists:', error);
+        displayData.value = (error as Error).message;
       }
     };
 

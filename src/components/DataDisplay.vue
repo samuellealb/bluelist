@@ -1,8 +1,12 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="data-display">
+    <div v-if="data === 'loading'" class="loading-indicator">
+      <div class="spinner" />
+      <span>Processing data...</span>
+    </div>
     <div
-      v-if="data && data.trim().length > 0"
+      v-else-if="data && data.trim().length > 0"
       class="data-content"
       v-html="sanitizedData"
     />
