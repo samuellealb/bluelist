@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/html-self-closing -->
 <template>
   <form class="login-form" @submit.prevent="$emit('login')">
     <div class="form-group">
@@ -9,7 +10,7 @@
         required
         class="form-input"
         placeholder="Enter your username"
-      >
+      />
     </div>
 
     <div class="form-group">
@@ -21,33 +22,20 @@
         required
         class="form-input"
         placeholder="Enter your password"
-      >
+      />
     </div>
 
     <button type="submit" class="btn-primary">Sign In</button>
   </form>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue';
+<script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
 
-export default defineComponent({
-  props: {
-    formInfo: {
-      type: String,
-      required: true,
-    },
-  },
-  emits: ['login'],
-  setup() {
-    const identifier = ref('');
-    const password = ref('');
+defineEmits<{
+  (e: 'login'): void;
+}>();
 
-    return {
-      identifier,
-      password,
-    };
-  },
-});
+const identifier = ref('');
+const password = ref('');
 </script>

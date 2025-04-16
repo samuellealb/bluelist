@@ -18,22 +18,15 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
 import '~/src/assets/styles/data-display.css';
 import DOMPurify from 'dompurify';
 
-export default defineComponent({
-  props: {
-    data: {
-      type: String,
-      required: true,
-    },
-  },
-  computed: {
-    sanitizedData() {
-      return DOMPurify.sanitize(this.data);
-    },
-  },
+const props = defineProps<{
+  data: string;
+}>();
+
+const sanitizedData = computed(() => {
+  return DOMPurify.sanitize(props.data);
 });
 </script>

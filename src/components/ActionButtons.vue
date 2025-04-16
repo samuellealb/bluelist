@@ -4,11 +4,11 @@
       <span class="btn-icon">📋</span>
       <span>Display Feed</span>
     </button>
-    <button class="btn btn-action" @click="$emit('fetch-lists', true)">
+    <button class="btn btn-action" @click="$emit('fetch-lists')">
       <span class="btn-icon">📑</span>
       <span>Get Lists</span>
     </button>
-    <button class="btn btn-action" @click="$emit('fetch-follows', true)">
+    <button class="btn btn-action" @click="$emit('fetch-follows')">
       <span class="btn-icon">👥</span>
       <span>Get Follows</span>
     </button>
@@ -19,11 +19,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
 import '~/src/assets/styles/action-buttons.css';
 
-export default defineComponent({
-  emits: ['display-feed', 'fetch-lists', 'fetch-follows', 'curate-lists'],
-});
+defineEmits<{
+  (e: 'fetch-lists' | 'fetch-follows' | 'display-feed' | 'curate-lists'): void;
+}>();
 </script>
