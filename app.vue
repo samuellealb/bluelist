@@ -43,6 +43,10 @@ import ActionButtons from '~/src/components/ActionButtons.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
 import '~/src/assets/styles/app.css';
 
+defineOptions({
+  name: 'BlueList',
+});
+
 const formInfo = ref('');
 const displayData = ref('');
 const usersJSON = ref('');
@@ -158,7 +162,7 @@ const fetchLists = async () => {
 
     const listsData = {
       type: 'lists',
-      lists: lists,
+      data: lists,
     };
 
     listsJSON.value = JSON.stringify(listsData);
@@ -201,7 +205,7 @@ const fetchFollows = async () => {
         follows.push({
           did: follow.did,
           handle: follow.handle,
-          displayName: follow.displayName,
+          name: follow.displayName,
           description: follow.description,
         });
       }
@@ -211,7 +215,7 @@ const fetchFollows = async () => {
 
     const followsData = {
       type: 'follows',
-      follows: follows,
+      data: follows,
     };
 
     usersJSON.value = JSON.stringify(followsData);
@@ -243,28 +247,22 @@ const curateLists = async () => {
     const followsData = JSON.parse(usersJSON.value);
     const listsData = JSON.parse(listsJSON.value);
 
-    const simplifiedUsers = followsData.follows.map(
-      (user: {
-        handle: string;
-        displayName?: string;
-        description?: string;
-      }) => ({
-        handle: user.handle,
-        displayName: user.displayName || user.handle,
+    const simplifiedUsers = followsData.data.map(
+      (user: { handle: string; name?: string; description?: string }) => ({
+        name: user.name || user.handle,
         description: user.description || '',
       })
     );
 
-    const simplifiedLists = listsData.lists.map(
+    const simplifiedLists = listsData.data.map(
       (list: { name: string; description: string }) => ({
         name: list.name,
         description: list.description || '',
       })
     );
-    const limitedUsers = simplifiedUsers.slice(0, 20);
 
     const response = await callListCurator(
-      JSON.stringify(limitedUsers),
+      JSON.stringify(simplifiedUsers),
       JSON.stringify(simplifiedLists)
     );
     let parsedResponse = JSON.parse(response);

@@ -22,6 +22,10 @@
 import '~/src/assets/styles/data-display.css';
 import DOMPurify from 'dompurify';
 
+defineOptions({
+  name: 'DataDisplay',
+});
+
 const props = defineProps<{
   data: string;
 }>();

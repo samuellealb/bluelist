@@ -32,6 +32,10 @@
 <script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
 
+defineOptions({
+  name: 'LoginForm',
+});
+
 defineEmits<{
   (e: 'login'): void;
 }>();

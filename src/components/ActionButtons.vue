@@ -22,6 +22,10 @@
 <script setup lang="ts">
 import '~/src/assets/styles/action-buttons.css';
 
+defineOptions({
+  name: 'ActionButtons',
+});
+
 defineEmits<{
   (e: 'fetch-lists' | 'fetch-follows' | 'display-feed' | 'curate-lists'): void;
 }>();
