@@ -153,11 +153,17 @@ const fetchLists = async () => {
     const lists = data.lists.map((list) => ({
       name: list.name,
       uri: list.uri,
+      description: list.description,
     }));
 
-    listsJSON.value = JSON.stringify(lists);
+    const listsData = {
+      type: 'lists',
+      lists: lists,
+    };
+
+    listsJSON.value = JSON.stringify(listsData);
     displayData.value = `<h2>Your Lists</h2><pre>${JSON.stringify(
-      lists,
+      listsData,
       null,
       2
     )}</pre>`;
@@ -203,10 +209,15 @@ const fetchFollows = async () => {
       cursor = data.cursor;
     } while (cursor && follows.length < 20);
 
-    usersJSON.value = JSON.stringify(follows);
+    const followsData = {
+      type: 'follows',
+      follows: follows,
+    };
+
+    usersJSON.value = JSON.stringify(followsData);
     displayData.value = `<h2>Your Follows (${
       follows.length
-    })</h2><pre>${JSON.stringify(follows, null, 2)}</pre>`;
+    })</h2><pre>${JSON.stringify(followsData, null, 2)}</pre>`;
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
       formInfo.value = 'Session expired. Please login again.';
@@ -229,10 +240,10 @@ const curateLists = async () => {
   try {
     displayData.value = 'loading';
 
-    const follows = JSON.parse(usersJSON.value);
-    const lists = JSON.parse(listsJSON.value);
+    const followsData = JSON.parse(usersJSON.value);
+    const listsData = JSON.parse(listsJSON.value);
 
-    const simplifiedUsers = follows.map(
+    const simplifiedUsers = followsData.follows.map(
       (user: {
         handle: string;
         displayName?: string;
@@ -240,25 +251,27 @@ const curateLists = async () => {
       }) => ({
         handle: user.handle,
         displayName: user.displayName || user.handle,
-        description: user.description?.substring(0, 20) || '',
+        description: user.description || '',
       })
     );
 
-    const simplifiedLists = lists.map((list: { name: string }) => ({
-      name: list.name,
-    }));
-
+    const simplifiedLists = listsData.lists.map(
+      (list: { name: string; description: string }) => ({
+        name: list.name,
+        description: list.description || '',
+      })
+    );
     const limitedUsers = simplifiedUsers.slice(0, 20);
 
     const response = await callListCurator(
       JSON.stringify(limitedUsers),
       JSON.stringify(simplifiedLists)
     );
-    const parsedResponse = JSON.parse(response);
+    let parsedResponse = JSON.parse(response);
     if (parsedResponse.error) {
       throw new Error(parsedResponse.error);
     }
-    parsedResponse.type = 'suggestions';
+    parsedResponse = { type: 'suggestions', ...parsedResponse };
     displayData.value = `<h2>Your Lists</h2><pre>${JSON.stringify(
       parsedResponse,
       null,

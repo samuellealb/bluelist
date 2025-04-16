@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       3) Let the user know which profiles are not in any list.
       4) Always double-check your response to make sure there is no non-existing list being suggested. Stick to the existing lists. Do not suggest new lists. This is very important.
       5) Read through each profile name, description, and posts carefully to determine which list they should be in.
-      6) Format your response as JSON object. The only root level property should be named 'data'. Data is an Array of objects, each one having the properties 'profileName' (string), profileDescription (string) and suggestedLists(Array). Each suggestedLists object should have the property listName.
+      6) Format your response as JSON object. The only root level property should be named 'suggestions'. Suggestions is an Array of objects, each one having the properties 'profileName' (string), profileDescription (string) and suggestedLists(Array). Each suggestedLists object should have the property listName.
       7) A single profile can have multiple lists suggested, as long as they are existing lists and considered a fit for that profile.
       8) Return a valid JSON object. Do not return any other text or HTML. The JSON object should be formatted as a string, and the string should be escaped properly so that it can be parsed as JSON.`;
 
