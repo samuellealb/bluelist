@@ -14,11 +14,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const systemPrompt = `You are a Bluesky list curator. Organize the given profiles into the existing lists.
-      Format your response with HTML to make it visually appealing. Follow these rules:
+      Follow these rules:
       1) Any profile can belong to more than one list.
-      2) Do not add profiles to lists that they do not fit in. Always double-check your response to make sure there is no non-existing list being suggested.
+      2) Do not add profiles to lists that they do not fit in.
       3) Let the user know which profiles are not in any list.
-      4) Stick to the existing lists. Do not suggest new lists. This is very important.
+      4) Always double-check your response to make sure there is no non-existing list being suggested. Stick to the existing lists. Do not suggest new lists. This is very important.
       5) Read through each profile name, description, and posts carefully to determine which list they should be in.
       6) Format your response as JSON object. The only root level property should be named 'data'. Data is an Array of objects, each one having the properties 'profileName' (string), profileDescription (string) and suggestedLists(Array). Each suggestedLists object should have the property listName.
       7) A single profile can have multiple lists suggested, as long as they are existing lists and considered a fit for that profile.
@@ -36,12 +36,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const response = await openAI.chat.completions.create({
-      model: 'gpt-4o-mini', // 'gpt-3.5-turbo-16k', // 'gpt-4.5-preview'
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      // temperature: 0.1,
     });
 
     return response.choices[0].message.content;
