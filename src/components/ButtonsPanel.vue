@@ -1,10 +1,10 @@
 <template>
   <div class="action-buttons">
-    <ActionButton icon="📋" label="Display Feed" @click="displayFeed" />
-    <ActionButton icon="📑" label="Display Lists" @click="displayLists" />
-    <ActionButton icon="👥" label="Display Follows" @click="displayFollows" />
+    <ActionButton icon="[L]" label="Display Feed" @click="displayFeed" />
+    <ActionButton icon="{#}" label="Display Lists" @click="displayLists" />
+    <ActionButton icon="(U)" label="Display Follows" @click="displayFollows" />
     <ActionButton
-      icon="✨"
+      icon="<*>"
       label="Display Suggestions"
       @click="displaySuggestions"
     />

@@ -3,10 +3,19 @@
   <div class="data-display">
     <div v-if="isLoading" class="loading-indicator">
       <div class="spinner" />
-      <span>Processing data...</span>
+      <span class="vintage-cursor">Processing data</span>
     </div>
     <div v-else-if="isError" class="error-message">
-      <div class="error-icon">❌</div>
+      <div class="ascii-art">
+        <pre>
++----------+
+|  ERROR   |
+|  x   x   |
+|    !     |
+| \____/   |
++----------+
+        </pre>
+      </div>
       <p>{{ errorMessage }}</p>
     </div>
     <div v-else-if="dataObject" class="data-cards-container">
@@ -18,7 +27,7 @@
           :disabled="isLoading"
           @click="handleRefresh"
         >
-          <span class="refresh-icon">🔄</span>
+          <span class="refresh-icon">[R]</span>
           <span class="refresh-text">Refresh</span>
         </button>
       </div>
@@ -30,10 +39,25 @@
           :index="index"
         />
       </template>
-      <p v-else>No items to display</p>
+      <div v-else class="ascii-empty">
+        <pre>
++----------+
+|  EMPTY   |
+|          |
+| No items |
++----------+
+        </pre>
+      </div>
     </div>
     <div v-else class="no-data">
-      <div class="no-data-icon">📊</div>
+      <div class="ascii-empty">
+        <pre>
++----------+
+|   DATA   |
+|  PENDING |
++----------+
+        </pre>
+      </div>
       <p>No data to display yet</p>
       <p class="hint">Use the action buttons to load content</p>
     </div>

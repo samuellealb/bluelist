@@ -1,0 +1,18 @@
+.theme-toggle {
+  background-color: var(--accent-transparent-50);
+  border: var(--border-style);
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  border-radius: var(--border-radius);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.theme-toggle:hover {
+  background-color: var(--accent-transparent-10);
+}

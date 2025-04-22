@@ -22,7 +22,7 @@
       <div class="data-card__footer">
         <div class="data-card__meta">
           <span class="data-card__meta-item">
-            <span class="data-card__icon">🕒</span>
+            <span class="data-card__icon">[T]</span>
             {{ formatDate(timelineItem.indexedAt) }}
           </span>
         </div>
@@ -40,7 +40,7 @@
       <div class="data-card__footer">
         <div class="data-card__meta">
           <span class="data-card__meta-item">
-            <span class="data-card__icon">🔗</span>
+            <span class="data-card__icon">#></span>
             {{ shortenUri(listItem.uri) }}
           </span>
         </div>
@@ -49,7 +49,7 @@
 
     <!-- Follow Item -->
     <div v-else-if="item.type === 'follows' && followItem">
-      <div class="data-card__avatar">👤</div>
+      <div class="data-card__avatar">[o]</div>
       <div class="data-card__info">
         <h3 class="data-card__title">
           {{ followItem.name || followItem.handle }}
@@ -62,7 +62,7 @@
     <!-- Suggestion Item -->
     <div v-else-if="item.type === 'suggestions' && suggestionItem">
       <div class="data-card__header">
-        <div class="data-card__avatar">👤</div>
+        <div class="data-card__avatar">[o]</div>
         <div>
           <h3 class="data-card__title">{{ suggestionItem.name }}</h3>
           <p v-if="suggestionItem.description" class="data-card__subtitle">
@@ -92,7 +92,7 @@
       </div>
       <div v-else class="data-card__no-lists">
         <p class="data-card__message">
-          <span class="data-card__icon">ℹ️</span>
+          <span class="data-card__icon">[!]</span>
           No list suggestions found for this profile. This profile doesn't match
           any of your existing lists.
         </p>

@@ -2,14 +2,14 @@
   <div>
     <div v-if="!state.isLoggedIn" class="login-section">
       <div class="card">
-        <h2>Login</h2>
+        <h2>Login [_]</h2>
         <LoginForm />
       </div>
     </div>
 
     <div v-else class="dashboard">
       <div class="actions-panel card">
-        <h2>Actions</h2>
+        <h2>Actions [/]</h2>
         <ButtonsPanel ref="buttonsPanelRef" />
       </div>
 
