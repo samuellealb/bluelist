@@ -2,18 +2,17 @@
   <div class="app-container">
     <header class="header">
       <h1>Bluelist</h1>
-      <div v-if="formInfo.includes('Logged in')" class="user-status">
+      <div v-if="state.formInfo.includes('Logged in')" class="user-status">
         <span class="status-dot online" />
-        {{ formInfo.substring(0, formInfo.indexOf('with')) }}
+        {{ state.formInfo.substring(0, state.formInfo.indexOf('with')) }}
       </div>
     </header>
 
     <div class="main-content">
-      <div v-if="!formInfo.includes('Logged in')" class="login-section">
+      <div v-if="!state.formInfo.includes('Logged in')" class="login-section">
         <div class="card">
           <h2>Login</h2>
-          <LoginForm @login="loginUser" />
-          <p v-if="loginError" class="error-message">{{ loginError }}</p>
+          <LoginForm />
         </div>
       </div>
 
@@ -37,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { AtpAgent } from '@atproto/api';
+import { state, checkLoginSession } from '~/src/store';
 import { callListCurator } from '~/src/lib/openai';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ActionButtons from '~/src/components/ActionButtons.vue';
@@ -48,99 +47,24 @@ defineOptions({
   name: 'BlueList',
 });
 
-const formInfo = ref('');
-const loginError = ref('');
 const displayData = ref('');
 const usersJSON = ref('');
 const listsJSON = ref('');
-const did = ref('');
-const agent = ref<AtpAgent | null>(
-  new AtpAgent({
-    service: 'https://bsky.social',
-  })
-);
 
 onMounted(() => {
   checkLoginSession();
 });
 
-const checkLoginSession = (): void => {
-  const storedData = localStorage.getItem('loginData');
-  if (storedData) {
-    try {
-      const { loginData } = JSON.parse(storedData);
-      formInfo.value = `Logged in as ${loginData.handle} with DID ${loginData.did}`;
-      did.value = loginData.did;
-
-      agent.value = new AtpAgent({
-        service: 'https://bsky.social',
-      });
-
-      agent.value.api.setHeader(
-        'Authorization',
-        `Bearer ${loginData.accessJwt}`
-      );
-    } catch (error) {
-      console.error('Failed to parse session data:', error);
-      localStorage.removeItem('loginData');
-    }
-  }
-};
-
-const loginUser = async (): Promise<void> => {
-  loginError.value = '';
-  if (!agent.value) {
-    formInfo.value = 'Agent not created';
-    return;
-  }
-
-  try {
-    const identifier = (document.getElementById('username') as HTMLInputElement)
-      .value;
-    const password = (document.getElementById('password') as HTMLInputElement)
-      .value;
-
-    if (!identifier.includes('@')) {
-      loginError.value =
-        'Please use your email address to login, not your handle';
-      return;
-    }
-
-    const { data: loginData, success } = await agent.value.login({
-      identifier,
-      password,
-    });
-
-    if (success) {
-      const { did: userDid, handle } = loginData;
-      formInfo.value = `Logged in as ${handle} with DID ${userDid}`;
-      did.value = userDid;
-
-      localStorage.setItem('loginData', JSON.stringify({ loginData }));
-    } else {
-      formInfo.value = 'Login Failed';
-    }
-  } catch (error) {
-    if ((error as Error).message.includes('Rate Limit Exceeded')) {
-      loginError.value =
-        'Login failed: Rate limit exceeded. Please use your email address to login.';
-    } else {
-      loginError.value = `Login failed: ${(error as Error).message}`;
-    }
-    console.error('Login error:', error);
-  }
-};
-
 const displayFeed = async () => {
-  if (!agent.value) {
-    formInfo.value = 'Please login first';
+  if (!state.agent) {
+    state.formInfo = 'Please login first';
     return;
   }
 
   try {
     displayData.value = 'loading';
 
-    const { data } = await agent.value.getTimeline({
+    const { data } = await state.agent.getTimeline({
       limit: 30,
     });
 
@@ -156,15 +80,15 @@ const displayFeed = async () => {
 };
 
 const fetchLists = async () => {
-  if (!agent.value) {
-    formInfo.value = 'Please login first';
+  if (!state.agent) {
+    state.formInfo = 'Please login first';
     return;
   }
 
   try {
     displayData.value = 'loading';
-    const { data } = await agent.value.app.bsky.graph.getLists({
-      actor: did.value,
+    const { data } = await state.agent.app.bsky.graph.getLists({
+      actor: state.did,
       limit: 50,
     });
 
@@ -187,7 +111,7 @@ const fetchLists = async () => {
     )}</pre>`;
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
-      formInfo.value = 'Session expired. Please login again.';
+      state.formInfo = 'Session expired. Please login again.';
       localStorage.removeItem('loginData');
       window.location.reload();
       return;
@@ -198,8 +122,8 @@ const fetchLists = async () => {
 };
 
 const fetchFollows = async () => {
-  if (!agent.value) {
-    formInfo.value = 'Please login first';
+  if (!state.agent) {
+    state.formInfo = 'Please login first';
     return;
   }
 
@@ -209,8 +133,8 @@ const fetchFollows = async () => {
     let cursor = undefined;
 
     do {
-      const { data } = await agent.value.app.bsky.graph.getFollows({
-        actor: did.value,
+      const { data } = await state.agent.app.bsky.graph.getFollows({
+        actor: state.did,
         limit: 20,
         cursor: cursor,
       });
@@ -238,7 +162,7 @@ const fetchFollows = async () => {
     })</h2><pre>${JSON.stringify(followsData, null, 2)}</pre>`;
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
-      formInfo.value = 'Session expired. Please login again.';
+      state.formInfo = 'Session expired. Please login again.';
       localStorage.removeItem('loginData');
       window.location.reload();
       return;

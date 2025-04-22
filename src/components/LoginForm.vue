@@ -28,25 +28,23 @@
     </div>
 
     <button type="submit" class="btn-primary">Sign In</button>
+    <p v-if="state.loginError" class="error-text">{{ state.loginError }}</p>
   </form>
 </template>
 
 <script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
+import { state, loginUser } from '~/src/store';
 
 defineOptions({
   name: 'LoginForm',
 });
 
-const emit = defineEmits<{
-  (e: 'login'): void;
-}>();
-
 const identifier = ref('');
 const password = ref('');
 const emailError = ref('');
 
-const validateAndLogin = () => {
+const validateAndLogin = async () => {
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -56,10 +54,11 @@ const validateAndLogin = () => {
   }
 
   emailError.value = '';
-  emit('login');
+  await loginUser(identifier.value, password.value);
 };
 
 const clearError = () => {
   emailError.value = '';
+  state.loginError = '';
 };
 </script>
