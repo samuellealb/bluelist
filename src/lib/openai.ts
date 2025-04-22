@@ -77,8 +77,6 @@ export const curateUserLists = async (): Promise<{
       throw new Error('Failed to parse API response');
     }
 
-    console.log('API Response:', parsedResponse);
-
     const transformedSuggestions = transformApiResponseToSuggestions(
       parsedResponse,
       simplifiedLists

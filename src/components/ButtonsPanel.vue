@@ -37,8 +37,13 @@ const setError = (error: Error) => {
   } as unknown as DataObject;
 };
 
-const displayFeed = async () => {
+const displayFeed = async (forceRefresh = false) => {
   try {
+    if (!forceRefresh && state.timelineJSON) {
+      state.displayData = JSON.parse(state.timelineJSON);
+      return;
+    }
+
     setLoading();
     const result = await getTimeline();
     state.displayData = result.displayData;
@@ -49,8 +54,13 @@ const displayFeed = async () => {
   }
 };
 
-const displayLists = async () => {
+const displayLists = async (forceRefresh = false) => {
   try {
+    if (!forceRefresh && state.listsJSON) {
+      state.displayData = JSON.parse(state.listsJSON);
+      return;
+    }
+
     setLoading();
     const result = await getLists();
     state.displayData = result.displayData;
@@ -61,8 +71,13 @@ const displayLists = async () => {
   }
 };
 
-const displayFollows = async () => {
+const displayFollows = async (forceRefresh = false) => {
   try {
+    if (!forceRefresh && state.usersJSON) {
+      state.displayData = JSON.parse(state.usersJSON);
+      return;
+    }
+
     setLoading();
     const result = await getFollows();
     state.displayData = result.displayData;
@@ -73,8 +88,13 @@ const displayFollows = async () => {
   }
 };
 
-const displaySuggestions = async () => {
+const displaySuggestions = async (forceRefresh = false) => {
   try {
+    if (!forceRefresh && state.suggestionsJSON) {
+      state.displayData = JSON.parse(state.suggestionsJSON);
+      return;
+    }
+
     setLoading();
     const result = await curateUserLists();
     state.displayData = result.displayData;
@@ -84,4 +104,11 @@ const displaySuggestions = async () => {
     console.error('Error in displaySuggestions:', error);
   }
 };
+
+defineExpose({
+  displayFeed,
+  displayLists,
+  displayFollows,
+  displaySuggestions,
+});
 </script>

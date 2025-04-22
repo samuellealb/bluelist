@@ -10,7 +10,18 @@
       <p>{{ errorMessage }}</p>
     </div>
     <div v-else-if="dataObject" class="data-cards-container">
-      <h2>{{ getDataTitle(dataObject.type) }}</h2>
+      <div class="data-header">
+        <h2>{{ getDataTitle(dataObject.type) }}</h2>
+        <button
+          class="refresh-button"
+          title="Refresh data from API"
+          :disabled="isLoading"
+          @click="handleRefresh"
+        >
+          <span class="refresh-icon">🔄</span>
+          <span class="refresh-text">Refresh</span>
+        </button>
+      </div>
       <template v-if="dataObject.data && dataObject.data.length > 0">
         <DataCard
           v-for="(_, index) in dataObject.data"
@@ -43,6 +54,10 @@ const props = defineProps<{
   data: DataObject | null;
 }>();
 
+const emit = defineEmits<{
+  refresh: [type: string];
+}>();
+
 const dataObject = computed<DataObject | null>(() => {
   if (props.data && !isLoading.value && !isError.value) {
     return props.data;
@@ -65,6 +80,15 @@ const errorMessage = computed(() => {
   }
   return 'An unknown error occurred';
 });
+
+/**
+ * Handles refresh button click
+ */
+const handleRefresh = () => {
+  if (dataObject.value) {
+    emit('refresh', dataObject.value.type);
+  }
+};
 
 /**
  * Returns a human-readable title based on data type
