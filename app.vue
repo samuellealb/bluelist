@@ -9,13 +9,7 @@
     </header>
 
     <div class="main-content">
-      <Dashboard
-        :form-info="state.formInfo"
-        :display-data="state.displayData"
-        @update:display-data="state.displayData = $event"
-        @update:lists-json="state.listsJSON = $event"
-        @update:users-json="state.usersJSON = $event"
-      />
+      <Dashboard />
     </div>
   </div>
 </template>
