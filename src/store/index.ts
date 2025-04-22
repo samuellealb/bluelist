@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { AtpAgent } from '@atproto/api';
+import type { DataObject } from '~/src/types';
 
 export const state = reactive({
   formInfo: '',
@@ -9,7 +10,7 @@ export const state = reactive({
     service: 'https://bsky.social',
   }),
   isLoggedIn: false,
-  displayData: '',
+  displayData: null as DataObject | null,
   usersJSON: '',
   listsJSON: '',
   timelineJSON: '',

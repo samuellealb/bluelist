@@ -42,8 +42,13 @@ export interface SuggestionItem {
 }
 
 export interface DataObject {
-  type: 'timeline' | 'lists' | 'follows' | 'suggestions';
-  data: TimelineItem[] | ListItem[] | FollowItem[] | SuggestionItem[];
+  type: 'timeline' | 'lists' | 'follows' | 'suggestions' | 'error' | 'loading';
+  data:
+    | TimelineItem[]
+    | ListItem[]
+    | FollowItem[]
+    | SuggestionItem[]
+    | { message: string }[];
   suggestions?: {
     existingLists?: SuggestionItem[];
     newLists?: SuggestionItem[];

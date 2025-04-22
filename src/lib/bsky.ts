@@ -1,5 +1,6 @@
 import { state } from '~/src/store';
 import { AtpAgent } from '@atproto/api';
+import type { DataObject } from '~/src/types';
 
 /**
  * Logs in a user to Bluesky using their credentials
@@ -81,7 +82,7 @@ export function checkLoginSession(): void {
  * @returns Formatted timeline data and raw JSON
  */
 export const getTimeline = async (): Promise<{
-  displayData: string;
+  displayData: DataObject;
   timelineJSON: string;
 }> => {
   if (!state.agent) {
@@ -111,13 +112,11 @@ export const getTimeline = async (): Promise<{
     };
 
     const jsonData = JSON.stringify(timelineData);
-    const displayData = `<h2>Your Timeline</h2><pre>${JSON.stringify(
-      timelineData,
-      null,
-      2
-    )}</pre>`;
 
-    return { displayData, timelineJSON: jsonData };
+    return {
+      displayData: timelineData as DataObject,
+      timelineJSON: jsonData,
+    };
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();
@@ -132,7 +131,7 @@ export const getTimeline = async (): Promise<{
  * @returns Formatted lists data and raw JSON
  */
 export const getLists = async (): Promise<{
-  displayData: string;
+  displayData: DataObject;
   listsJSON: string;
 }> => {
   if (!state.agent) {
@@ -157,13 +156,11 @@ export const getLists = async (): Promise<{
     };
 
     const jsonData = JSON.stringify(listsData);
-    const displayData = `<h2>Your Lists</h2><pre>${JSON.stringify(
-      listsData,
-      null,
-      2
-    )}</pre>`;
 
-    return { displayData, listsJSON: jsonData };
+    return {
+      displayData: listsData as DataObject,
+      listsJSON: jsonData,
+    };
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();
@@ -178,7 +175,7 @@ export const getLists = async (): Promise<{
  * @returns Formatted follows data and raw JSON
  */
 export const getFollows = async (): Promise<{
-  displayData: string;
+  displayData: DataObject;
   usersJSON: string;
 }> => {
   if (!state.agent) {
@@ -214,11 +211,11 @@ export const getFollows = async (): Promise<{
     };
 
     const jsonData = JSON.stringify(followsData);
-    const displayData = `<h2>Your Follows (${
-      follows.length
-    })</h2><pre>${JSON.stringify(followsData, null, 2)}</pre>`;
 
-    return { displayData, usersJSON: jsonData };
+    return {
+      displayData: followsData as DataObject,
+      usersJSON: jsonData,
+    };
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();

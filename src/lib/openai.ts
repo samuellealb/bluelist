@@ -8,6 +8,7 @@ import type {
   SimplifiedUser,
   SuggestionItem,
   SuggestedList,
+  DataObject,
 } from '~/src/types';
 
 const callListCurator = async (users: string, lists: string) => {
@@ -31,7 +32,7 @@ const callListCurator = async (users: string, lists: string) => {
  * @returns Formatted suggestion data and raw JSON
  */
 export const curateUserLists = async (): Promise<{
-  displayData: string;
+  displayData: DataObject;
   suggestionsJSON: string;
 }> => {
   if (!state.usersJSON || !state.listsJSON) {
@@ -92,14 +93,10 @@ export const curateUserLists = async (): Promise<{
       },
     };
 
-    const jsonData = JSON.stringify(suggestionsData);
-    const displayData = `<h2>Your Suggested Lists</h2><pre>${JSON.stringify(
-      suggestionsData,
-      null,
-      2
-    )}</pre>`;
-
-    return { displayData, suggestionsJSON: jsonData };
+    return {
+      displayData: suggestionsData as DataObject,
+      suggestionsJSON: JSON.stringify(suggestionsData),
+    };
   } catch (error) {
     console.error('Error curating lists:', error);
     throw new Error((error as Error).message);
@@ -116,25 +113,19 @@ const transformApiResponseToSuggestions = (
 ): SuggestionItem[] => {
   const result: SuggestionItem[] = [];
 
-  // If the API response has the expected structure with a data property
   if (apiResponse && apiResponse.data && Array.isArray(apiResponse.data)) {
-    // Create a map of list names to their descriptions for quick lookup
     const listDescriptionMap: Record<string, string> = {};
     existingLists.forEach((list) => {
       listDescriptionMap[list.name] = list.description || '';
     });
 
-    // Process each user in the API response
     apiResponse.data.forEach((item: ApiResponseItem) => {
       const userName = item.name;
       const userDescription = item.description || '';
 
-      // Initialize suggestedLists array - empty by default
       let suggestedLists: SuggestedList[] = [];
 
-      // If the user has suggested lists, process them
       if (item.lists && Array.isArray(item.lists) && item.lists.length > 0) {
-        // Transform the lists to include descriptions
         suggestedLists = item.lists.map((listItem: ApiResponseList) => {
           const listName = listItem.name;
           return {
@@ -144,8 +135,6 @@ const transformApiResponseToSuggestions = (
         });
       }
 
-      // Add the user with their suggested lists to the result
-      // Even if the suggestedLists array is empty
       result.push({
         name: userName,
         description: userDescription,
