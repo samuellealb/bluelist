@@ -327,6 +327,10 @@
   border-bottom: 1px solid #e9ecef;
 }
 
+.data-cards-container {
+  padding: 16px;
+}
+
 /* Media query for mobile devices */
 @media (max-width: 768px) {
   .profile-cards-container {

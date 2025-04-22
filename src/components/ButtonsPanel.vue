@@ -25,8 +25,9 @@ defineOptions({
 const displayFeed = async () => {
   try {
     state.displayData = 'loading';
-    const timelineData = await getTimeline();
-    state.displayData = timelineData;
+    const result = await getTimeline();
+    state.displayData = result.displayData;
+    state.timelineJSON = result.timelineJSON;
   } catch (error) {
     state.displayData = (error as Error).message;
     console.error(error);
@@ -60,8 +61,9 @@ const displayFollows = async () => {
 const displaySuggestions = async () => {
   try {
     state.displayData = 'loading';
-    const suggestions = await curateUserLists();
-    state.displayData = suggestions;
+    const result = await curateUserLists();
+    state.displayData = result.displayData;
+    state.suggestionsJSON = result.suggestionsJSON;
   } catch (error) {
     state.displayData = (error as Error).message;
     console.error('Error in displaySuggestions:', error);

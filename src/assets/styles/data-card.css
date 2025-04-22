@@ -1,0 +1,225 @@
+.data-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.data-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.data-card__header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.data-card__title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0;
+  color: #333;
+}
+
+.data-card__subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 4px 0 0;
+}
+
+.data-card__content {
+  margin-bottom: 12px;
+}
+
+.data-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.data-card__meta {
+  display: flex;
+  align-items: center;
+}
+
+.data-card__meta-item {
+  margin-right: 12px;
+}
+
+.data-card__icon {
+  margin-right: 4px;
+}
+
+/* Timeline specific styles */
+.data-card--timeline .data-card__author {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.data-card--timeline .data-card__handle {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.data-card--timeline .data-card__text {
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+/* List specific styles */
+.data-card--list .data-card__header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+/* Follow specific styles */
+.data-card--follow {
+  display: flex;
+  align-items: center;
+}
+
+.data-card--follow .data-card__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #eee;
+  margin-right: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.data-card--follow .data-card__info {
+  flex: 1;
+}
+
+/* Suggestion specific styles */
+.data-card--suggestion .data-card__header {
+  display: flex;
+  align-items: flex-start;
+}
+
+.data-card--suggestion .data-card__icon-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f0f7ff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+.data-card--suggestion .data-card__badge {
+  display: inline-block;
+  background-color: #e0f2ff;
+  color: #0072c6;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.data-card--suggestion .data-card__users {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.data-card--suggestion .data-card__user-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.data-card--suggestion .data-card__user-item {
+  display: inline-block;
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  padding: 2px 10px;
+  margin: 3px 6px 3px 0;
+  font-size: 0.8rem;
+}
+
+.data-card--suggestion .data-card__user-item--more {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.data-card--suggestion .data-card__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #eee;
+  margin-right: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.data-card--suggestion .data-card__lists {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.data-card--suggestion .data-card__list-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.data-card--suggestion .data-card__list-button {
+  display: inline-block;
+  background-color: #0072c6;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.data-card--suggestion .data-card__list-button:hover {
+  background-color: #0085e0;
+  transform: translateY(-1px);
+}
+
+.data-card--suggestion .data-card__list-button:active {
+  background-color: #005fa3;
+  transform: translateY(1px);
+}
+
+.data-card--suggestion .data-card__no-lists {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.data-card--suggestion .data-card__message {
+  background-color: #f8f8f8;
+  border-left: 4px solid #ccc;
+  padding: 10px 12px;
+  margin: 8px 0;
+  border-radius: 4px;
+  color: #666;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.data-card--suggestion .data-card__message .data-card__icon {
+  font-size: 1.2rem;
+  margin-right: 8px;
+}

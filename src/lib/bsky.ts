@@ -78,9 +78,12 @@ export function checkLoginSession(): void {
 
 /**
  * Fetches the user's timeline from Bluesky
- * @returns HTML formatted timeline data
+ * @returns Formatted timeline data and raw JSON
  */
-export const getTimeline = async (): Promise<string> => {
+export const getTimeline = async (): Promise<{
+  displayData: string;
+  timelineJSON: string;
+}> => {
   if (!state.agent) {
     throw new Error('Please login first');
   }
@@ -90,12 +93,35 @@ export const getTimeline = async (): Promise<string> => {
       limit: 30,
     });
 
-    return `<h2>Your Timeline</h2><pre>${JSON.stringify(
-      data.feed,
+    const timeline = data.feed.map((item) => ({
+      uri: item.post.uri,
+      cid: item.post.cid,
+      author: {
+        did: item.post.author.did,
+        handle: item.post.author.handle,
+        name: item.post.author.displayName,
+      },
+      text: item.post.record.text,
+      indexedAt: item.post.indexedAt,
+    }));
+
+    const timelineData = {
+      type: 'timeline',
+      data: timeline,
+    };
+
+    const jsonData = JSON.stringify(timelineData);
+    const displayData = `<h2>Your Timeline</h2><pre>${JSON.stringify(
+      timelineData,
       null,
       2
     )}</pre>`;
+
+    return { displayData, timelineJSON: jsonData };
   } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      handleSessionExpired();
+    }
     console.error('Error fetching timeline:', error);
     throw new Error('Error fetching feed');
   }

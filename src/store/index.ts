@@ -12,4 +12,6 @@ export const state = reactive({
   displayData: '',
   usersJSON: '',
   listsJSON: '',
+  timelineJSON: '',
+  suggestionsJSON: '',
 });
