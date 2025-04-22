@@ -36,8 +36,13 @@
 </template>
 
 <script setup lang="ts">
-import { state, checkLoginSession } from '~/src/store';
-import { getTimeline, getLists, getFollows } from '~/src/lib/bsky';
+import { state } from '~/src/store';
+import {
+  getTimeline,
+  getLists,
+  getFollows,
+  checkLoginSession,
+} from '~/src/lib/bsky';
 import { curateUserLists } from '~/src/lib/openai';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ActionButtons from '~/src/components/ActionButtons.vue';

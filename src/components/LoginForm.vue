@@ -34,7 +34,8 @@
 
 <script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
-import { state, loginUser } from '~/src/store';
+import { state } from '~/src/store';
+import { loginUser } from '~/src/lib/bsky';
 
 defineOptions({
   name: 'LoginForm',
