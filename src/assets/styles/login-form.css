@@ -54,3 +54,15 @@
   outline: none;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.4);
 }
+
+.hint-text {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+.error-text {
+  font-size: 0.8rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+}

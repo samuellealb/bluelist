@@ -13,6 +13,7 @@
         <div class="card">
           <h2>Login</h2>
           <LoginForm @login="loginUser" />
+          <p v-if="loginError" class="error-message">{{ loginError }}</p>
         </div>
       </div>
 
@@ -48,6 +49,7 @@ defineOptions({
 });
 
 const formInfo = ref('');
+const loginError = ref('');
 const displayData = ref('');
 const usersJSON = ref('');
 const listsJSON = ref('');
@@ -86,6 +88,7 @@ const checkLoginSession = (): void => {
 };
 
 const loginUser = async (): Promise<void> => {
+  loginError.value = '';
   if (!agent.value) {
     formInfo.value = 'Agent not created';
     return;
@@ -97,14 +100,20 @@ const loginUser = async (): Promise<void> => {
     const password = (document.getElementById('password') as HTMLInputElement)
       .value;
 
+    if (!identifier.includes('@')) {
+      loginError.value =
+        'Please use your email address to login, not your handle';
+      return;
+    }
+
     const { data: loginData, success } = await agent.value.login({
       identifier,
       password,
     });
 
     if (success) {
-      const { did: userDid, handle, email } = loginData;
-      formInfo.value = `Logged in as ${handle} with DID ${userDid} with email ${email}`;
+      const { did: userDid, handle } = loginData;
+      formInfo.value = `Logged in as ${handle} with DID ${userDid}`;
       did.value = userDid;
 
       localStorage.setItem('loginData', JSON.stringify({ loginData }));
@@ -112,7 +121,12 @@ const loginUser = async (): Promise<void> => {
       formInfo.value = 'Login Failed';
     }
   } catch (error) {
-    formInfo.value = `Login failed: ${(error as Error).message}`;
+    if ((error as Error).message.includes('Rate Limit Exceeded')) {
+      loginError.value =
+        'Login failed: Rate limit exceeded. Please use your email address to login.';
+    } else {
+      loginError.value = `Login failed: ${(error as Error).message}`;
+    }
     console.error('Login error:', error);
   }
 };

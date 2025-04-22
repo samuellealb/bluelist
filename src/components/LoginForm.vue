@@ -1,16 +1,18 @@
 <!-- eslint-disable vue/html-self-closing -->
 <template>
-  <form class="login-form" @submit.prevent="$emit('login')">
+  <form class="login-form" @submit.prevent="validateAndLogin">
     <div class="form-group">
-      <label for="username">Username</label>
+      <label for="username">Email Address</label>
       <input
         id="username"
         v-model="identifier"
-        type="text"
+        type="email"
         required
         class="form-input"
-        placeholder="Enter your username"
+        placeholder="Enter your email address"
+        @input="clearError"
       />
+      <p v-if="emailError" class="error-text">{{ emailError }}</p>
     </div>
 
     <div class="form-group">
@@ -36,10 +38,28 @@ defineOptions({
   name: 'LoginForm',
 });
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'login'): void;
 }>();
 
 const identifier = ref('');
 const password = ref('');
+const emailError = ref('');
+
+const validateAndLogin = () => {
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(identifier.value)) {
+    emailError.value = 'Please enter a valid email address';
+    return;
+  }
+
+  emailError.value = '';
+  emit('login');
+};
+
+const clearError = () => {
+  emailError.value = '';
+};
 </script>
