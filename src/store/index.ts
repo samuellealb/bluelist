@@ -9,6 +9,9 @@ export const state = reactive({
     service: 'https://bsky.social',
   }),
   isLoggedIn: false,
+  displayData: '',
+  usersJSON: '',
+  listsJSON: '',
 });
 
 export function checkLoginSession(): void {

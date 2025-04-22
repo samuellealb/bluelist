@@ -4,17 +4,17 @@
       <span class="btn-icon">📋</span>
       <span>Display Feed</span>
     </button>
-    <button class="btn btn-action" @click="$emit('fetch-lists')">
+    <button class="btn btn-action" @click="$emit('display-lists')">
       <span class="btn-icon">📑</span>
-      <span>Get Lists</span>
+      <span>Display Lists</span>
     </button>
-    <button class="btn btn-action" @click="$emit('fetch-follows')">
+    <button class="btn btn-action" @click="$emit('display-follows')">
       <span class="btn-icon">👥</span>
-      <span>Get Follows</span>
+      <span>Display Follows</span>
     </button>
-    <button class="btn btn-action" @click="$emit('curate-lists')">
+    <button class="btn btn-action" @click="$emit('display-suggestions')">
       <span class="btn-icon">✨</span>
-      <span>Curate Lists</span>
+      <span>Display Suggestions</span>
     </button>
   </div>
 </template>
@@ -27,6 +27,12 @@ defineOptions({
 });
 
 defineEmits<{
-  (e: 'fetch-lists' | 'fetch-follows' | 'display-feed' | 'curate-lists'): void;
+  (
+    e:
+      | 'display-lists'
+      | 'display-follows'
+      | 'display-feed'
+      | 'display-suggestions'
+  ): void;
 }>();
 </script>
