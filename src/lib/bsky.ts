@@ -249,6 +249,19 @@ export const addUserToList = async (
   }
 
   try {
+    const { data } = await state.agent.app.bsky.graph.getList({
+      list: listUri,
+      limit: 1000,
+    });
+
+    const isUserAlreadyInList = data.items.some(
+      (item) => item.subject.did === userDid
+    );
+
+    if (isUserAlreadyInList) {
+      return 'User is already in this list';
+    }
+
     await state.agent.com.atproto.repo.createRecord({
       repo: state.did,
       collection: 'app.bsky.graph.listitem',
@@ -264,11 +277,6 @@ export const addUserToList = async (
   } catch (error) {
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();
-    }
-
-    // TODO: check if this is possible
-    if ((error as Error).message.includes('duplicate')) {
-      return 'User is already in this list';
     }
 
     console.error('Error adding user to list:', error);
