@@ -67,20 +67,28 @@ const displayLists = async (forceRefresh = false) => {
   }
 };
 
-const displayFollows = async (forceRefresh = false) => {
+/**
+ * Display follows with pagination support
+ * @param forceRefresh Whether to refresh data even if cached
+ * @param page Optional page number to fetch
+ */
+const displayFollows = async (forceRefresh = false, page?: number) => {
   try {
-    if (!forceRefresh && state.usersJSON) {
+    if (!forceRefresh && !page && state.usersJSON) {
       state.displayData = JSON.parse(state.usersJSON);
       return;
     }
 
     setLoading();
-    const result = await getFollows();
+    const result = await getFollows(
+      page || state.follows.currentPage,
+      forceRefresh
+    );
     state.displayData = result.displayData;
     state.usersJSON = result.usersJSON;
   } catch (error) {
     setError(error as Error);
-    console.error(error);
+    console.error('Error displaying follows:', error);
   }
 };
 

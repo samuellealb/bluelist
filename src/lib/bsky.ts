@@ -171,10 +171,17 @@ export const getLists = async (): Promise<{
 };
 
 /**
- * Fetches the user's follows from Bluesky
+ * Fetches the user's follows from Bluesky with pagination and prefetching support
+ * @param page Optional page number to fetch (defaults to current page in state)
+ * @param refresh Whether to refresh and start from the first page
+ * @param prefetchOnly If true, only prefetch data without updating display
  * @returns Formatted follows data and raw JSON
  */
-export const getFollows = async (): Promise<{
+export const getFollows = async (
+  page?: number,
+  refresh: boolean = false,
+  prefetchOnly: boolean = false
+): Promise<{
   displayData: DataObject;
   usersJSON: string;
 }> => {
@@ -183,46 +190,156 @@ export const getFollows = async (): Promise<{
   }
 
   try {
-    const follows = [];
-    let cursor = undefined;
+    if (refresh) {
+      state.follows.currentPage = 1;
+      state.follows.cursor = null;
+      state.follows.allFollows = [];
+      state.follows.prefetchedPages = 0;
+    }
 
-    do {
-      const { data } = await state.agent.app.bsky.graph.getFollows({
-        actor: state.did,
-        limit: 20,
-        cursor: cursor,
-      });
+    const requestedPage = page || state.follows.currentPage;
+    const maxAvailablePage = Math.max(
+      1,
+      Math.ceil(state.follows.allFollows.length / state.follows.itemsPerPage)
+    );
+    const needsMoreData =
+      requestedPage > maxAvailablePage && !!state.follows.cursor;
 
-      for (const follow of data.follows) {
-        follows.push({
-          did: follow.did,
-          handle: follow.handle,
-          name: follow.displayName,
-          description: follow.description,
-        });
+    if (state.follows.isFetching) {
+      console.info('Already fetching follows data, will wait');
+      throw new Error('Already fetching follows data');
+    }
+
+    state.follows.isFetching = true;
+
+    try {
+      if (state.follows.allFollows.length === 0) {
+        const firstBatch = await fetchFollowsBatch(null);
+        state.follows.allFollows.push(...firstBatch.follows);
+        state.follows.prefetchedPages = 1;
+        state.follows.cursor = firstBatch.cursor;
+        state.follows.hasMorePages = !!firstBatch.cursor;
+      } else if (needsMoreData) {
+        const newBatch = await fetchFollowsBatch(state.follows.cursor);
+
+        if (newBatch.follows.length > 0) {
+          state.follows.allFollows.push(...newBatch.follows);
+          state.follows.prefetchedPages++;
+          state.follows.cursor = newBatch.cursor;
+          state.follows.hasMorePages = !!newBatch.cursor;
+
+          const newMaxAvailablePage = Math.ceil(
+            state.follows.allFollows.length / state.follows.itemsPerPage
+          );
+
+          if (requestedPage > newMaxAvailablePage && state.follows.cursor) {
+            return await getFollows(requestedPage, false, prefetchOnly);
+          }
+        } else {
+          state.follows.hasMorePages = false;
+          state.follows.cursor = null;
+        }
       }
 
-      cursor = data.cursor;
-    } while (cursor && follows.length < 20);
+      if (prefetchOnly) {
+        const currentPageData = getCurrentPageData(state.follows.currentPage);
+        return {
+          displayData: currentPageData.displayData,
+          usersJSON: currentPageData.usersJSON,
+        };
+      }
 
-    const followsData = {
-      type: 'follows',
-      data: follows,
-    };
+      const validPage = Math.min(
+        requestedPage,
+        Math.ceil(state.follows.allFollows.length / state.follows.itemsPerPage)
+      );
 
-    const jsonData = JSON.stringify(followsData);
+      if (validPage !== requestedPage) {
+        console.log(
+          `Requested page ${requestedPage} is out of bounds, using page ${validPage} instead`
+        );
+      }
 
-    return {
-      displayData: followsData as DataObject,
-      usersJSON: jsonData,
-    };
+      state.follows.currentPage = validPage;
+
+      const pageData = getCurrentPageData(validPage);
+
+      return pageData;
+    } finally {
+      state.follows.isFetching = false;
+    }
   } catch (error) {
+    state.follows.isFetching = false;
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();
     }
     console.error('Error fetching follows:', error);
     throw new Error('Error fetching follows');
   }
+};
+
+/**
+ * Helper function to fetch a single batch of follows from the API
+ * @param cursor Optional cursor for pagination
+ * @returns Object containing follows data and next cursor
+ */
+const fetchFollowsBatch = async (cursor: string | null) => {
+  const apiParams: { actor: string; limit: number; cursor?: string } = {
+    actor: state.did,
+    limit: state.follows.itemsPerPage,
+  };
+
+  if (cursor) {
+    apiParams.cursor = cursor;
+  }
+
+  const { data } = await state.agent.app.bsky.graph.getFollows(apiParams);
+
+  const follows = data.follows.map((follow) => ({
+    did: follow.did,
+    handle: follow.handle,
+    name: follow.displayName,
+    description: follow.description,
+  }));
+
+  return {
+    follows,
+    cursor: data.cursor || null,
+  };
+};
+
+/**
+ * Get the data for the current page from the prefetched follows
+ * @param page The page number to get
+ * @returns Formatted follows data and JSON for the requested page
+ */
+const getCurrentPageData = (page: number) => {
+  const startIndex = (page - 1) * state.follows.itemsPerPage;
+  const endIndex = startIndex + state.follows.itemsPerPage;
+  const pageFollows = state.follows.allFollows.slice(startIndex, endIndex);
+
+  const followsData = {
+    type: 'follows',
+    data: pageFollows,
+    pagination: {
+      currentPage: page,
+      hasMorePages:
+        state.follows.hasMorePages ||
+        endIndex < state.follows.allFollows.length,
+      totalPages:
+        Math.ceil(
+          state.follows.allFollows.length / state.follows.itemsPerPage
+        ) + (state.follows.hasMorePages ? 1 : 0),
+      totalPrefetched: state.follows.allFollows.length,
+    },
+  };
+
+  const jsonData = JSON.stringify(followsData);
+
+  return {
+    displayData: followsData as DataObject,
+    usersJSON: jsonData,
+  };
 };
 
 /**

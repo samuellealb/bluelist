@@ -33,7 +33,7 @@ defineOptions({
 
 const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
 
-const handleRefresh = async (type: string) => {
+const handleRefresh = async (type: string, page?: number) => {
   if (!buttonsPanelRef.value) return;
 
   switch (type) {
@@ -43,9 +43,11 @@ const handleRefresh = async (type: string) => {
     case 'lists':
       await buttonsPanelRef.value.displayLists(true);
       break;
-    case 'follows':
-      await buttonsPanelRef.value.displayFollows(true);
+    case 'follows': {
+      const forceRefresh = page === undefined;
+      await buttonsPanelRef.value.displayFollows(forceRefresh, page);
       break;
+    }
     case 'suggestions':
       await buttonsPanelRef.value.displaySuggestions(true);
       break;

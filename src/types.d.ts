@@ -52,6 +52,7 @@ export interface DataObject {
     | SuggestionItem[]
     | { message: string }[];
   suggestions?: SuggestionItem[];
+  pagination?: { totalPrefetched: number; hasMorePages: boolean };
 }
 
 export interface ApiResponseItem {

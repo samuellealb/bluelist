@@ -31,6 +31,22 @@
           <span class="data-display__refresh-text">Refresh</span>
         </button>
       </div>
+
+      <Pagination
+        v-if="
+          dataObject.type === 'follows' &&
+          dataObject.data &&
+          dataObject.data.length > 0
+        "
+        :current-page="state.follows.currentPage"
+        :total-pages="state.follows.prefetchedPages"
+        :is-loading="isLoading"
+        :has-more-pages="!!dataObject.pagination?.hasMorePages"
+        :total-items="dataObject.pagination?.totalPrefetched"
+        :is-top="true"
+        @page-change="handlePageChange"
+      />
+
       <div
         v-if="dataObject.type === 'suggestions'"
         class="data-display__action-buttons"
@@ -109,7 +125,18 @@
           :item="dataObject"
           :index="index"
         />
+
+        <Pagination
+          v-if="dataObject.type === 'follows'"
+          :current-page="state.follows.currentPage"
+          :total-pages="state.follows.prefetchedPages"
+          :is-loading="isLoading"
+          :has-more-pages="!!dataObject.pagination?.hasMorePages"
+          :total-items="dataObject.pagination?.totalPrefetched"
+          @page-change="handlePageChange"
+        />
       </template>
+
       <div v-else class="data-display__empty">
         <pre>
 +----------+
@@ -136,8 +163,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { state } from '~/src/store';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
+import Pagination from '~/src/components/Pagination.vue';
 import type { DataObject, SuggestionItem } from '~/src/types';
 import { addUserToList } from '~/src/lib/bsky';
 import type { ComponentPublicInstance } from 'vue';
@@ -151,7 +181,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  refresh: [type: string];
+  refresh: [type: string, page?: number];
 }>();
 
 const dataObject = computed<DataObject | null>(() => {
@@ -307,7 +337,7 @@ const getDataTitle = (type: string): string => {
     case 'lists':
       return 'Your Lists';
     case 'follows':
-      return `Your Follows (${dataObject.value?.data?.length || 0})`;
+      return 'Your Follows';
     case 'suggestions':
       return 'Your Suggested Lists';
     default:
@@ -327,6 +357,12 @@ const dismissDetailedResults = () => {
 const dismissAllMessages = () => {
   dismissFeedbackMessage();
   dismissDetailedResults();
+};
+
+const handlePageChange = (newPage: number) => {
+  if (dataObject.value?.type === 'follows') {
+    emit('refresh', dataObject.value.type, newPage);
+  }
 };
 
 watch(
