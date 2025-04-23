@@ -1,5 +1,5 @@
 :root {
-  --primary-color: #c1e4ff;
+  --primary-color: #a0d6ff;
   --primary-dark: #0063c1;
   --primary-transparent-10: rgba(255, 158, 100, 0.1);
   --primary-transparent-20: rgba(255, 158, 100, 0.2);
@@ -9,9 +9,9 @@
   --secondary-transparent-10: rgba(242, 153, 74, 0.1);
   --secondary-transparent-50: rgba(242, 153, 74, 0.5);
 
-  --accent-color: #9020ac;
-  --accent-transparent-10: rgba(144, 32, 172, 0.1);
-  --accent-transparent-50: rgba(144, 32, 172, 0.5);
+  --accent-color: rgb(38, 206, 192);
+  --accent-transparent-10: rgba(38, 206, 192, 0.1);
+  --accent-transparent-50: rgba(38, 206, 192, 0.5);
 
   --disabled-color: #4a4a4a;
 

@@ -21,6 +21,15 @@
     <div v-else-if="dataObject" class="data-display__container">
       <div class="data-display__header">
         <h2>{{ getDataTitle(dataObject.type) }}</h2>
+        <button
+          class="data-display__refresh-button"
+          title="Refresh data from API"
+          :disabled="isLoading || isAcceptingAll"
+          @click="handleRefresh"
+        >
+          <span class="data-display__refresh-icon">[R]</span>
+          <span class="data-display__refresh-text">Refresh</span>
+        </button>
       </div>
       <div
         v-if="dataObject.type === 'suggestions'"
@@ -46,45 +55,50 @@
             {{ isAcceptingAll ? 'Processing...' : 'Accept All' }}
           </span>
         </button>
+      </div>
+      <div
+        v-if="acceptAllResult || detailedResults.length > 0"
+        class="data-display__feedback-container"
+      >
         <button
-          class="data-display__refresh-button"
-          title="Refresh data from API"
-          :disabled="isLoading || isAcceptingAll"
-          @click="handleRefresh"
+          class="data-display__dismiss-all-button"
+          title="Dismiss all messages"
+          @click="dismissAllMessages"
         >
-          <span class="data-display__refresh-icon">[R]</span>
-          <span class="data-display__refresh-text">Refresh</span>
+          [X]
         </button>
-      </div>
-      <div
-        v-if="acceptAllResult"
-        class="data-display__accept-all-result"
-        :class="{ 'data-display__accept-all-result--error': acceptAllError }"
-      >
-        {{ acceptAllResult }}
-      </div>
-      <div
-        v-if="detailedResults.length > 0"
-        class="data-display__detailed-results"
-      >
+
         <div
-          v-for="(result, index) in detailedResults"
-          :key="index"
-          class="data-display__detailed-result"
-          :class="{
-            'data-display__detailed-result--duplicate': result.isDuplicate,
-          }"
+          v-if="acceptAllResult"
+          class="data-display__accept-all-result"
+          :class="{ 'data-display__accept-all-result--error': acceptAllError }"
         >
-          <span class="data-display__detailed-result-profile">{{
-            result.profileName
-          }}</span>
-          <span class="data-display__detailed-result-arrow">→</span>
-          <span class="data-display__detailed-result-list">{{
-            result.listName
-          }}</span>
-          <span class="data-display__detailed-result-status">{{
-            result.message
-          }}</span>
+          {{ acceptAllResult }}
+        </div>
+
+        <div
+          v-if="detailedResults.length > 0"
+          class="data-display__detailed-results"
+        >
+          <div
+            v-for="(result, index) in detailedResults"
+            :key="index"
+            class="data-display__detailed-result"
+            :class="{
+              'data-display__detailed-result--duplicate': result.isDuplicate,
+            }"
+          >
+            <span class="data-display__detailed-result-profile">{{
+              result.profileName
+            }}</span>
+            <span class="data-display__detailed-result-arrow">→</span>
+            <span class="data-display__detailed-result-list">{{
+              result.listName
+            }}</span>
+            <span class="data-display__detailed-result-status">{{
+              result.message
+            }}</span>
+          </div>
         </div>
       </div>
       <template v-if="dataObject.data && dataObject.data.length > 0">
@@ -300,4 +314,27 @@ const getDataTitle = (type: string): string => {
       return 'Data';
   }
 };
+
+const dismissFeedbackMessage = () => {
+  acceptAllResult.value = '';
+  acceptAllError.value = false;
+};
+
+const dismissDetailedResults = () => {
+  detailedResults.value = [];
+};
+
+const dismissAllMessages = () => {
+  dismissFeedbackMessage();
+  dismissDetailedResults();
+};
+
+watch(
+  () => props.data?.type,
+  (newType, oldType) => {
+    if (newType !== oldType && newType !== 'loading') {
+      dismissAllMessages();
+    }
+  }
+);
 </script>

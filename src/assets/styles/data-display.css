@@ -79,10 +79,9 @@
 
 .data-display__action-buttons {
   display: flex;
+  justify-content: flex-end;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
-  margin-top: 1rem;
-  border-top: 1px solid rgba(255, 158, 100, 0.3);
 }
 
 .data-display__refresh-button,
@@ -96,7 +95,7 @@
   font-size: 0.9rem;
   text-align: center;
   font-family: var(--font-mono);
-  background-color: var(--primary-transparent-10);
+  background-color: var(--primary-transparent-15);
   color: var(--text-color);
   padding: 0.5rem 0.75rem;
   display: flex;
@@ -105,18 +104,6 @@
   border: 1px solid var(--primary-color);
   border-radius: 0;
   transition: background-color 0.2s, transform 0.1s;
-}
-
-.data-display__accept-all-button {
-  background-color: var(--primary-transparent-20);
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.data-display__toggle-all-button {
-  background-color: var(--primary-transparent-15);
-  color: var(--secondary-color);
-  font-weight: 600;
 }
 
 .data-display__refresh-button:hover,
@@ -150,10 +137,10 @@
 
 .data-display__accept-all-result {
   background-color: #e6f7e6;
-  border-radius: 4px;
+  border-radius: 0;
   color: #2e7d32;
   padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   font-size: 0.9rem;
   border-left: 3px solid #2e7d32;
   font-family: var(--font-mono);
@@ -304,6 +291,34 @@
   background-color: var(--error-bg);
   color: var(--error-text);
   border-left-color: var(--error-text);
+}
+
+.data-display__feedback-container {
+  position: relative;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--primary-transparent-20);
+  border-radius: 4px;
+  background-color: var(--card-bg-transparent-30);
+  padding: 2.5rem 0 0 0;
+}
+
+.data-display__dismiss-all-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background-color: transparent;
+  border: none;
+  font-family: var(--font-mono);
+  color: var(--secondary-color);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 800;
+  transition: background-color 0.2s, opacity 0.2s;
+  z-index: 2;
+}
+
+.data-display__dismiss-all-button:hover {
+  background-color: var(--primary-transparent-20);
 }
 
 @media (max-width: 1100px) {
