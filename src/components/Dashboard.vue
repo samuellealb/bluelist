@@ -40,9 +40,11 @@ const handleRefresh = async (type: string, page?: number) => {
     case 'timeline':
       await buttonsPanelRef.value.displayFeed(true);
       break;
-    case 'lists':
-      await buttonsPanelRef.value.displayLists(true);
+    case 'lists': {
+      const forceRefresh = page === undefined;
+      await buttonsPanelRef.value.displayLists(forceRefresh, page);
       break;
+    }
     case 'follows': {
       const forceRefresh = page === undefined;
       await buttonsPanelRef.value.displayFollows(forceRefresh, page);

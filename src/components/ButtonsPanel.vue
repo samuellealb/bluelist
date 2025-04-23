@@ -50,20 +50,28 @@ const displayFeed = async (forceRefresh = false) => {
   }
 };
 
-const displayLists = async (forceRefresh = false) => {
+/**
+ * Display lists with pagination support
+ * @param forceRefresh Whether to refresh data even if cached
+ * @param page Optional page number to fetch
+ */
+const displayLists = async (forceRefresh = false, page?: number) => {
   try {
-    if (!forceRefresh && state.listsJSON) {
+    if (!forceRefresh && !page && state.listsJSON) {
       state.displayData = JSON.parse(state.listsJSON);
       return;
     }
 
     setLoading();
-    const result = await getLists();
+    const result = await getLists(
+      page || state.lists.currentPage,
+      forceRefresh
+    );
     state.displayData = result.displayData;
     state.listsJSON = result.listsJSON;
   } catch (error) {
     setError(error as Error);
-    console.error(error);
+    console.error('Error displaying lists:', error);
   }
 };
 

@@ -66,14 +66,27 @@ const emit = defineEmits<{
 }>();
 
 const lastPage = computed(() => {
-  if (!state.follows.allFollows.length) return 1;
-  return Math.ceil(
-    state.follows.allFollows.length / state.follows.itemsPerPage
-  );
+  if (props.currentPage === undefined) return 1;
+
+  // Calculate last page based on the view type (follows or lists)
+  if (state.follows.currentPage === props.currentPage) {
+    // This is the follows view
+    if (!state.follows.allFollows.length) return 1;
+    return Math.ceil(
+      state.follows.allFollows.length / state.follows.itemsPerPage
+    );
+  } else if (state.lists.currentPage === props.currentPage) {
+    // This is the lists view
+    if (!state.lists.allLists.length) return 1;
+    return Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage);
+  }
+
+  // Default fallback
+  return props.totalPages || 1;
 });
 
 const isLastPage = computed(() => {
-  return props.currentPage >= lastPage.value;
+  return props.currentPage >= lastPage.value || !props.hasMorePages;
 });
 
 const handlePageChange = (newPage: number) => {

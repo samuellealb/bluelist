@@ -117,8 +117,16 @@ const availableLists = computed(() => {
     return [];
   }
 
-  // Get all lists from state if available
-  if (state.listsJSON) {
+  // First, try to use all lists from state cache
+  if (state.lists.allLists && state.lists.allLists.length > 0) {
+    return state.lists.allLists.map((list: ListItem) => ({
+      name: list.name,
+      description: list.description || '',
+      uri: list.uri,
+    }));
+  }
+  // Fallback to listsJSON if state cache isn't available
+  else if (state.listsJSON) {
     try {
       const listsData = JSON.parse(state.listsJSON);
       if (listsData.data && Array.isArray(listsData.data)) {

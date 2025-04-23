@@ -34,12 +34,20 @@
 
       <Pagination
         v-if="
-          dataObject.type === 'follows' &&
+          (dataObject.type === 'follows' || dataObject.type === 'lists') &&
           dataObject.data &&
           dataObject.data.length > 0
         "
-        :current-page="state.follows.currentPage"
-        :total-pages="state.follows.prefetchedPages"
+        :current-page="
+          dataObject.type === 'follows'
+            ? state.follows.currentPage
+            : state.lists.currentPage
+        "
+        :total-pages="
+          dataObject.type === 'follows'
+            ? state.follows.prefetchedPages
+            : state.lists.prefetchedPages
+        "
         :is-loading="isLoading"
         :has-more-pages="!!dataObject.pagination?.hasMorePages"
         :total-items="dataObject.pagination?.totalPrefetched"
@@ -127,9 +135,17 @@
         />
 
         <Pagination
-          v-if="dataObject.type === 'follows'"
-          :current-page="state.follows.currentPage"
-          :total-pages="state.follows.prefetchedPages"
+          v-if="dataObject.type === 'follows' || dataObject.type === 'lists'"
+          :current-page="
+            dataObject.type === 'follows'
+              ? state.follows.currentPage
+              : state.lists.currentPage
+          "
+          :total-pages="
+            dataObject.type === 'follows'
+              ? state.follows.prefetchedPages
+              : state.lists.prefetchedPages
+          "
           :is-loading="isLoading"
           :has-more-pages="!!dataObject.pagination?.hasMorePages"
           :total-items="dataObject.pagination?.totalPrefetched"
@@ -423,7 +439,10 @@ const dismissAllMessages = () => {
 };
 
 const handlePageChange = (newPage: number) => {
-  if (dataObject.value?.type === 'follows') {
+  if (
+    dataObject.value?.type === 'follows' ||
+    dataObject.value?.type === 'lists'
+  ) {
     emit('refresh', dataObject.value.type, newPage);
   }
 };

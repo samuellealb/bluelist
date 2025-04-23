@@ -37,15 +37,50 @@ export const curateUserLists = async (): Promise<{
   displayData: DataObject;
   suggestionsJSON: string;
 }> => {
-  if (!state.usersJSON || !state.listsJSON) {
-    throw new Error('Please fetch your follows and lists before curating');
+  if (!state.agent || !state.isLoggedIn) {
+    throw new Error('Please login first');
   }
 
   try {
-    const followsData = JSON.parse(state.usersJSON);
-    const listsData = JSON.parse(state.listsJSON);
+    // Make sure we have access to follows data
+    if (!state.follows.allFollows.length && !state.usersJSON) {
+      throw new Error('Please fetch your follows first before curating');
+    }
 
-    const simplifiedUsers = followsData.data.map(
+    // Make sure we have access to lists data
+    if (!state.lists.allLists.length && !state.listsJSON) {
+      throw new Error('Please fetch your lists first before curating');
+    }
+
+    // Get all follows from state (if available) or from usersJSON
+    let allFollows: FollowItem[] = [];
+    if (state.follows.allFollows.length > 0) {
+      // Use already fetched follows from state
+      allFollows = state.follows.allFollows;
+    } else if (state.usersJSON) {
+      // Parse follows from JSON if not in state
+      const followsData = JSON.parse(state.usersJSON);
+      allFollows = followsData.data;
+    }
+
+    // Get all lists from state (if available) or from listsJSON
+    let allLists: ListItem[] = [];
+    if (state.lists.allLists.length > 0) {
+      // Use already fetched lists from state
+      allLists = state.lists.allLists;
+    } else if (state.listsJSON) {
+      // Parse lists from JSON if not in state
+      const listsData = JSON.parse(state.listsJSON);
+      allLists = listsData.data;
+    }
+
+    // Get current page follows (which will be used for curation)
+    const currentPage = state.follows.currentPage;
+    const startIndex = (currentPage - 1) * state.follows.itemsPerPage;
+    const endIndex = startIndex + state.follows.itemsPerPage;
+    const currentPageFollows = allFollows.slice(startIndex, endIndex);
+
+    const simplifiedUsers = currentPageFollows.map(
       (user: {
         handle: string;
         name?: string;
@@ -56,7 +91,7 @@ export const curateUserLists = async (): Promise<{
       })
     );
 
-    const simplifiedLists = listsData.data.map(
+    const simplifiedLists = allLists.map(
       (list: { name: string; description?: string }): SimplifiedList => ({
         name: list.name,
         description: list.description || '',
@@ -75,17 +110,26 @@ export const curateUserLists = async (): Promise<{
         throw new Error(parsedResponse.error);
       }
     } catch (parseError) {
-      // TODO: Handle parsing error more gracefully:
-      // if error message has 'Unexpected token' or 'is not valid JSON', run callListCurator again
       console.error('Error parsing response:', parseError);
       throw new Error('Failed to parse API response');
     }
 
+    // Create virtual data objects to use in transformation
+    const followsData = {
+      type: 'follows',
+      data: currentPageFollows,
+    };
+
+    const listsData = {
+      type: 'lists',
+      data: allLists,
+    };
+
     const transformedSuggestions = transformApiResponseToSuggestions(
       parsedResponse,
       simplifiedLists,
-      listsData,
-      followsData
+      listsData as DataObject,
+      followsData as DataObject
     );
 
     const suggestionsData = {
@@ -117,32 +161,48 @@ const transformApiResponseToSuggestions = (
   const result: SuggestionItem[] = [];
 
   if (apiResponse && apiResponse.data && Array.isArray(apiResponse.data)) {
+    // Create maps for list data for efficient lookups
     const listDescriptionMap: Record<string, string> = {};
     suggestions.forEach((list) => {
       listDescriptionMap[list.name] = list.description || '';
     });
 
     const listUriMap: Record<string, string> = {};
-    suggestions.forEach((list) => {
-      (listsData.data as ListItem[]).forEach((l) => {
-        if (l.name === list.name) {
-          listUriMap[list.name] = l.uri || '';
-        }
-      });
+    // Ensure we use all lists, not just the current page
+    (listsData.data as ListItem[]).forEach((list) => {
+      listUriMap[list.name] = list.uri || '';
     });
 
-    console.log(followsData.data);
+    // Get all follows for matching, not just the current page
+    let allFollows: FollowItem[] = [];
+    if (state.follows.allFollows.length > 0) {
+      allFollows = state.follows.allFollows;
+    } else {
+      allFollows = followsData.data as FollowItem[];
+    }
 
     apiResponse.data.forEach((item: ApiResponseItem) => {
       const userName = item.name;
       const userDescription = item.description || '';
       let userDid = '';
 
+      // First try to find the user in the current page's follows
+      let userFound = false;
       (followsData.data as FollowItem[]).forEach((user) => {
-        if (userName === user.name) {
+        if (userName === user.name || userName === user.handle) {
           userDid = user.did || '';
+          userFound = true;
         }
       });
+
+      // If not found in current page, check all follows
+      if (!userFound && allFollows.length > 0) {
+        allFollows.forEach((user) => {
+          if (userName === user.name || userName === user.handle) {
+            userDid = user.did || '';
+          }
+        });
+      }
 
       let suggestedLists: SuggestedList[] = [];
 
