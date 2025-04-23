@@ -25,6 +25,7 @@ import LoginForm from '~/src/components/LoginForm.vue';
 import ButtonsPanel from '~/src/components/ButtonsPanel.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
 import { state } from '~/src/store';
+import '~/src/assets/styles/dashboard.css';
 
 defineOptions({
   name: 'UserDashboard',

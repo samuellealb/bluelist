@@ -23,7 +23,7 @@
 
 .data-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px var(--card-hover-shadow);
+  box-shadow: 0 4px 8px var(--card-shadow);
   border-color: var(--primary-color);
 }
 
@@ -169,16 +169,65 @@
 }
 
 .data-card--suggestion .data-card__list-button {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   background-color: var(--primary-transparent-10);
   color: var(--primary-color);
   border: 1px solid var(--primary-color);
   border-radius: 0;
-  padding: 6px 12px;
+  padding: 0;
   font-size: 0.85rem;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.1s;
   font-family: var(--font-mono);
+  overflow: hidden;
+}
+
+.data-card--suggestion .data-card__list-button--disabled {
+  background-color: var(--disabled-color);
+  color: var(--text-disabled);
+  border-color: var(--disabled-color);
+}
+
+.data-card--suggestion
+  .data-card__list-button--disabled
+  .data-card__list-checkbox {
+  background-color: var(--disabled-color);
+  border-right-color: var(--disabled-color);
+}
+
+.data-card--suggestion .data-card__list-checkbox {
+  display: block;
+  width: 20%;
+  height: 100%;
+  background-color: var(--primary-transparent-30);
+  border-right: 1px solid var(--primary-color);
+  min-width: 20px;
+  min-height: 26px;
+}
+
+.data-card--suggestion
+  .data-card__list-button--disabled
+  .data-card__list-checkbox {
+  border-right-color: var(--disabled-color);
+}
+
+.data-card--suggestion
+  .data-card__list-button
+  span:not(.data-card__list-checkbox) {
+  padding: 6px 12px;
+}
+
+.data-card--suggestion
+  .data-card__list-button:hover:not(.data-card__list-button--disabled) {
+  background-color: var(--primary-transparent-20);
+  transform: translateY(-1px);
+}
+
+.data-card--suggestion
+  .data-card__list-button:active:not(.data-card__list-button--disabled) {
+  background-color: var(--primary-transparent-30);
+  transform: translateY(1px);
 }
 
 .data-card--suggestion .data-card__list-button:hover {
@@ -219,14 +268,14 @@
   margin-top: 8px;
   padding: 4px 8px;
   font-size: 0.8rem;
-  background-color: #e6f7e6;
+  background-color: var(--success-bg);
   border-radius: 4px;
-  color: #2e7d32;
+  color: var(--success-text);
 }
 
 .data-card__action-message--error {
-  background-color: #ffebee;
-  color: #c62828;
+  background-color: var(--error-bg);
+  color: var(--error-text);
 }
 
 .data-card__list-button:disabled {

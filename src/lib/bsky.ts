@@ -251,7 +251,7 @@ export const addUserToList = async (
   try {
     const { data } = await state.agent.app.bsky.graph.getList({
       list: listUri,
-      limit: 1000,
+      limit: 100,
     });
 
     const isUserAlreadyInList = data.items.some(
@@ -282,4 +282,99 @@ export const addUserToList = async (
     console.error('Error adding user to list:', error);
     throw new Error(`Failed to add to list: ${(error as Error).message}`);
   }
+};
+
+/**
+ * Adds multiple users to their respective lists in batch
+ * @param usersToLists Array of objects containing a user DID and the lists they should be added to
+ * @returns An array of results for each operation
+ */
+export const addUsersToLists = async (
+  usersToLists: Array<{
+    profileDid: string;
+    lists: Array<{ uri: string; name: string }>;
+  }>
+): Promise<
+  Array<{
+    profileDid: string;
+    listUri: string;
+    listName: string;
+    success: boolean;
+    message: string;
+  }>
+> => {
+  if (!state.agent) {
+    throw new Error('Please login first');
+  }
+
+  const results: Array<{
+    profileDid: string;
+    listUri: string;
+    listName: string;
+    success: boolean;
+    message: string;
+  }> = [];
+
+  for (const user of usersToLists) {
+    const { profileDid, lists } = user;
+
+    for (const list of lists) {
+      try {
+        const { data } = await state.agent.app.bsky.graph.getList({
+          list: list.uri,
+          limit: 100,
+        });
+
+        const isUserAlreadyInList = data.items.some(
+          (item) => item.subject.did === profileDid
+        );
+
+        if (isUserAlreadyInList) {
+          results.push({
+            profileDid,
+            listUri: list.uri,
+            listName: list.name,
+            success: true,
+            message: 'User is already in this list',
+          });
+          continue;
+        }
+
+        await state.agent.com.atproto.repo.createRecord({
+          repo: state.did,
+          collection: 'app.bsky.graph.listitem',
+          record: {
+            $type: 'app.bsky.graph.listitem',
+            subject: profileDid,
+            list: list.uri,
+            createdAt: new Date().toISOString(),
+          },
+        });
+
+        results.push({
+          profileDid,
+          listUri: list.uri,
+          listName: list.name,
+          success: true,
+          message: 'User successfully added to list',
+        });
+      } catch (error) {
+        if ((error as Error).message === 'Token has expired') {
+          handleSessionExpired();
+        }
+
+        results.push({
+          profileDid,
+          listUri: list.uri,
+          listName: list.name,
+          success: false,
+          message: `Failed to add to list: ${(error as Error).message}`,
+        });
+
+        console.error('Error adding user to list:', error);
+      }
+    }
+  }
+
+  return results;
 };

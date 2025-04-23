@@ -75,6 +75,8 @@ export const curateUserLists = async (): Promise<{
         throw new Error(parsedResponse.error);
       }
     } catch (parseError) {
+      // TODO: Handle parsing error more gracefully:
+      // if error message has 'Unexpected token' or 'is not valid JSON', run callListCurator again
       console.error('Error parsing response:', parseError);
       throw new Error('Failed to parse API response');
     }

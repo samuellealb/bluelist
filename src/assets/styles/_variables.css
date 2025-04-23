@@ -1,0 +1,82 @@
+:root {
+  --primary-color: #c1e4ff;
+  --primary-dark: #0063c1;
+  --primary-transparent-10: rgba(255, 158, 100, 0.1);
+  --primary-transparent-20: rgba(255, 158, 100, 0.2);
+  --primary-transparent-30: rgba(255, 158, 100, 0.3);
+
+  --secondary-color: #f2994a;
+  --secondary-transparent-10: rgba(242, 153, 74, 0.1);
+  --secondary-transparent-50: rgba(242, 153, 74, 0.5);
+
+  --accent-color: #9020ac;
+  --accent-transparent-10: rgba(144, 32, 172, 0.1);
+  --accent-transparent-50: rgba(144, 32, 172, 0.5);
+
+  --disabled-color: #4a4a4a;
+
+  --success-color: #00ba7c;
+  --error-color: #c62828;
+
+  --background-color: #16181c;
+  --border-color: #393e47;
+  --border-radius: 10px;
+  --border-style: 1px solid var(--border-color);
+  --shadow: 0 4px 6px var(--card-shadow);
+
+  --spinner-bg: rgba(169, 177, 214, 0.1);
+
+  --card-color: #21242b;
+  --card-bg-transparent-50: rgba(36, 40, 59, 0.5);
+  --card-bg-transparent-80: rgba(26, 27, 38, 0.8);
+  --card-shadow: rgba(0, 0, 0, 0.3);
+
+  --text-color: #e0e4e8;
+  --text-light: #8899a6;
+  --text-light-transparent-20: rgba(86, 95, 137, 0.2);
+  --text-light-transparent-30: rgba(86, 95, 137, 0.3);
+  --text-disabled: #919191;
+
+  --transition: all 0.3s ease;
+  --font-mono: 'Courier New', Courier, monospace;
+}
+
+.light-theme {
+  --primary-color: #1185e0;
+  --primary-dark: #0063c1;
+  --primary-transparent-10: rgba(211, 100, 255, 0.1);
+  --primary-transparent-20: rgba(211, 100, 255, 0.2);
+  --primary-transparent-30: rgba(211, 100, 255, 0.3);
+
+  --secondary-color: #ff7700;
+  --secondary-transparent-10: rgba(92, 204, 150, 0.1);
+
+  --accent-color: #7c5cff;
+  --accent-transparent-10: rgba(187, 154, 247, 0.1);
+  --accent-transparent-50: rgba(187, 154, 247, 0.5);
+
+  --disabled-color: #e0e0e0;
+
+  --success-color: #00ba7c;
+  --success-bg: #e8f5e9;
+  --error-color: #c62828;
+  --error-bg: #ffebee;
+
+  --background-color: #f7f7f8;
+  --border-color: #e1e8ed;
+  --border-style: 1px solid var(--border-color);
+  --shadow: 0 4px 6px var(--card-shadow);
+
+  --spinner-bg: rgba(35, 36, 37, 0.4);
+
+  --card-color: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --card-bg-transparent-50: rgba(189, 190, 197, 0.5);
+  --card-bg-transparent-80: rgba(204, 206, 219, 0.8);
+
+  --text-color: #141618;
+  --text-light: #5c6c7c;
+  --text-light-transparent-20: rgba(86, 95, 137, 0.2);
+  --text-light-transparent-30: rgba(86, 95, 137, 0.3);
+  --text-disabled: #a0a0a0;
+}

@@ -75,11 +75,21 @@
             v-for="(list, idx) in suggestionItem.suggestedLists"
             :key="idx"
             class="data-card__list-button"
+            :class="{
+              'data-card__list-button--disabled':
+                !enabledLists[`${suggestionItem.did}-${list.uri}`],
+            }"
             :title="list.description"
             :disabled="loading"
             @click="handleAddToList(suggestionItem.did, list.uri, list.name)"
           >
-            {{ list.name }}
+            <span
+              class="data-card__list-checkbox"
+              @click.stop="toggleListEnabled(suggestionItem.did, list.uri)"
+            />
+            <span class="data-card__list-name">
+              {{ list.name }}
+            </span>
             <span v-if="activeList === list.uri && loading">...</span>
           </button>
         </div>
@@ -173,6 +183,63 @@ const loading = ref(false);
 const activeList = ref('');
 const listActionMessage = ref('');
 const listActionError = ref(false);
+const enabledLists = ref<Record<string, boolean>>({});
+
+watchEffect(() => {
+  if (suggestionItem.value && suggestionItem.value.suggestedLists) {
+    suggestionItem.value.suggestedLists.forEach((list) => {
+      const key = `${suggestionItem.value!.did}-${list.uri}`;
+      if (enabledLists.value[key] === undefined) {
+        enabledLists.value[key] = true;
+      }
+    });
+  }
+});
+
+/**
+ * Toggle enabled/disabled state for a list suggestion
+ */
+const toggleListEnabled = (profileDid: string, listUri: string) => {
+  const key = `${profileDid}-${listUri}`;
+  enabledLists.value[key] = !enabledLists.value[key];
+};
+
+/**
+ * Toggle all list suggestions for this profile
+ * @param enable If true, enable all suggestions; if false, disable all; if undefined, toggle current state
+ * @param invertEach If true, invert each suggestion's current state individually
+ */
+const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
+  if (!suggestionItem.value || !suggestionItem.value.suggestedLists) return;
+
+  const profileDid = suggestionItem.value.did;
+  const allKeys = suggestionItem.value.suggestedLists.map(
+    (list) => `${profileDid}-${list.uri}`
+  );
+
+  if (invertEach) {
+    // Invert each suggestion's current state individually
+    allKeys.forEach((key) => {
+      enabledLists.value[key] = !enabledLists.value[key];
+    });
+  } else {
+    // Determine the target state
+    let targetState: boolean;
+    if (enable !== undefined) {
+      // Use the provided state
+      targetState = enable;
+    } else {
+      // Toggle: check if all are currently enabled; if so, disable all, otherwise enable all
+      const allEnabled = allKeys.every((key) => enabledLists.value[key]);
+      targetState = !allEnabled;
+    }
+
+    // Set all to the target state
+    allKeys.forEach((key) => {
+      enabledLists.value[key] = targetState;
+    });
+  }
+};
 
 /**
  * Handles clicks on list buttons
@@ -213,4 +280,10 @@ const handleAddToList = async (
     }, 3000);
   }
 };
+
+defineExpose({
+  enabledLists,
+  handleAddToList,
+  toggleAllLists,
+});
 </script>
