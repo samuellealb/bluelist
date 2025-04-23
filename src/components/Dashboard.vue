@@ -1,19 +1,19 @@
 <template>
   <div>
-    <div v-if="!state.isLoggedIn" class="login-section">
-      <div class="card">
+    <div v-if="!state.isLoggedIn" class="dashboard-login">
+      <div class="dashboard-login__card">
         <h2>Login [_]</h2>
         <LoginForm />
       </div>
     </div>
 
     <div v-else class="dashboard">
-      <div class="actions-panel card">
+      <div class="dashboard__actions-panel">
         <h2>Actions [/]</h2>
         <ButtonsPanel ref="buttonsPanelRef" />
       </div>
 
-      <div class="data-panel card">
+      <div class="dashboard__data-panel">
         <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
       </div>
     </div>

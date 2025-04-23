@@ -1,7 +1,7 @@
 <template>
-  <button class="btn btn-action" @click="onClick">
-    <span class="btn-icon">{{ icon }}</span>
-    <span>{{ label }}</span>
+  <button class="action-button" @click="onClick">
+    <span class="action-button__icon">{{ icon }}</span>
+    <span class="action-button__label">{{ label }}</span>
   </button>
 </template>
 

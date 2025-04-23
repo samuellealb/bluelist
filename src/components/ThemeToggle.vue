@@ -5,7 +5,7 @@
     :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
     @click="toggleTheme"
   >
-    <span class="theme-toggle-icon">{{ isDark ? 'light' : 'dark' }}</span>
+    <span class="theme-toggle__icon">{{ isDark ? 'light' : 'dark' }}</span>
   </button>
 </template>
 

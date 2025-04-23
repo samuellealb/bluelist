@@ -1,12 +1,12 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="data-display">
-    <div v-if="isLoading" class="loading-indicator">
-      <div class="spinner" />
-      <span class="vintage-cursor">Processing data</span>
+    <div v-if="isLoading" class="data-display__loading">
+      <div class="data-display__spinner" />
+      <span class="data-display__cursor">Processing data</span>
     </div>
-    <div v-else-if="isError" class="error-message">
-      <div class="ascii-art">
+    <div v-else-if="isError" class="data-display__error">
+      <div class="data-display__ascii-art">
         <pre>
 +----------+
 |  ERROR   |
@@ -18,17 +18,17 @@
       </div>
       <p>{{ errorMessage }}</p>
     </div>
-    <div v-else-if="dataObject" class="data-cards-container">
-      <div class="data-header">
+    <div v-else-if="dataObject" class="data-display__container">
+      <div class="data-display__header">
         <h2>{{ getDataTitle(dataObject.type) }}</h2>
         <button
-          class="refresh-button"
+          class="data-display__refresh-button"
           title="Refresh data from API"
           :disabled="isLoading"
           @click="handleRefresh"
         >
-          <span class="refresh-icon">[R]</span>
-          <span class="refresh-text">Refresh</span>
+          <span class="data-display__refresh-icon">[R]</span>
+          <span class="data-display__refresh-text">Refresh</span>
         </button>
       </div>
       <template v-if="dataObject.data && dataObject.data.length > 0">
@@ -39,7 +39,7 @@
           :index="index"
         />
       </template>
-      <div v-else class="ascii-empty">
+      <div v-else class="data-display__empty">
         <pre>
 +----------+
 |  EMPTY   |
@@ -49,8 +49,8 @@
         </pre>
       </div>
     </div>
-    <div v-else class="no-data">
-      <div class="ascii-empty">
+    <div v-else class="data-display__no-data">
+      <div class="data-display__ascii-empty">
         <pre>
 +----------+
 |   DATA   |
@@ -59,7 +59,7 @@
         </pre>
       </div>
       <p>No data to display yet</p>
-      <p class="hint">Use the action buttons to load content</p>
+      <p class="data-display__hint">Use the action buttons to load content</p>
     </div>
   </div>
 </template>

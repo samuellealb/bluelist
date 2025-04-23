@@ -86,7 +86,7 @@
         <div
           v-if="listActionMessage"
           class="data-card__action-message"
-          :class="{ 'data-card__action-error': listActionError }"
+          :class="{ 'data-card__action-message--error': listActionError }"
         >
           {{ listActionMessage }}
         </div>

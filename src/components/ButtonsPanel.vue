@@ -1,5 +1,5 @@
 <template>
-  <div class="action-buttons">
+  <div class="buttons-panel">
     <ActionButton icon="[L]" label="Display Feed" @click="displayFeed" />
     <ActionButton icon="{#}" label="Display Lists" @click="displayLists" />
     <ActionButton icon="(U)" label="Display Follows" @click="displayFollows" />
