@@ -45,7 +45,6 @@
 
 <script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
-import { ref } from 'vue';
 import { state } from '~/src/store';
 import { loginUser } from '~/src/lib/bsky';
 

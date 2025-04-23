@@ -233,3 +233,45 @@ const handleSessionExpired = (): void => {
   localStorage.removeItem('loginData');
   window.location.reload();
 };
+
+/**
+ * Adds a user to a specified list
+ * @param userDid The DID of the user to add
+ * @param listUri The URI of the list to add the user to
+ * @returns A success message if the operation succeeds
+ */
+export const addUserToList = async (
+  userDid: string,
+  listUri: string
+): Promise<string> => {
+  if (!state.agent) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    await state.agent.com.atproto.repo.createRecord({
+      repo: state.did,
+      collection: 'app.bsky.graph.listitem',
+      record: {
+        $type: 'app.bsky.graph.listitem',
+        subject: userDid,
+        list: listUri,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    return 'User successfully added to list';
+  } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      handleSessionExpired();
+    }
+
+    // TODO: check if this is possible
+    if ((error as Error).message.includes('duplicate')) {
+      return 'User is already in this list';
+    }
+
+    console.error('Error adding user to list:', error);
+    throw new Error(`Failed to add to list: ${(error as Error).message}`);
+  }
+};

@@ -9,6 +9,8 @@ import type {
   SuggestionItem,
   SuggestedList,
   DataObject,
+  ListItem,
+  FollowItem,
 } from '~/src/types';
 
 const callListCurator = async (users: string, lists: string) => {
@@ -79,16 +81,15 @@ export const curateUserLists = async (): Promise<{
 
     const transformedSuggestions = transformApiResponseToSuggestions(
       parsedResponse,
-      simplifiedLists
+      simplifiedLists,
+      listsData,
+      followsData
     );
 
     const suggestionsData = {
       type: 'suggestions',
       data: transformedSuggestions,
-      suggestions: {
-        existingLists: transformedSuggestions,
-        newLists: [] as SuggestionItem[],
-      },
+      suggestions: transformedSuggestions,
     };
 
     return {
@@ -107,19 +108,39 @@ export const curateUserLists = async (): Promise<{
  */
 const transformApiResponseToSuggestions = (
   apiResponse: ApiResponse,
-  existingLists: SimplifiedList[]
+  suggestions: SimplifiedList[],
+  listsData: DataObject,
+  followsData: DataObject
 ): SuggestionItem[] => {
   const result: SuggestionItem[] = [];
 
   if (apiResponse && apiResponse.data && Array.isArray(apiResponse.data)) {
     const listDescriptionMap: Record<string, string> = {};
-    existingLists.forEach((list) => {
+    suggestions.forEach((list) => {
       listDescriptionMap[list.name] = list.description || '';
     });
+
+    const listUriMap: Record<string, string> = {};
+    suggestions.forEach((list) => {
+      (listsData.data as ListItem[]).forEach((l) => {
+        if (l.name === list.name) {
+          listUriMap[list.name] = l.uri || '';
+        }
+      });
+    });
+
+    console.log(followsData.data);
 
     apiResponse.data.forEach((item: ApiResponseItem) => {
       const userName = item.name;
       const userDescription = item.description || '';
+      let userDid = '';
+
+      (followsData.data as FollowItem[]).forEach((user) => {
+        if (userName === user.name) {
+          userDid = user.did || '';
+        }
+      });
 
       let suggestedLists: SuggestedList[] = [];
 
@@ -129,12 +150,14 @@ const transformApiResponseToSuggestions = (
           return {
             name: listName,
             description: listDescriptionMap[listName] || '',
+            uri: listUriMap[listName] || '',
           };
         });
       }
 
       result.push({
         name: userName,
+        did: userDid,
         description: userDescription,
         suggestedLists: suggestedLists,
       });

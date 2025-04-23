@@ -66,7 +66,6 @@
 
 <script setup lang="ts">
 import '~/src/assets/styles/data-display.css';
-import { computed } from 'vue';
 import DataCard from '~/src/components/DataCard.vue';
 import type { DataObject } from '~/src/types';
 

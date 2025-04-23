@@ -37,14 +37,6 @@
       <div v-if="listItem.description" class="data-card__content">
         <p>{{ listItem.description }}</p>
       </div>
-      <div class="data-card__footer">
-        <div class="data-card__meta">
-          <span class="data-card__meta-item">
-            <span class="data-card__icon">#></span>
-            {{ shortenUri(listItem.uri) }}
-          </span>
-        </div>
-      </div>
     </div>
 
     <!-- Follow Item -->
@@ -84,10 +76,19 @@
             :key="idx"
             class="data-card__list-button"
             :title="list.description"
-            @click="handleListClick(suggestionItem.name, list.name)"
+            :disabled="loading"
+            @click="handleAddToList(suggestionItem.did, list.uri, list.name)"
           >
             {{ list.name }}
+            <span v-if="activeList === list.uri && loading">...</span>
           </button>
+        </div>
+        <div
+          v-if="listActionMessage"
+          class="data-card__action-message"
+          :class="{ 'data-card__action-error': listActionError }"
+        >
+          {{ listActionMessage }}
         </div>
       </div>
       <div v-else class="data-card__no-lists">
@@ -103,7 +104,7 @@
 
 <script setup lang="ts">
 import '~/src/assets/styles/data-card.css';
-import { computed } from 'vue';
+import { addUserToList } from '~/src/lib/bsky';
 import type {
   DataObject,
   TimelineItem,
@@ -119,6 +120,15 @@ defineOptions({
 const props = defineProps<{
   item: DataObject;
   index: number;
+}>();
+
+const emit = defineEmits<{
+  (
+    e: 'add-to-list',
+    profileDid: string,
+    listName: string,
+    success: boolean
+  ): void;
 }>();
 
 const timelineItem = computed(() => {
@@ -149,9 +159,6 @@ const suggestionItem = computed(() => {
   return null;
 });
 
-/**
- * Formats a date string to a human-readable format
- */
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('en-US', {
@@ -162,18 +169,48 @@ const formatDate = (dateString: string): string => {
   }).format(date);
 };
 
-/**
- * Shortens a URI for display
- */
-const shortenUri = (uri: string): string => {
-  if (!uri) return '';
-  return uri.split('/').pop() || uri;
-};
+const loading = ref(false);
+const activeList = ref('');
+const listActionMessage = ref('');
+const listActionError = ref(false);
 
 /**
  * Handles clicks on list buttons
  */
-const handleListClick = (profileName: string, listName: string) => {
-  console.log(`Action: Adding profile "${profileName}" to list "${listName}"`);
+const handleAddToList = async (
+  profileDid: string,
+  listUri: string,
+  listName: string
+) => {
+  if (!profileDid || !listUri) {
+    listActionMessage.value =
+      'Missing required information to add user to list';
+    listActionError.value = true;
+    emit('add-to-list', '', '', false);
+    console.error('Missing required information to add user to list');
+    return;
+  }
+
+  loading.value = true;
+  activeList.value = listUri;
+  listActionMessage.value = '';
+  listActionError.value = false;
+
+  try {
+    const result = await addUserToList(profileDid, listUri);
+    listActionMessage.value = result;
+    listActionError.value = false;
+    emit('add-to-list', profileDid, listName, true);
+  } catch (error) {
+    listActionMessage.value = (error as Error).message;
+    listActionError.value = true;
+    emit('add-to-list', profileDid, listName, false);
+    console.error('Failed to add user to list:', error);
+  } finally {
+    loading.value = false;
+    setTimeout(() => {
+      listActionMessage.value = '';
+    }, 3000);
+  }
 };
 </script>

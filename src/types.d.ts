@@ -33,10 +33,12 @@ export interface FollowItem {
 export interface SuggestedList {
   name: string;
   description: string;
+  uri: string;
 }
 
 export interface SuggestionItem {
   name: string;
+  did: string;
   description: string;
   suggestedLists: SuggestedList[];
 }
@@ -49,21 +51,19 @@ export interface DataObject {
     | FollowItem[]
     | SuggestionItem[]
     | { message: string }[];
-  suggestions?: {
-    existingLists?: SuggestionItem[];
-    newLists?: SuggestionItem[];
-  };
+  suggestions?: SuggestionItem[];
 }
 
-// API response interfaces
 export interface ApiResponseItem {
   name: string;
+  did: string;
   description?: string;
   lists?: ApiResponseList[];
 }
 
 export interface ApiResponseList {
   name: string;
+  uri: string;
 }
 
 export interface ApiResponse {
@@ -71,13 +71,14 @@ export interface ApiResponse {
   error?: string;
 }
 
-// Define simplified types for functions
 export interface SimplifiedUser {
   name: string;
   description: string;
+  did?: string;
 }
 
 export interface SimplifiedList {
   name: string;
   description: string;
+  uri?: string;
 }

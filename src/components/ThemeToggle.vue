@@ -10,7 +10,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
 import '~/src/assets/styles/theme-toggle.css';
 
 const isDark = ref(true);
