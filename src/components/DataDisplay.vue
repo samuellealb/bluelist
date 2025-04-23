@@ -168,7 +168,7 @@ import { state } from '~/src/store';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
-import type { DataObject, SuggestionItem } from '~/src/types';
+import type { DataObject, SuggestionItem, ListItem } from '~/src/types';
 import { addUserToList } from '~/src/lib/bsky';
 import type { ComponentPublicInstance } from 'vue';
 
@@ -243,43 +243,106 @@ const handleAcceptAll = async () => {
     const suggestionItem = dataObject.value.data[
       cardRef.$props.index
     ] as SuggestionItem;
-    if (!suggestionItem || !suggestionItem.suggestedLists) continue;
+    if (!suggestionItem) continue;
 
-    for (const list of suggestionItem.suggestedLists) {
-      const key = `${suggestionItem.did}-${list.uri}`;
+    if (
+      suggestionItem.suggestedLists &&
+      suggestionItem.suggestedLists.length > 0
+    ) {
+      for (const list of suggestionItem.suggestedLists) {
+        const key = `${suggestionItem.did}-${list.uri}`;
 
-      if (cardRef.enabledLists[key]) {
-        try {
-          const result = await addUserToList(suggestionItem.did, list.uri);
-          const isDuplicate = result.includes('already in this list');
+        if (cardRef.enabledLists[key]) {
+          try {
+            const result = await addUserToList(suggestionItem.did, list.uri);
+            const isDuplicate = result.includes('already in this list');
 
-          if (isDuplicate) {
-            duplicateCount++;
-          } else {
-            successCount++;
+            if (isDuplicate) {
+              duplicateCount++;
+            } else {
+              successCount++;
+            }
+
+            detailedResults.value.push({
+              profileName: suggestionItem.name,
+              profileDid: suggestionItem.did,
+              listName: list.name,
+              listUri: list.uri,
+              success: true,
+              message: result,
+              isDuplicate: isDuplicate,
+            });
+          } catch (error) {
+            errorCount++;
+            detailedResults.value.push({
+              profileName: suggestionItem.name,
+              profileDid: suggestionItem.did,
+              listName: list.name,
+              listUri: list.uri,
+              success: false,
+              message: (error as Error).message,
+              isDuplicate: false,
+            });
+            console.error('Error adding to list during Accept All:', error);
           }
+        }
+      }
+    } else {
+      const profilePrefix = `${suggestionItem.did}-`;
 
-          detailedResults.value.push({
-            profileName: suggestionItem.name,
-            profileDid: suggestionItem.did,
-            listName: list.name,
-            listUri: list.uri,
-            success: true,
-            message: result,
-            isDuplicate: isDuplicate,
-          });
-        } catch (error) {
-          errorCount++;
-          detailedResults.value.push({
-            profileName: suggestionItem.name,
-            profileDid: suggestionItem.did,
-            listName: list.name,
-            listUri: list.uri,
-            success: false,
-            message: (error as Error).message,
-            isDuplicate: false,
-          });
-          console.error('Error adding to list during Accept All:', error);
+      for (const key in cardRef.enabledLists) {
+        if (key.startsWith(profilePrefix) && cardRef.enabledLists[key]) {
+          const listUri = key.substring(profilePrefix.length);
+
+          try {
+            let listName = 'Unknown List';
+            if (state.listsJSON) {
+              try {
+                const listsData = JSON.parse(state.listsJSON);
+                if (listsData.data && Array.isArray(listsData.data)) {
+                  const foundList = listsData.data.find(
+                    (list: ListItem) => list.uri === listUri
+                  );
+                  if (foundList) {
+                    listName = foundList.name;
+                  }
+                }
+              } catch (error) {
+                console.error('Error finding list name:', error);
+              }
+            }
+
+            const result = await addUserToList(suggestionItem.did, listUri);
+            const isDuplicate = result.includes('already in this list');
+
+            if (isDuplicate) {
+              duplicateCount++;
+            } else {
+              successCount++;
+            }
+
+            detailedResults.value.push({
+              profileName: suggestionItem.name,
+              profileDid: suggestionItem.did,
+              listName: listName,
+              listUri: listUri,
+              success: true,
+              message: result,
+              isDuplicate: isDuplicate,
+            });
+          } catch (error) {
+            errorCount++;
+            detailedResults.value.push({
+              profileName: suggestionItem.name,
+              profileDid: suggestionItem.did,
+              listName: 'Unknown List',
+              listUri: listUri,
+              success: false,
+              message: (error as Error).message,
+              isDuplicate: false,
+            });
+            console.error('Error adding to list during Accept All:', error);
+          }
         }
       }
     }

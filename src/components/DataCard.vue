@@ -62,59 +62,25 @@
           </p>
         </div>
       </div>
-      <div
-        v-if="
-          suggestionItem.suggestedLists &&
-          suggestionItem.suggestedLists.length > 0
-        "
-        class="data-card__lists"
-      >
-        <h4 class="data-card__subtitle">Suggested Lists:</h4>
-        <div class="data-card__list-buttons">
-          <button
-            v-for="(list, idx) in suggestionItem.suggestedLists"
-            :key="idx"
-            class="data-card__list-button"
-            :class="{
-              'data-card__list-button--disabled':
-                !enabledLists[`${suggestionItem.did}-${list.uri}`],
-            }"
-            :title="list.description"
-            :disabled="loading"
-            @click="handleAddToList(suggestionItem.did, list.uri, list.name)"
-          >
-            <span
-              class="data-card__list-checkbox"
-              @click.stop="toggleListEnabled(suggestionItem.did, list.uri)"
-            />
-            <span class="data-card__list-name">
-              {{ list.name }}
-            </span>
-            <span v-if="activeList === list.uri && loading">...</span>
-          </button>
-        </div>
-        <div
-          v-if="listActionMessage"
-          class="data-card__action-message"
-          :class="{ 'data-card__action-message--error': listActionError }"
-        >
-          {{ listActionMessage }}
-        </div>
-      </div>
-      <div v-else class="data-card__no-lists">
-        <p class="data-card__message">
-          <span class="data-card__icon">[!]</span>
-          No list suggestions found for this profile. This profile doesn't match
-          any of your existing lists.
-        </p>
-      </div>
+
+      <ListChips
+        v-if="suggestionItem"
+        ref="listChipsRef"
+        :profile-did="suggestionItem.did"
+        :profile-name="suggestionItem.name"
+        :lists="suggestionItem.suggestedLists"
+        :title="'Suggested Lists'"
+        :show-no-lists-message="true"
+        @add-to-list="handleAddToList"
+        @update:enabled-lists="updateEnabledLists"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import '~/src/assets/styles/data-card.css';
-import { addUserToList } from '~/src/lib/bsky';
+import ListChips from '~/src/components/ListChips.vue';
 import type {
   DataObject,
   TimelineItem,
@@ -179,111 +145,38 @@ const formatDate = (dateString: string): string => {
   }).format(date);
 };
 
-const loading = ref(false);
-const activeList = ref('');
-const listActionMessage = ref('');
-const listActionError = ref(false);
+const listChipsRef = ref<InstanceType<typeof ListChips> | null>(null);
 const enabledLists = ref<Record<string, boolean>>({});
 
-watchEffect(() => {
-  if (suggestionItem.value && suggestionItem.value.suggestedLists) {
-    suggestionItem.value.suggestedLists.forEach((list) => {
-      const key = `${suggestionItem.value!.did}-${list.uri}`;
-      if (enabledLists.value[key] === undefined) {
-        enabledLists.value[key] = true;
-      }
-    });
-  }
-});
-
 /**
- * Toggle enabled/disabled state for a list suggestion
+ * Relay the add-to-list event from ListChips
  */
-const toggleListEnabled = (profileDid: string, listUri: string) => {
-  const key = `${profileDid}-${listUri}`;
-  enabledLists.value[key] = !enabledLists.value[key];
+const handleAddToList = (
+  profileDid: string,
+  listName: string,
+  success: boolean
+) => {
+  emit('add-to-list', profileDid, listName, success);
 };
 
 /**
- * Toggle all list suggestions for this profile
- * @param enable If true, enable all suggestions; if false, disable all; if undefined, toggle current state
- * @param invertEach If true, invert each suggestion's current state individually
+ * Update the enabledLists state from ListChips
+ */
+const updateEnabledLists = (lists: Record<string, boolean>) => {
+  enabledLists.value = lists;
+};
+
+/**
+ * Toggle all list suggestions - delegate to ListChips component
  */
 const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
-  if (!suggestionItem.value || !suggestionItem.value.suggestedLists) return;
-
-  const profileDid = suggestionItem.value.did;
-  const allKeys = suggestionItem.value.suggestedLists.map(
-    (list) => `${profileDid}-${list.uri}`
-  );
-
-  if (invertEach) {
-    // Invert each suggestion's current state individually
-    allKeys.forEach((key) => {
-      enabledLists.value[key] = !enabledLists.value[key];
-    });
-  } else {
-    // Determine the target state
-    let targetState: boolean;
-    if (enable !== undefined) {
-      // Use the provided state
-      targetState = enable;
-    } else {
-      // Toggle: check if all are currently enabled; if so, disable all, otherwise enable all
-      const allEnabled = allKeys.every((key) => enabledLists.value[key]);
-      targetState = !allEnabled;
-    }
-
-    // Set all to the target state
-    allKeys.forEach((key) => {
-      enabledLists.value[key] = targetState;
-    });
-  }
-};
-
-/**
- * Handles clicks on list buttons
- */
-const handleAddToList = async (
-  profileDid: string,
-  listUri: string,
-  listName: string
-) => {
-  if (!profileDid || !listUri) {
-    listActionMessage.value =
-      'Missing required information to add user to list';
-    listActionError.value = true;
-    emit('add-to-list', '', '', false);
-    console.error('Missing required information to add user to list');
-    return;
-  }
-
-  loading.value = true;
-  activeList.value = listUri;
-  listActionMessage.value = '';
-  listActionError.value = false;
-
-  try {
-    const result = await addUserToList(profileDid, listUri);
-    listActionMessage.value = result;
-    listActionError.value = false;
-    emit('add-to-list', profileDid, listName, true);
-  } catch (error) {
-    listActionMessage.value = (error as Error).message;
-    listActionError.value = true;
-    emit('add-to-list', profileDid, listName, false);
-    console.error('Failed to add user to list:', error);
-  } finally {
-    loading.value = false;
-    setTimeout(() => {
-      listActionMessage.value = '';
-    }, 3000);
+  if (listChipsRef.value) {
+    listChipsRef.value.toggleAllLists(enable, invertEach);
   }
 };
 
 defineExpose({
   enabledLists,
-  handleAddToList,
   toggleAllLists,
 });
 </script>
