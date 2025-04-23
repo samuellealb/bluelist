@@ -1,15 +1,27 @@
+<!-- eslint-disable vue/html-self-closing -->
 <template>
-  <form class="login-form" @submit.prevent="$emit('login')">
+  <form class="login-form" @submit.prevent="validateAndLogin">
     <div class="form-group">
-      <label for="username">Username</label>
-      <input
-        id="username"
-        v-model="identifier"
-        type="text"
-        required
-        class="form-input"
-        placeholder="Enter your username"
-      >
+      <label for="username">Email Address</label>
+      <div class="input-container">
+        <input
+          id="username"
+          v-model="identifier"
+          type="email"
+          required
+          class="form-input"
+          placeholder="Enter your email address"
+          @input="clearError"
+          @focus="showEmailHint = true"
+          @blur="showEmailHint = false"
+        />
+        <div v-if="showEmailHint" class="email-hint-popup">
+          <div class="ascii-hint-box">+--- | FORMAT: user@mail | ---+</div>
+        </div>
+      </div>
+      <p v-if="emailError" class="error-text">
+        <span class="error-prefix">[!]</span> {{ emailError }}
+      </p>
     </div>
 
     <div class="form-group">
@@ -21,33 +33,46 @@
         required
         class="form-input"
         placeholder="Enter your password"
-      >
+      />
     </div>
 
     <button type="submit" class="btn-primary">Sign In</button>
+    <p v-if="state.loginError" class="error-text">
+      <span class="error-prefix">[!]</span> {{ state.loginError }}
+    </p>
   </form>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue';
+<script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
+import { ref } from 'vue';
+import { state } from '~/src/store';
+import { loginUser } from '~/src/lib/bsky';
 
-export default defineComponent({
-  props: {
-    formInfo: {
-      type: String,
-      required: true,
-    },
-  },
-  emits: ['login'],
-  setup() {
-    const identifier = ref('');
-    const password = ref('');
-
-    return {
-      identifier,
-      password,
-    };
-  },
+defineOptions({
+  name: 'LoginForm',
 });
+
+const identifier = ref('');
+const password = ref('');
+const emailError = ref('');
+const showEmailHint = ref(false);
+
+const validateAndLogin = async () => {
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(identifier.value)) {
+    emailError.value = 'Please enter a valid email address';
+    return;
+  }
+
+  emailError.value = '';
+  await loginUser(identifier.value, password.value);
+};
+
+const clearError = () => {
+  emailError.value = '';
+  state.loginError = '';
+};
 </script>
