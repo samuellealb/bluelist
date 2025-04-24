@@ -5,6 +5,10 @@
   font-family: var(--font-mono);
 }
 
+.buttons-panel--disabled {
+  cursor: not-allowed;
+}
+
 .action-button {
   border: none;
   border-radius: var(--border-radius);
@@ -49,4 +53,10 @@
   justify-content: center;
   color: var(--primary-color);
   border-radius: 0;
+}
+
+.action-button--disabled {
+  background-color: transparent;
+  color: var(--disabled-color);
+  pointer-events: none;
 }

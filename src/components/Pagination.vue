@@ -3,13 +3,15 @@
     <span class="pagination__info">
       Page {{ currentPage }} of {{ totalPages }}
       <span v-if="totalItems" class="pagination__details">
-        ({{ totalItems }} users loaded)
+        ({{ totalItems }} {{ typeLabel }} loaded)
       </span>
     </span>
     <div class="pagination__buttons">
       <button
         class="pagination__button"
-        :disabled="currentPage === 1 || isLoading"
+        :disabled="
+          currentPage === 1 || isLoading || state.isProcessingSuggestions
+        "
         title="First page"
         @click="handlePageChange(1)"
       >
@@ -17,7 +19,9 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="currentPage === 1 || isLoading"
+        :disabled="
+          currentPage === 1 || isLoading || state.isProcessingSuggestions
+        "
         title="Previous page"
         @click="handlePageChange(currentPage - 1)"
       >
@@ -25,7 +29,7 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="!hasMorePages || isLoading"
+        :disabled="!hasMorePages || isLoading || state.isProcessingSuggestions"
         title="Next page"
         @click="handlePageChange(currentPage + 1)"
       >
@@ -33,7 +37,7 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="isLastPage || isLoading"
+        :disabled="isLastPage || isLoading || state.isProcessingSuggestions"
         title="Skip to last loaded page"
         @click="handlePageChange(lastPage)"
       >
@@ -59,6 +63,7 @@ const props = defineProps<{
   hasMorePages: boolean;
   totalItems?: number;
   isTop?: boolean;
+  dataType?: string;
 }>();
 
 const emit = defineEmits<{
@@ -68,25 +73,25 @@ const emit = defineEmits<{
 const lastPage = computed(() => {
   if (props.currentPage === undefined) return 1;
 
-  // Calculate last page based on the view type (follows or lists)
   if (state.follows.currentPage === props.currentPage) {
-    // This is the follows view
     if (!state.follows.allFollows.length) return 1;
     return Math.ceil(
       state.follows.allFollows.length / state.follows.itemsPerPage
     );
   } else if (state.lists.currentPage === props.currentPage) {
-    // This is the lists view
     if (!state.lists.allLists.length) return 1;
     return Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage);
   }
 
-  // Default fallback
   return props.totalPages || 1;
 });
 
 const isLastPage = computed(() => {
   return props.currentPage >= lastPage.value || !props.hasMorePages;
+});
+
+const typeLabel = computed(() => {
+  return props.dataType === 'follows' ? 'profiles' : 'lists';
 });
 
 const handlePageChange = (newPage: number) => {

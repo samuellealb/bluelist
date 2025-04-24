@@ -1,6 +1,6 @@
 import { reactive } from 'vue';
 import { AtpAgent } from '@atproto/api';
-import type { DataObject, FollowItem, ListItem } from '~/src/types';
+import type { DataObject, FollowItem, ListItem } from '~/src/types/index';
 
 export const state = reactive({
   formInfo: '',
@@ -14,7 +14,6 @@ export const state = reactive({
   usersJSON: '',
   listsJSON: '',
   timelineJSON: '',
-  suggestionsJSON: '',
   follows: {
     currentPage: 1,
     itemsPerPage: 20,
@@ -26,11 +25,12 @@ export const state = reactive({
   },
   lists: {
     currentPage: 1,
-    itemsPerPage: 5, // 5 items per page as specified in the requirements
+    itemsPerPage: 5,
     cursor: null as string | null,
     hasMorePages: false,
     allLists: [] as ListItem[],
     prefetchedPages: 0,
     isFetching: false,
   },
+  isProcessingSuggestions: false,
 });

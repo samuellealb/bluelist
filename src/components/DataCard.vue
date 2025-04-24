@@ -5,7 +5,7 @@
       'data-card--timeline': item.type === 'timeline',
       'data-card--list': item.type === 'lists',
       'data-card--follow': item.type === 'follows',
-      'data-card--suggestion': item.type === 'suggestions',
+      'data-card--loading': state.isProcessingSuggestions,
     }"
   >
     <!-- Timeline Item -->
@@ -49,36 +49,27 @@
         <p class="data-card__subtitle">@{{ followItem.handle }}</p>
         <p v-if="followItem.description">{{ followItem.description }}</p>
       </div>
-    </div>
 
-    <!-- Suggestion Item -->
-    <div v-else-if="item.type === 'suggestions' && suggestionItem">
-      <div class="data-card__header">
-        <div class="data-card__avatar">[o]</div>
-        <div>
-          <h3 class="data-card__title">{{ suggestionItem.name }}</h3>
-          <p v-if="suggestionItem.description" class="data-card__subtitle">
-            {{ suggestionItem.description }}
-          </p>
-        </div>
+      <!-- Footer for follows with list chips -->
+      <div class="data-card__footer">
+        <ListChips
+          v-if="followItem"
+          ref="followListChipsRef"
+          :profile-did="followItem.did"
+          :profile-name="followItem.name || followItem.handle"
+          :title="'Add to Lists'"
+          :show-no-lists-message="false"
+          :hide-warning-but-show-lists="true"
+          @add-to-list="handleAddToList"
+          @update:enabled-lists="updateFollowEnabledLists"
+        />
       </div>
-
-      <ListChips
-        v-if="suggestionItem"
-        ref="listChipsRef"
-        :profile-did="suggestionItem.did"
-        :profile-name="suggestionItem.name"
-        :lists="suggestionItem.suggestedLists"
-        :title="'Suggested Lists'"
-        :show-no-lists-message="true"
-        @add-to-list="handleAddToList"
-        @update:enabled-lists="updateEnabledLists"
-      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { state } from '../store';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
 import type {
@@ -86,8 +77,7 @@ import type {
   TimelineItem,
   ListItem,
   FollowItem,
-  SuggestionItem,
-} from '~/src/types';
+} from '~/src/types/index';
 
 defineOptions({
   name: 'DataCard',
@@ -128,13 +118,6 @@ const followItem = computed(() => {
   return null;
 });
 
-const suggestionItem = computed(() => {
-  if (props.item.type === 'suggestions' && props.item.data[props.index]) {
-    return props.item.data[props.index] as SuggestionItem;
-  }
-  return null;
-});
-
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('en-US', {
@@ -145,8 +128,8 @@ const formatDate = (dateString: string): string => {
   }).format(date);
 };
 
-const listChipsRef = ref<InstanceType<typeof ListChips> | null>(null);
-const enabledLists = ref<Record<string, boolean>>({});
+const followListChipsRef = ref<InstanceType<typeof ListChips> | null>(null);
+const followEnabledLists = ref<Record<string, boolean>>({});
 
 /**
  * Relay the add-to-list event from ListChips
@@ -160,23 +143,26 @@ const handleAddToList = (
 };
 
 /**
- * Update the enabledLists state from ListChips
+ * Update the followEnabledLists state from ListChips for follows view
  */
-const updateEnabledLists = (lists: Record<string, boolean>) => {
-  enabledLists.value = lists;
+const updateFollowEnabledLists = (lists: Record<string, boolean>) => {
+  followEnabledLists.value = lists;
 };
 
 /**
- * Toggle all list suggestions - delegate to ListChips component
+ * Toggle all list suggestions for follows - delegate to follow ListChips component
  */
-const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
-  if (listChipsRef.value) {
-    listChipsRef.value.toggleAllLists(enable, invertEach);
+const toggleFollowAllLists = (
+  enable?: boolean,
+  invertEach: boolean = false
+) => {
+  if (followListChipsRef.value) {
+    followListChipsRef.value.toggleAllLists(enable, invertEach);
   }
 };
 
 defineExpose({
-  enabledLists,
-  toggleAllLists,
+  followEnabledLists,
+  toggleFollowAllLists,
 });
 </script>

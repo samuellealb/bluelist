@@ -74,6 +74,42 @@
         </div>
       </div>
     </div>
+    <div
+      v-else-if="availableLists.length > 0 && hideWarningButShowLists"
+      class="list-chips"
+    >
+      <h4 class="list-chips__title">{{ title }}:</h4>
+      <div class="list-chips__buttons">
+        <button
+          v-for="(list, idx) in availableLists"
+          :key="idx"
+          class="list-chips__button"
+          :class="{
+            'list-chips__button--disabled':
+              !enabledLists[`${profileDid}-${list.uri}`],
+          }"
+          :title="list.description"
+          :disabled="loading"
+          @click="handleAddToList(profileDid, list.uri, list.name)"
+        >
+          <span
+            class="list-chips__checkbox"
+            @click.stop="toggleListEnabled(profileDid, list.uri)"
+          />
+          <span class="list-chips__name">
+            {{ list.name }}
+          </span>
+          <span v-if="activeList === list.uri && loading">...</span>
+        </button>
+      </div>
+      <div
+        v-if="actionMessage"
+        class="list-chips__action-message"
+        :class="{ 'list-chips__action-message--error': actionError }"
+      >
+        {{ actionMessage }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -81,7 +117,7 @@
 import '~/src/assets/styles/list-chips.css';
 import { addUserToList } from '~/src/lib/bsky';
 import { state } from '~/src/store';
-import type { SuggestedList, ListItem } from '~/src/types';
+import type { SuggestedList, ListItem } from '~/src/types/index';
 
 defineOptions({
   name: 'ListChips',
@@ -93,6 +129,7 @@ const props = defineProps<{
   lists?: SuggestedList[];
   title?: string;
   showNoListsMessage?: boolean;
+  hideWarningButShowLists?: boolean;
 }>();
 
 const emit = defineEmits<{

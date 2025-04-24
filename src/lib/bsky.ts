@@ -1,11 +1,13 @@
 import { state } from '~/src/store';
 import { AtpAgent } from '@atproto/api';
-import type { DataObject } from '~/src/types';
+import type { DataObject } from '~/src/types/index';
 
 /**
  * Logs in a user to Bluesky using their credentials
- * @param identifier Email address of the user
- * @param password User's password
+ * @param identifier - Email address of the user
+ * @param password - User's password
+ * @returns {Promise<void>} - A Promise that resolves when login completes
+ * @throws {Error} - Throws when rate limit is exceeded or other login errors occur
  */
 export async function loginUser(
   identifier: string,
@@ -52,6 +54,8 @@ export async function loginUser(
 
 /**
  * Checks for an existing login session and restores it
+ * @returns {void} - No return value
+ * @throws {Error} - If session data cannot be parsed
  */
 export function checkLoginSession(): void {
   const storedData = localStorage.getItem('loginData');
@@ -79,7 +83,8 @@ export function checkLoginSession(): void {
 
 /**
  * Fetches the user's timeline from Bluesky
- * @returns Formatted timeline data and raw JSON
+ * @returns {Promise<{displayData: DataObject, timelineJSON: string}>} - Object containing formatted timeline data and raw JSON
+ * @throws {Error} - When user is not logged in, token has expired, or there's an error fetching the feed
  */
 export const getTimeline = async (): Promise<{
   displayData: DataObject;
@@ -128,10 +133,11 @@ export const getTimeline = async (): Promise<{
 
 /**
  * Fetches the user's lists from Bluesky with pagination and prefetching support
- * @param page Optional page number to fetch (defaults to current page in state)
- * @param refresh Whether to refresh and start from the first page
- * @param prefetchOnly If true, only prefetch data without updating display
- * @returns Formatted lists data and raw JSON
+ * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
+ * @param {boolean} [refresh=false] - Whether to refresh and start from the first page
+ * @param {boolean} [prefetchOnly=false] - If true, only prefetch data without updating display
+ * @returns {Promise<{displayData: DataObject, listsJSON: string}>} - Object containing formatted lists data and raw JSON
+ * @throws {Error} - When user is not logged in, token has expired, or already fetching data
  */
 export const getLists = async (
   page?: number,
@@ -238,10 +244,11 @@ export const getLists = async (
 
 /**
  * Fetches the user's follows from Bluesky with pagination and prefetching support
- * @param page Optional page number to fetch (defaults to current page in state)
- * @param refresh Whether to refresh and start from the first page
- * @param prefetchOnly If true, only prefetch data without updating display
- * @returns Formatted follows data and raw JSON
+ * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
+ * @param {boolean} [refresh=false] - Whether to refresh and start from the first page
+ * @param {boolean} [prefetchOnly=false] - If true, only prefetch data without updating display
+ * @returns {Promise<{displayData: DataObject, usersJSON: string}>} - Object containing formatted follows data and raw JSON
+ * @throws {Error} - When user is not logged in, token has expired, or already fetching data
  */
 export const getFollows = async (
   page?: number,
@@ -346,8 +353,9 @@ export const getFollows = async (
 
 /**
  * Helper function to fetch a single batch of follows from the API
- * @param cursor Optional cursor for pagination
- * @returns Object containing follows data and next cursor
+ * @param {string|null} cursor - Optional cursor for pagination
+ * @returns {Promise<{follows: Array, cursor: string|null}>} - Object containing follows data and next cursor
+ * @throws {Error} - When API request fails
  */
 const fetchFollowsBatch = async (cursor: string | null) => {
   const apiParams: { actor: string; limit: number; cursor?: string } = {
@@ -376,8 +384,10 @@ const fetchFollowsBatch = async (cursor: string | null) => {
 
 /**
  * Get the data for the current page from the prefetched follows
- * @param page The page number to get
- * @returns Formatted follows data and JSON for the requested page
+ * @param {number} page - The page number to get
+ * @returns {Object} - Object containing formatted follows data and JSON for the requested page
+ * @returns {DataObject} - displayData Formatted follows data
+ * @returns {string} - usersJSON JSON string representation of the formatted data
  */
 const getCurrentPageData = (page: number) => {
   const startIndex = (page - 1) * state.follows.itemsPerPage;
@@ -410,13 +420,14 @@ const getCurrentPageData = (page: number) => {
 
 /**
  * Helper function to fetch a single batch of lists from the API
- * @param cursor Optional cursor for pagination
- * @returns Object containing lists data and next cursor
+ * @param {string|null} cursor - Optional cursor for pagination
+ * @returns {Promise<{lists: Array, cursor: string|null}>} - Object containing lists data and next cursor
+ * @throws {Error} - When API request fails
  */
 const fetchListsBatch = async (cursor: string | null) => {
   const apiParams: { actor: string; limit: number; cursor?: string } = {
     actor: state.did,
-    limit: 50, // We fetch more at once but still paginate in the UI
+    limit: 50,
   };
 
   if (cursor) {
@@ -439,13 +450,19 @@ const fetchListsBatch = async (cursor: string | null) => {
 
 /**
  * Get the data for the current page from the prefetched lists
- * @param page The page number to get
- * @returns Formatted lists data and JSON for the requested page
+ * @param {number} page - The page number to get
+ * @returns {Object} - Object containing formatted lists data and JSON for the requested page
+ * @returns {DataObject} - displayData Formatted lists data
+ * @returns {string} - listsJSON JSON string representation of the formatted data
  */
 const getCurrentListsPageData = (page: number) => {
   const startIndex = (page - 1) * state.lists.itemsPerPage;
   const endIndex = startIndex + state.lists.itemsPerPage;
   const pageLists = state.lists.allLists.slice(startIndex, endIndex);
+
+  state.lists.prefetchedPages = Math.ceil(
+    state.lists.allLists.length / state.lists.itemsPerPage
+  );
 
   const listsData = {
     type: 'lists',
@@ -471,6 +488,7 @@ const getCurrentListsPageData = (page: number) => {
 
 /**
  * Helper function to handle expired sessions
+ * @returns {void} - No return value
  */
 const handleSessionExpired = (): void => {
   state.formInfo = 'Session expired. Please login again.';
@@ -480,9 +498,10 @@ const handleSessionExpired = (): void => {
 
 /**
  * Adds a user to a specified list
- * @param userDid The DID of the user to add
- * @param listUri The URI of the list to add the user to
- * @returns A success message if the operation succeeds
+ * @param {string} userDid - The DID of the user to add
+ * @param {string} listUri - The URI of the list to add the user to
+ * @returns {Promise<string>} - A success message if the operation succeeds
+ * @throws {Error} - When user is not logged in, session expired, or API request fails
  */
 export const addUserToList = async (
   userDid: string,
@@ -530,8 +549,9 @@ export const addUserToList = async (
 
 /**
  * Adds multiple users to their respective lists in batch
- * @param usersToLists Array of objects containing a user DID and the lists they should be added to
- * @returns An array of results for each operation
+ * @param {Array<{profileDid: string, lists: Array<{uri: string, name: string}>}>} usersToLists - Array of objects containing user DIDs and lists to add them to
+ * @returns {Promise<Array<{profileDid: string, listUri: string, listName: string, success: boolean, message: string}>>} - An array of results for each operation
+ * @throws {Error} - When user is not logged in
  */
 export const addUsersToLists = async (
   usersToLists: Array<{

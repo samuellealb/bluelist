@@ -1,8 +1,3 @@
-export interface GraphEntity {
-  name: string;
-  description?: string;
-}
-
 export interface Author {
   did: string;
   handle: string;
@@ -44,15 +39,20 @@ export interface SuggestionItem {
 }
 
 export interface DataObject {
-  type: 'timeline' | 'lists' | 'follows' | 'suggestions' | 'error' | 'loading';
+  type: 'timeline' | 'lists' | 'follows' | 'error' | 'loading';
   data:
     | TimelineItem[]
     | ListItem[]
     | FollowItem[]
     | SuggestionItem[]
     | { message: string }[];
-  suggestions?: SuggestionItem[];
   pagination?: { totalPrefetched: number; hasMorePages: boolean };
+}
+
+// API response related interfaces
+export interface ApiResponseList {
+  name: string;
+  uri: string;
 }
 
 export interface ApiResponseItem {
@@ -62,16 +62,12 @@ export interface ApiResponseItem {
   lists?: ApiResponseList[];
 }
 
-export interface ApiResponseList {
-  name: string;
-  uri: string;
-}
-
 export interface ApiResponse {
   data: ApiResponseItem[];
   error?: string;
 }
 
+// Simplified data structures used for API requests
 export interface SimplifiedUser {
   name: string;
   description: string;

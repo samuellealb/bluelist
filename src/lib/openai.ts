@@ -11,7 +11,7 @@ import type {
   DataObject,
   ListItem,
   FollowItem,
-} from '~/src/types';
+} from '~/src/types/index';
 
 /**
  * Calls the List Curator API endpoint to process users and lists.
@@ -39,13 +39,10 @@ const callOpenAiAPI = async (users: string, lists: string) => {
 
 /**
  * Processes user follows and lists to suggest list curation options using OpenAI
- * @param {string} users - String representation of users to be processed
- * @param {string} lists - String representation of lists to be processed
- * @returns {Promise<ApiResponse>} - The processed response from the OpenAI API
+ * @returns {Promise<Object>} - Object containing the suggestions data
  * @throws {Error} - If the API call fails or if parsing the response fails
  */
 export const curateUserLists = async (): Promise<{
-  displayData: DataObject;
   suggestionsJSON: string;
 }> => {
   if (!state.agent || !state.isLoggedIn) {
@@ -137,13 +134,10 @@ export const curateUserLists = async (): Promise<{
     );
 
     const suggestionsData = {
-      type: 'suggestions',
       data: transformedSuggestions,
-      suggestions: transformedSuggestions,
     };
 
     return {
-      displayData: suggestionsData as DataObject,
       suggestionsJSON: JSON.stringify(suggestionsData),
     };
   } catch (error) {
