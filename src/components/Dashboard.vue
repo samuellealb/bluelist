@@ -33,6 +33,33 @@ defineOptions({
 
 const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
 
+// Function to safely load lists with a force refresh
+const loadListsView = async () => {
+  // Use nextTick to ensure DOM is updated and components are available
+  await nextTick();
+
+  // Small delay to ensure component is fully initialized
+  setTimeout(() => {
+    if (state.isLoggedIn && buttonsPanelRef.value) {
+      buttonsPanelRef.value.displayLists(true); // Force refresh
+    }
+  }, 100);
+};
+
+onMounted(() => {
+  loadListsView();
+});
+
+// Watch for login state changes to display Lists when user logs in
+watch(
+  () => state.isLoggedIn,
+  (isLoggedIn) => {
+    if (isLoggedIn) {
+      loadListsView();
+    }
+  }
+);
+
 const handleRefresh = async (type: string, page?: number) => {
   if (!buttonsPanelRef.value) return;
 

@@ -1,9 +1,8 @@
 <template>
   <div class="buttons-panel">
-    <ActionButton icon="[L]" label="Feed" @click="displayFeed" />
     <ActionButton icon="{#}" label="Lists" @click="displayLists" />
     <ActionButton icon="(U)" label="Follows" @click="displayFollows" />
-    <ActionButton icon="<*>" label="Suggestions" @click="displaySuggestions" />
+    <ActionButton icon="[L]" label="Feed" @click="displayFeed" />
   </div>
 </template>
 
