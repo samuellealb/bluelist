@@ -37,14 +37,6 @@
       <div v-if="listItem.description" class="data-card__content">
         <p>{{ listItem.description }}</p>
       </div>
-      <div class="data-card__footer">
-        <div class="data-card__meta">
-          <span class="data-card__meta-item">
-            <span class="data-card__icon">#></span>
-            {{ shortenUri(listItem.uri) }}
-          </span>
-        </div>
-      </div>
     </div>
 
     <!-- Follow Item -->
@@ -70,40 +62,25 @@
           </p>
         </div>
       </div>
-      <div
-        v-if="
-          suggestionItem.suggestedLists &&
-          suggestionItem.suggestedLists.length > 0
-        "
-        class="data-card__lists"
-      >
-        <h4 class="data-card__subtitle">Suggested Lists:</h4>
-        <div class="data-card__list-buttons">
-          <button
-            v-for="(list, idx) in suggestionItem.suggestedLists"
-            :key="idx"
-            class="data-card__list-button"
-            :title="list.description"
-            @click="handleListClick(suggestionItem.name, list.name)"
-          >
-            {{ list.name }}
-          </button>
-        </div>
-      </div>
-      <div v-else class="data-card__no-lists">
-        <p class="data-card__message">
-          <span class="data-card__icon">[!]</span>
-          No list suggestions found for this profile. This profile doesn't match
-          any of your existing lists.
-        </p>
-      </div>
+
+      <ListChips
+        v-if="suggestionItem"
+        ref="listChipsRef"
+        :profile-did="suggestionItem.did"
+        :profile-name="suggestionItem.name"
+        :lists="suggestionItem.suggestedLists"
+        :title="'Suggested Lists'"
+        :show-no-lists-message="true"
+        @add-to-list="handleAddToList"
+        @update:enabled-lists="updateEnabledLists"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import '~/src/assets/styles/data-card.css';
-import { computed } from 'vue';
+import ListChips from '~/src/components/ListChips.vue';
 import type {
   DataObject,
   TimelineItem,
@@ -119,6 +96,15 @@ defineOptions({
 const props = defineProps<{
   item: DataObject;
   index: number;
+}>();
+
+const emit = defineEmits<{
+  (
+    e: 'add-to-list',
+    profileDid: string,
+    listName: string,
+    success: boolean
+  ): void;
 }>();
 
 const timelineItem = computed(() => {
@@ -149,9 +135,6 @@ const suggestionItem = computed(() => {
   return null;
 });
 
-/**
- * Formats a date string to a human-readable format
- */
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('en-US', {
@@ -162,18 +145,38 @@ const formatDate = (dateString: string): string => {
   }).format(date);
 };
 
+const listChipsRef = ref<InstanceType<typeof ListChips> | null>(null);
+const enabledLists = ref<Record<string, boolean>>({});
+
 /**
- * Shortens a URI for display
+ * Relay the add-to-list event from ListChips
  */
-const shortenUri = (uri: string): string => {
-  if (!uri) return '';
-  return uri.split('/').pop() || uri;
+const handleAddToList = (
+  profileDid: string,
+  listName: string,
+  success: boolean
+) => {
+  emit('add-to-list', profileDid, listName, success);
 };
 
 /**
- * Handles clicks on list buttons
+ * Update the enabledLists state from ListChips
  */
-const handleListClick = (profileName: string, listName: string) => {
-  console.log(`Action: Adding profile "${profileName}" to list "${listName}"`);
+const updateEnabledLists = (lists: Record<string, boolean>) => {
+  enabledLists.value = lists;
 };
+
+/**
+ * Toggle all list suggestions - delegate to ListChips component
+ */
+const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
+  if (listChipsRef.value) {
+    listChipsRef.value.toggleAllLists(enable, invertEach);
+  }
+};
+
+defineExpose({
+  enabledLists,
+  toggleAllLists,
+});
 </script>

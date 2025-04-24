@@ -16,3 +16,7 @@
 .theme-toggle:hover {
   background-color: var(--accent-transparent-10);
 }
+
+.theme-toggle__icon {
+  display: inline-block;
+}

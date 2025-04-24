@@ -1,0 +1,120 @@
+.list-chips {
+  margin-top: 12px;
+  border-top: 1px dashed var(--text-light);
+  padding-top: 12px;
+}
+
+.list-chips__title {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin: 4px 0 0;
+}
+
+.list-chips__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.list-chips__button {
+  display: flex;
+  align-items: center;
+  background-color: var(--primary-transparent-10);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  font-family: var(--font-mono);
+  overflow: hidden;
+}
+
+.list-chips__button--disabled {
+  background-color: var(--disabled-color);
+  color: var(--text-disabled);
+  border-color: var(--disabled-color);
+}
+
+.list-chips__button--disabled .list-chips__checkbox {
+  background-color: var(--disabled-color);
+  border-right-color: var(--disabled-color);
+}
+
+.list-chips__checkbox {
+  display: block;
+  width: 20%;
+  height: 100%;
+  background-color: var(--primary-transparent-30);
+  border-right: 1px solid var(--primary-color);
+  min-width: 20px;
+  min-height: 26px;
+}
+
+.list-chips__name {
+  padding: 6px 12px;
+}
+
+.list-chips__button--disabled .list-chips__checkbox {
+  border-right-color: var(--disabled-color);
+}
+
+.list-chips__button:hover:not(.list-chips__button--disabled) {
+  background-color: var(--primary-transparent-20);
+  transform: translateY(-1px);
+}
+
+.list-chips__button:active:not(.list-chips__button--disabled) {
+  background-color: var(--primary-transparent-30);
+  transform: translateY(1px);
+}
+
+.list-chips__button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.list-chips__message {
+  background-color: var(--card-bg-transparent-50);
+  border-left: 4px solid var(--text-light);
+  padding: 10px 12px;
+  margin: 8px 0;
+  border-radius: 0;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+}
+
+.list-chips__message .list-chips__icon {
+  font-size: 1.2rem;
+  margin-right: 8px;
+}
+
+.list-chips__action-message {
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  background-color: var(--success-bg);
+  border-radius: 4px;
+  color: var(--success-text);
+}
+
+.list-chips__action-message--error {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+}
+
+.list-chips__no-lists {
+  margin-top: 12px;
+  border-top: 1px dashed var(--text-light);
+  padding-top: 12px;
+}
+
+.list-chips__icon {
+  margin-right: 4px;
+  color: var(--accent-color);
+}

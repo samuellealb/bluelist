@@ -5,14 +5,14 @@
   font-family: var(--font-mono);
 }
 
-.form-group {
+.login-form__group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   position: relative;
 }
 
-.form-group::before {
+.login-form__group::before {
   content: '>';
   position: absolute;
   left: 0;
@@ -20,7 +20,7 @@
   color: var(--primary-color);
 }
 
-.form-group label {
+.login-form__group label {
   font-weight: 500;
   color: var(--primary-color);
   font-size: 0.9rem;
@@ -28,11 +28,11 @@
   font-family: var(--font-mono);
 }
 
-.input-container {
+.login-form__input-container {
   position: relative;
 }
 
-.form-input {
+.login-form__input {
   padding: 0.75rem;
   border: var(--border-style);
   border-radius: var(--border-radius);
@@ -45,17 +45,17 @@
   width: 100%;
 }
 
-.form-input:focus {
+.login-form__input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px var(--primary-transparent-20);
 }
 
-.form-input::placeholder {
+.login-form__input::placeholder {
   color: var(--text-light);
 }
 
-.form-input:focus::after {
+.login-form__input:focus::after {
   content: '';
   position: absolute;
   right: 10px;
@@ -68,7 +68,7 @@
 }
 
 /* Email hint popup styling */
-.email-hint-popup {
+.login-form__hint-popup {
   position: absolute;
   top: -50px;
   right: 0;
@@ -76,7 +76,7 @@
   animation: fadeIn 0.3s ease-in-out;
 }
 
-.ascii-hint-box {
+.login-form__hint-box {
   font-family: var(--font-mono);
   white-space: pre;
   line-height: 1.2;
@@ -89,7 +89,7 @@
   position: relative;
 }
 
-.ascii-hint-box::after {
+.login-form__hint-box::after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -112,7 +112,7 @@
   }
 }
 
-.btn-primary {
+.login-form__submit {
   background-color: var(--primary-transparent-10);
   color: var(--primary-color);
   border: 1px solid var(--primary-color);
@@ -126,34 +126,26 @@
   position: relative;
 }
 
-.btn-primary::before {
+.login-form__submit::before {
   content: '[ ';
   color: var(--primary-color);
 }
 
-.btn-primary::after {
+.login-form__submit::after {
   content: ' ]';
   color: var(--primary-color);
 }
 
-.btn-primary:hover {
+.login-form__submit:hover {
   background-color: var(--primary-transparent-20);
 }
 
-.btn-primary:focus {
+.login-form__submit:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--primary-transparent-20);
 }
 
-.hint-text {
-  font-size: 0.8rem;
-  color: var(--text-light);
-  margin-top: 0.25rem;
-  font-family: var(--font-mono);
-  font-style: italic;
-}
-
-.error-text {
+.login-form__error {
   font-size: 0.8rem;
   color: var(--error-color);
   margin-top: 0.25rem;
@@ -164,16 +156,7 @@
   align-items: center;
 }
 
-.error-prefix {
+.login-form__error-prefix {
   margin-right: 5px;
   font-weight: bold;
-}
-
-.ascii-login-art {
-  font-family: var(--font-mono);
-  white-space: pre;
-  line-height: 1.2;
-  color: var(--primary-color);
-  margin: 1rem 0;
-  text-align: center;
 }

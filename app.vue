@@ -1,17 +1,17 @@
 <template>
-  <div class="app-container">
-    <header class="header">
-      <h1>Bluelist</h1>
-      <div class="header-right">
-        <div v-if="state.isLoggedIn" class="user-status">
-          <span class="status-dot online" />
+  <div class="app">
+    <header class="app__header">
+      <h1 class="app__title">Bluelist</h1>
+      <div class="app__header-right">
+        <div v-if="state.isLoggedIn" class="app__user-status">
+          <span class="app__status-dot app__status-dot--online" />
           {{ state.formInfo.substring(0, state.formInfo.indexOf('with')) }}
         </div>
         <ThemeToggle />
       </div>
     </header>
 
-    <div class="main-content">
+    <div class="app__content">
       <Dashboard />
     </div>
   </div>

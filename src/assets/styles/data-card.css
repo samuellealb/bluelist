@@ -23,7 +23,7 @@
 
 .data-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px var(--card-hover-shadow);
+  box-shadow: 0 4px 8px var(--card-shadow);
   border-color: var(--primary-color);
 }
 
@@ -141,60 +141,6 @@
   align-items: flex-start;
 }
 
-.data-card--suggestion .data-card__icon-container {
-  width: 32px;
-  height: 32px;
-  border-radius: 0;
-  background-color: rgba(255, 158, 100, 0.1);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 12px;
-  font-size: 1.2rem;
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-}
-
-.data-card--suggestion .data-card__badge {
-  display: inline-block;
-  background-color: var(--accent-transparent-10);
-  color: var(--accent-color);
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 0;
-  margin-top: 4px;
-  border: 1px dashed var(--accent-color);
-}
-
-.data-card--suggestion .data-card__users {
-  margin-top: 12px;
-  border-top: 1px dashed var(--text-light);
-  padding-top: 12px;
-}
-
-.data-card--suggestion .data-card__user-list {
-  list-style: none;
-  padding: 0;
-  margin: 8px 0 0;
-}
-
-.data-card--suggestion .data-card__user-item {
-  display: inline-block;
-  background-color: var(--secondary-transparent-10);
-  border-radius: 0;
-  padding: 2px 10px;
-  margin: 3px 6px 3px 0;
-  font-size: 0.8rem;
-  border: 1px solid var(--secondary-color);
-  color: var(--secondary-color);
-}
-
-.data-card--suggestion .data-card__user-item--more {
-  background-color: var(--text-light-transparent-20);
-  color: var(--text-light);
-  border: 1px dashed var(--text-light);
-}
-
 .data-card--suggestion .data-card__avatar {
   width: 48px;
   height: 48px;
@@ -207,64 +153,4 @@
   font-size: 1.2rem;
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
-}
-
-.data-card--suggestion .data-card__lists {
-  margin-top: 12px;
-  border-top: 1px dashed var(--text-light);
-  padding-top: 12px;
-}
-
-.data-card--suggestion .data-card__list-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.data-card--suggestion .data-card__list-button {
-  display: inline-block;
-  background-color: var(--primary-transparent-10);
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  border-radius: 0;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-  font-family: var(--font-mono);
-}
-
-.data-card--suggestion .data-card__list-button:hover {
-  background-color: var(--primary-transparent-20);
-  transform: translateY(-1px);
-}
-
-.data-card--suggestion .data-card__list-button:active {
-  background-color: var(--primary-transparent-30);
-  transform: translateY(1px);
-}
-
-.data-card--suggestion .data-card__no-lists {
-  margin-top: 12px;
-  border-top: 1px dashed var(--text-light);
-  padding-top: 12px;
-}
-
-.data-card--suggestion .data-card__message {
-  background-color: var(--card-bg-transparent-50);
-  border-left: 4px solid var(--text-light);
-  padding: 10px 12px;
-  margin: 8px 0;
-  border-radius: 0;
-  color: var(--text-light);
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  font-family: var(--font-mono);
-}
-
-.data-card--suggestion .data-card__message .data-card__icon {
-  font-size: 1.2rem;
-  margin-right: 8px;
 }

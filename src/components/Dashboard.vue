@@ -1,19 +1,19 @@
 <template>
   <div>
-    <div v-if="!state.isLoggedIn" class="login-section">
-      <div class="card">
+    <div v-if="!state.isLoggedIn" class="dashboard-login">
+      <div class="dashboard-login__card">
         <h2>Login [_]</h2>
         <LoginForm />
       </div>
     </div>
 
     <div v-else class="dashboard">
-      <div class="actions-panel card">
+      <div class="dashboard__actions-panel">
         <h2>Actions [/]</h2>
         <ButtonsPanel ref="buttonsPanelRef" />
       </div>
 
-      <div class="data-panel card">
+      <div class="dashboard__data-panel">
         <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
       </div>
     </div>
@@ -21,11 +21,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ButtonsPanel from '~/src/components/ButtonsPanel.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
 import { state } from '~/src/store';
+import '~/src/assets/styles/dashboard.css';
 
 defineOptions({
   name: 'UserDashboard',
@@ -33,19 +33,23 @@ defineOptions({
 
 const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
 
-const handleRefresh = async (type: string) => {
+const handleRefresh = async (type: string, page?: number) => {
   if (!buttonsPanelRef.value) return;
 
   switch (type) {
     case 'timeline':
       await buttonsPanelRef.value.displayFeed(true);
       break;
-    case 'lists':
-      await buttonsPanelRef.value.displayLists(true);
+    case 'lists': {
+      const forceRefresh = page === undefined;
+      await buttonsPanelRef.value.displayLists(forceRefresh, page);
       break;
-    case 'follows':
-      await buttonsPanelRef.value.displayFollows(true);
+    }
+    case 'follows': {
+      const forceRefresh = page === undefined;
+      await buttonsPanelRef.value.displayFollows(forceRefresh, page);
       break;
+    }
     case 'suggestions':
       await buttonsPanelRef.value.displaySuggestions(true);
       break;
