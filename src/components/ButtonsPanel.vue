@@ -11,7 +11,7 @@ import '~/src/assets/styles/action-buttons.css';
 import { getTimeline, getLists, getFollows } from '~/src/lib/bsky';
 import { state } from '~/src/store';
 import ActionButton from '~/src/components/ActionButton.vue';
-import type { DataObject } from '~/src/types';
+import type { DataObject } from '~/src/types/index';
 
 defineOptions({
   name: 'ButtonsPanel',

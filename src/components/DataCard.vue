@@ -75,7 +75,7 @@ import type {
   TimelineItem,
   ListItem,
   FollowItem,
-} from '~/src/types';
+} from '~/src/types/index';
 
 defineOptions({
   name: 'DataCard',

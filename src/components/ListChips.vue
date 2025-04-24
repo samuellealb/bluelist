@@ -117,7 +117,7 @@
 import '~/src/assets/styles/list-chips.css';
 import { addUserToList } from '~/src/lib/bsky';
 import { state } from '~/src/store';
-import type { SuggestedList, ListItem } from '~/src/types';
+import type { SuggestedList, ListItem } from '~/src/types/index';
 
 defineOptions({
   name: 'ListChips',

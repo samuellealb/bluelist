@@ -1,6 +1,6 @@
 import { reactive } from 'vue';
 import { AtpAgent } from '@atproto/api';
-import type { DataObject, FollowItem, ListItem } from '~/src/types';
+import type { DataObject, FollowItem, ListItem } from '~/src/types/index';
 
 export const state = reactive({
   formInfo: '',

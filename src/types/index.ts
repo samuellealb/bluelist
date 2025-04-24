@@ -1,8 +1,3 @@
-export interface GraphEntity {
-  name: string;
-  description?: string;
-}
-
 export interface Author {
   did: string;
   handle: string;
@@ -52,6 +47,13 @@ export interface DataObject {
     | SuggestionItem[]
     | { message: string }[];
   pagination?: { totalPrefetched: number; hasMorePages: boolean };
+  isProcessingSuggestions?: boolean;
+}
+
+// API response related interfaces
+export interface ApiResponseList {
+  name: string;
+  uri: string;
 }
 
 export interface ApiResponseItem {
@@ -61,16 +63,12 @@ export interface ApiResponseItem {
   lists?: ApiResponseList[];
 }
 
-export interface ApiResponseList {
-  name: string;
-  uri: string;
-}
-
 export interface ApiResponse {
   data: ApiResponseItem[];
   error?: string;
 }
 
+// Simplified data structures used for API requests
 export interface SimplifiedUser {
   name: string;
   description: string;

@@ -1,6 +1,6 @@
 import { state } from '~/src/store';
 import { AtpAgent } from '@atproto/api';
-import type { DataObject } from '~/src/types';
+import type { DataObject } from '~/src/types/index';
 
 /**
  * Logs in a user to Bluesky using their credentials

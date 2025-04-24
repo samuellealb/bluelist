@@ -201,7 +201,7 @@ import type {
   ListItem,
   FollowItem,
   SuggestionItem,
-} from '~/src/types';
+} from '~/src/types/index';
 import { addUserToList } from '~/src/lib/bsky';
 import { curateUserLists } from '~/src/lib/openai';
 import type { ComponentPublicInstance } from 'vue';

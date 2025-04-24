@@ -11,7 +11,7 @@ import type {
   DataObject,
   ListItem,
   FollowItem,
-} from '~/src/types';
+} from '~/src/types/index';
 
 /**
  * Calls the List Curator API endpoint to process users and lists.
