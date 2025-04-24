@@ -84,14 +84,16 @@
   margin-bottom: 1.5rem;
 }
 
+/* Common button styles - apply to all buttons */
 .data-display__refresh-button,
 .data-display__accept-all-button,
-.data-display__toggle-all-button {
-  border: none;
-  border-radius: var(--border-radius);
+.data-display__toggle-all-button,
+.data-display__suggestions-button {
+  border: 1px solid var(--primary-color);
+  border-radius: 0;
   font-weight: 500;
   cursor: pointer;
-  transition: var(--transition);
+  transition: background-color 0.2s, transform 0.1s;
   font-size: 0.9rem;
   text-align: center;
   font-family: var(--font-mono);
@@ -100,36 +102,37 @@
   padding: 0.5rem 0.75rem;
   display: flex;
   align-items: center;
-  position: relative;
-  border: 1px solid var(--primary-color);
-  border-radius: 0;
-  transition: background-color 0.2s, transform 0.1s;
 }
 
 .data-display__refresh-button:hover,
 .data-display__accept-all-button:hover,
-.data-display__toggle-all-button:hover {
+.data-display__toggle-all-button:hover,
+.data-display__suggestions-button:hover {
   background-color: var(--primary-transparent-30);
   transform: translateY(-1px);
 }
 
 .data-display__refresh-button:active,
 .data-display__accept-all-button:active,
-.data-display__toggle-all-button:active {
+.data-display__toggle-all-button:active,
+.data-display__suggestions-button:active {
   transform: translateY(1px);
 }
 
 .data-display__refresh-button:disabled,
 .data-display__accept-all-button:disabled,
-.data-display__toggle-all-button:disabled {
+.data-display__toggle-all-button:disabled,
+.data-display__suggestions-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
 }
 
+/* Common icon styles - apply to all button icons */
 .data-display__refresh-icon,
 .data-display__accept-all-icon,
-.data-display__toggle-all-icon {
+.data-display__toggle-all-icon,
+.data-display__suggestions-icon {
   margin-right: 0.5rem;
   font-size: 1rem;
   color: var(--accent-color);
@@ -150,25 +153,6 @@
   background-color: #ffebee;
   color: #c62828;
   border-left-color: #c62828;
-}
-
-.data-display__refresh-button:hover {
-  background-color: var(--primary-transparent-20);
-}
-
-.data-display__refresh-button:active {
-  transform: translateY(1px);
-}
-
-.data-display__refresh-button:disabled {
-  background-color: var(--text-light-transparent-20);
-  color: var(--text-light);
-  border-color: var(--text-light);
-  cursor: not-allowed;
-}
-
-.data-display__refresh-icon {
-  font-size: 1.1rem;
 }
 
 .data-display__refresh-text {

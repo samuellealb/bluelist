@@ -21,15 +21,17 @@
     <div v-else-if="dataObject" class="data-display__container">
       <div class="data-display__header">
         <h2>{{ getDataTitle(dataObject.type) }}</h2>
-        <button
-          class="data-display__refresh-button"
-          title="Refresh data from API"
-          :disabled="isLoading || isAcceptingAll"
-          @click="handleRefresh"
-        >
-          <span class="data-display__refresh-icon">[R]</span>
-          <span class="data-display__refresh-text">Refresh</span>
-        </button>
+        <div class="data-display__header-buttons">
+          <button
+            class="data-display__refresh-button"
+            title="Refresh data from API"
+            :disabled="isLoading || isAcceptingAll"
+            @click="handleRefresh"
+          >
+            <span class="data-display__refresh-icon">[R]</span>
+            <span class="data-display__refresh-text">Refresh</span>
+          </button>
+        </div>
       </div>
 
       <Pagination
@@ -56,30 +58,40 @@
       />
 
       <div
-        v-if="dataObject.type === 'suggestions'"
+        v-if="dataObject.type === 'follows'"
         class="data-display__action-buttons"
       >
         <button
-          class="data-display__toggle-all-button"
-          title="Toggle all suggestions between enabled and disabled states"
+          class="data-display__suggestions-button"
+          title="Get suggestions for your follows"
           :disabled="isLoading || isAcceptingAll"
-          @click="handleToggleAll"
+          @click="handleSuggestions"
+        >
+          <span class="data-display__suggestions-icon">[*]</span>
+          <span class="data-display__suggestions-text">Suggest Lists</span>
+        </button>
+        <button
+          class="data-display__toggle-all-button"
+          title="Toggle all list options between enabled and disabled states"
+          :disabled="isLoading || isAcceptingAll"
+          @click="handleToggleFollowsLists"
         >
           <span class="data-display__toggle-all-icon">[↕]</span>
           <span class="data-display__toggle-all-text"> Toggle All </span>
         </button>
         <button
           class="data-display__accept-all-button"
-          title="Accept all enabled suggestions"
+          title="Add all follows to their enabled lists"
           :disabled="isLoading || isAcceptingAll"
-          @click="handleAcceptAll"
+          @click="handleAcceptFollowsLists"
         >
           <span class="data-display__accept-all-icon">[+]</span>
           <span class="data-display__accept-all-text">
-            {{ isAcceptingAll ? 'Processing...' : 'Accept All' }}
+            {{ isAcceptingAll ? 'Processing...' : 'Apply All' }}
           </span>
         </button>
       </div>
+
       <div
         v-if="acceptAllResult || detailedResults.length > 0"
         class="data-display__feedback-container"
@@ -184,8 +196,14 @@ import { state } from '~/src/store';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
-import type { DataObject, SuggestionItem, ListItem } from '~/src/types';
+import type {
+  DataObject,
+  ListItem,
+  FollowItem,
+  SuggestionItem,
+} from '~/src/types';
 import { addUserToList } from '~/src/lib/bsky';
+import { curateUserLists } from '~/src/lib/openai';
 import type { ComponentPublicInstance } from 'vue';
 
 defineOptions({
@@ -240,7 +258,23 @@ const acceptAllResult = ref('');
 const acceptAllError = ref(false);
 const detailedResults = ref<DetailedResult[]>([]);
 
-const handleAcceptAll = async () => {
+/**
+ * Toggle all list options across all follow profile cards
+ */
+const handleToggleFollowsLists = () => {
+  if (!dataObject.value || !dataCardRefs.value.length) return;
+
+  // Call toggleFollowAllLists for each card
+  for (const cardRef of dataCardRefs.value) {
+    if (!cardRef) continue;
+    cardRef.toggleFollowAllLists(undefined, true);
+  }
+};
+
+/**
+ * Accept all enabled list assignments for follows
+ */
+const handleAcceptFollowsLists = async () => {
   if (!dataObject.value || !dataCardRefs.value.length || isAcceptingAll.value)
     return;
 
@@ -256,149 +290,79 @@ const handleAcceptAll = async () => {
   for (const cardRef of dataCardRefs.value) {
     if (!cardRef) continue;
 
-    const suggestionItem = dataObject.value.data[
+    const followItem = dataObject.value.data[
       cardRef.$props.index
-    ] as SuggestionItem;
-    if (!suggestionItem) continue;
+    ] as FollowItem;
+    if (!followItem) continue;
 
-    if (
-      suggestionItem.suggestedLists &&
-      suggestionItem.suggestedLists.length > 0
-    ) {
-      for (const list of suggestionItem.suggestedLists) {
-        const key = `${suggestionItem.did}-${list.uri}`;
+    const profilePrefix = `${followItem.did}-`;
 
-        if (cardRef.enabledLists[key]) {
-          try {
-            const result = await addUserToList(suggestionItem.did, list.uri);
-            const isDuplicate = result.includes('already in this list');
+    // Process all enabled lists for this follow
+    for (const key in cardRef.followEnabledLists) {
+      if (key.startsWith(profilePrefix) && cardRef.followEnabledLists[key]) {
+        const listUri = key.substring(profilePrefix.length);
 
-            if (isDuplicate) {
-              duplicateCount++;
-            } else {
-              successCount++;
-            }
+        try {
+          const listName = findListNameByUri(listUri);
 
-            detailedResults.value.push({
-              profileName: suggestionItem.name,
-              profileDid: suggestionItem.did,
-              listName: list.name,
-              listUri: list.uri,
-              success: true,
-              message: result,
-              isDuplicate: isDuplicate,
-            });
-          } catch (error) {
-            errorCount++;
-            detailedResults.value.push({
-              profileName: suggestionItem.name,
-              profileDid: suggestionItem.did,
-              listName: list.name,
-              listUri: list.uri,
-              success: false,
-              message: (error as Error).message,
-              isDuplicate: false,
-            });
-            console.error('Error adding to list during Accept All:', error);
+          const result = await addUserToList(followItem.did, listUri);
+          const isDuplicate = result.includes('already in this list');
+
+          if (isDuplicate) {
+            duplicateCount++;
+          } else {
+            successCount++;
           }
-        }
-      }
-    } else {
-      const profilePrefix = `${suggestionItem.did}-`;
 
-      for (const key in cardRef.enabledLists) {
-        if (key.startsWith(profilePrefix) && cardRef.enabledLists[key]) {
-          const listUri = key.substring(profilePrefix.length);
-
-          try {
-            let listName = 'Unknown List';
-            if (state.listsJSON) {
-              try {
-                const listsData = JSON.parse(state.listsJSON);
-                if (listsData.data && Array.isArray(listsData.data)) {
-                  const foundList = listsData.data.find(
-                    (list: ListItem) => list.uri === listUri
-                  );
-                  if (foundList) {
-                    listName = foundList.name;
-                  }
-                }
-              } catch (error) {
-                console.error('Error finding list name:', error);
-              }
-            }
-
-            const result = await addUserToList(suggestionItem.did, listUri);
-            const isDuplicate = result.includes('already in this list');
-
-            if (isDuplicate) {
-              duplicateCount++;
-            } else {
-              successCount++;
-            }
-
-            detailedResults.value.push({
-              profileName: suggestionItem.name,
-              profileDid: suggestionItem.did,
-              listName: listName,
-              listUri: listUri,
-              success: true,
-              message: result,
-              isDuplicate: isDuplicate,
-            });
-          } catch (error) {
-            errorCount++;
-            detailedResults.value.push({
-              profileName: suggestionItem.name,
-              profileDid: suggestionItem.did,
-              listName: 'Unknown List',
-              listUri: listUri,
-              success: false,
-              message: (error as Error).message,
-              isDuplicate: false,
-            });
-            console.error('Error adding to list during Accept All:', error);
-          }
+          detailedResults.value.push({
+            profileName: followItem.name || followItem.handle,
+            profileDid: followItem.did,
+            listName: listName,
+            listUri: listUri,
+            success: true,
+            message: result,
+            isDuplicate: isDuplicate,
+          });
+        } catch (error) {
+          errorCount++;
+          detailedResults.value.push({
+            profileName: followItem.name || followItem.handle,
+            profileDid: followItem.did,
+            listName: 'Unknown List',
+            listUri: listUri,
+            success: false,
+            message: (error as Error).message,
+            isDuplicate: false,
+          });
+          console.error('Error adding follow to list:', error);
         }
       }
     }
   }
 
+  // Generate result message
   if ((successCount > 0 || duplicateCount > 0) && errorCount === 0) {
     acceptAllResult.value = `Successfully processed ${
       successCount + duplicateCount
-    } suggestions (${successCount} added, ${duplicateCount} already in lists)`;
+    } list assignments (${successCount} added, ${duplicateCount} already in lists)`;
     acceptAllError.value = false;
   } else if ((successCount > 0 || duplicateCount > 0) && errorCount > 0) {
     acceptAllResult.value = `Processed ${
       successCount + duplicateCount
-    } suggestions with ${errorCount} errors (${successCount} added, ${duplicateCount} already in lists)`;
+    } list assignments with ${errorCount} errors (${successCount} added, ${duplicateCount} already in lists)`;
     acceptAllError.value = true;
   } else if (successCount === 0 && duplicateCount === 0 && errorCount > 0) {
-    acceptAllResult.value = `Failed to add any suggestions. ${errorCount} errors occurred.`;
+    acceptAllResult.value = `Failed to add any profiles to lists. ${errorCount} errors occurred.`;
     acceptAllError.value = true;
   } else if (successCount === 0 && duplicateCount > 0 && errorCount === 0) {
-    acceptAllResult.value = `All ${duplicateCount} selected profiles are already in their suggested lists.`;
+    acceptAllResult.value = `All ${duplicateCount} selected profiles are already in their selected lists.`;
     acceptAllError.value = false;
   } else {
-    acceptAllResult.value = 'No suggestions were processed';
+    acceptAllResult.value = 'No list assignments were processed';
     acceptAllError.value = false;
   }
 
   isAcceptingAll.value = false;
-};
-
-/**
- * Toggle all suggestions across all profile cards
- */
-const handleToggleAll = () => {
-  if (!dataObject.value || !dataCardRefs.value.length) return;
-
-  // Call toggleAllLists with invertEach=true for each card to toggle individual suggestions
-  for (const cardRef of dataCardRefs.value) {
-    if (!cardRef) continue;
-    cardRef.toggleAllLists(undefined, true);
-  }
 };
 
 const handleRefresh = () => {
@@ -417,8 +381,6 @@ const getDataTitle = (type: string): string => {
       return 'Your Lists';
     case 'follows':
       return 'Your Follows';
-    case 'suggestions':
-      return 'Your Suggested Lists';
     default:
       return 'Data';
   }
@@ -455,4 +417,141 @@ watch(
     }
   }
 );
+
+const handleSuggestions = async () => {
+  if (!dataObject.value || dataObject.value.type !== 'follows') return;
+
+  // Show loading state
+  const originalButtonText = document.querySelector(
+    '.data-display__suggestions-text'
+  )?.textContent;
+  if (document.querySelector('.data-display__suggestions-text')) {
+    document.querySelector('.data-display__suggestions-text')!.textContent =
+      'Processing...';
+  }
+
+  try {
+    // First, get suggestions from the API for the current follows
+    const { suggestionsJSON } = await curateUserLists();
+
+    if (!suggestionsJSON) {
+      throw new Error('Failed to get suggestions');
+    }
+
+    // Parse suggestions
+    const suggestionsData = JSON.parse(suggestionsJSON);
+
+    // Apply suggestions to the current follows view
+    applySuggestionsToFollows(suggestionsData);
+
+    // Show success message
+    acceptAllResult.value =
+      'Successfully applied list suggestions to current follows';
+    acceptAllError.value = false;
+  } catch (error) {
+    console.error('Error getting suggestions:', error);
+    acceptAllResult.value = `Error getting suggestions: ${
+      (error as Error).message
+    }`;
+    acceptAllError.value = true;
+  } finally {
+    // Restore button text
+    if (
+      document.querySelector('.data-display__suggestions-text') &&
+      originalButtonText
+    ) {
+      document.querySelector('.data-display__suggestions-text')!.textContent =
+        originalButtonText;
+    }
+  }
+};
+
+/**
+ * Apply suggestions to the follows view by toggling the relevant list chips
+ * @param suggestionsData The suggestions data containing recommended lists for profiles
+ */
+const applySuggestionsToFollows = (suggestionsData: {
+  data: SuggestionItem[];
+}) => {
+  if (!dataCardRefs.value.length || !dataObject.value) return;
+
+  // Process each follow card
+  for (const cardRef of dataCardRefs.value) {
+    if (!cardRef) continue;
+
+    const followItem = dataObject.value.data[
+      cardRef.$props.index
+    ] as FollowItem;
+    if (!followItem) continue;
+
+    // Find matching suggestion for this follow
+    const matchingSuggestion = suggestionsData.data.find(
+      (item: SuggestionItem) => item.did === followItem.did
+    );
+
+    if (
+      matchingSuggestion &&
+      matchingSuggestion.suggestedLists &&
+      matchingSuggestion.suggestedLists.length > 0
+    ) {
+      // We have suggestions for this follow, toggle the corresponding list chips
+      for (const list of matchingSuggestion.suggestedLists) {
+        const key = `${followItem.did}-${list.uri}`;
+
+        // If the follow has this list enabled option, set it to enabled
+        if (typeof cardRef.followEnabledLists[key] !== 'undefined') {
+          // Set this chip to enabled
+          cardRef.followEnabledLists[key] = true;
+        }
+      }
+    }
+  }
+};
+
+/**
+ * Helper function to find a list name based on URI
+ * Uses multiple sources to ensure we find the correct name
+ */
+const findListNameByUri = (listUri: string): string => {
+  // First try to find the list in state.lists.allLists
+  if (state.lists.allLists && state.lists.allLists.length > 0) {
+    const foundList = state.lists.allLists.find(
+      (list: ListItem) => list.uri === listUri
+    );
+    if (foundList) {
+      return foundList.name;
+    }
+  }
+
+  // Next try to parse from state.listsJSON
+  if (state.listsJSON) {
+    try {
+      const listsData = JSON.parse(state.listsJSON);
+      if (listsData.data && Array.isArray(listsData.data)) {
+        const foundList = listsData.data.find(
+          (list: ListItem) => list.uri === listUri
+        );
+        if (foundList) {
+          return foundList.name;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing lists JSON:', error);
+    }
+  }
+
+  // Extract list name from URI as a last resort
+  // URIs typically end with something like "app.bsky.graph.list/3jui4lcvpba2z"
+  try {
+    const uriParts = listUri.split('/');
+    if (uriParts.length > 0) {
+      // Try to get the list ID at the end of the URI
+      return `List ${uriParts[uriParts.length - 1]}`;
+    }
+  } catch (error) {
+    console.error('Error extracting list name from URI:', error);
+  }
+
+  return 'Unknown List';
+};
 </script>

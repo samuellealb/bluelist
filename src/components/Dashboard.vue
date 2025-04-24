@@ -9,7 +9,6 @@
 
     <div v-else class="dashboard">
       <div class="dashboard__actions-panel">
-        <h2>Actions [/]</h2>
         <ButtonsPanel ref="buttonsPanelRef" />
       </div>
 
@@ -77,9 +76,6 @@ const handleRefresh = async (type: string, page?: number) => {
       await buttonsPanelRef.value.displayFollows(forceRefresh, page);
       break;
     }
-    case 'suggestions':
-      await buttonsPanelRef.value.displaySuggestions(true);
-      break;
     default:
       console.error('Unknown data type for refresh:', type);
   }

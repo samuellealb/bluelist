@@ -44,14 +44,13 @@ export interface SuggestionItem {
 }
 
 export interface DataObject {
-  type: 'timeline' | 'lists' | 'follows' | 'suggestions' | 'error' | 'loading';
+  type: 'timeline' | 'lists' | 'follows' | 'error' | 'loading';
   data:
     | TimelineItem[]
     | ListItem[]
     | FollowItem[]
     | SuggestionItem[]
     | { message: string }[];
-  suggestions?: SuggestionItem[];
   pagination?: { totalPrefetched: number; hasMorePages: boolean };
 }
 

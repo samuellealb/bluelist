@@ -14,7 +14,6 @@ export const state = reactive({
   usersJSON: '',
   listsJSON: '',
   timelineJSON: '',
-  suggestionsJSON: '',
   follows: {
     currentPage: 1,
     itemsPerPage: 20,

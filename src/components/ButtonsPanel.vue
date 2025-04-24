@@ -1,15 +1,14 @@
 <template>
   <div class="buttons-panel">
-    <ActionButton icon="{#}" label="Lists" @click="displayLists" />
-    <ActionButton icon="(U)" label="Follows" @click="displayFollows" />
-    <ActionButton icon="[L]" label="Feed" @click="displayFeed" />
+    <ActionButton icon="[#]" label="Lists" @click="displayLists" />
+    <ActionButton icon="[o]" label="Follows" @click="displayFollows" />
+    <ActionButton icon="[≡]" label="Feed" @click="displayFeed" />
   </div>
 </template>
 
 <script setup lang="ts">
 import '~/src/assets/styles/action-buttons.css';
 import { getTimeline, getLists, getFollows } from '~/src/lib/bsky';
-import { curateUserLists } from '~/src/lib/openai';
 import { state } from '~/src/store';
 import ActionButton from '~/src/components/ActionButton.vue';
 import type { DataObject } from '~/src/types';
@@ -99,27 +98,9 @@ const displayFollows = async (forceRefresh = false, page?: number) => {
   }
 };
 
-const displaySuggestions = async (forceRefresh = false) => {
-  try {
-    if (!forceRefresh && state.suggestionsJSON) {
-      state.displayData = JSON.parse(state.suggestionsJSON);
-      return;
-    }
-
-    setLoading();
-    const result = await curateUserLists();
-    state.displayData = result.displayData;
-    state.suggestionsJSON = result.suggestionsJSON;
-  } catch (error) {
-    setError(error as Error);
-    console.error('Error in displaySuggestions:', error);
-  }
-};
-
 defineExpose({
   displayFeed,
   displayLists,
   displayFollows,
-  displaySuggestions,
 });
 </script>
