@@ -37,11 +37,7 @@
       </div>
 
       <Pagination
-        v-if="
-          (dataObject.type === 'follows' || dataObject.type === 'lists') &&
-          dataObject.data &&
-          dataObject.data.length > 0
-        "
+        v-if="hasData"
         :current-page="
           dataObject.type === 'follows'
             ? state.follows.currentPage
@@ -52,6 +48,7 @@
             ? state.follows.prefetchedPages
             : state.lists.prefetchedPages
         "
+        :data-type="dataObject.type"
         :is-loading="isLoading"
         :has-more-pages="!!dataObject.pagination?.hasMorePages"
         :total-items="dataObject.pagination?.totalPrefetched"
@@ -161,7 +158,7 @@
         />
 
         <Pagination
-          v-if="dataObject.type === 'follows' || dataObject.type === 'lists'"
+          v-if="hasData"
           :current-page="
             dataObject.type === 'follows'
               ? state.follows.currentPage
@@ -172,6 +169,7 @@
               ? state.follows.prefetchedPages
               : state.lists.prefetchedPages
           "
+          :data-type="dataObject.type"
           :is-loading="isLoading"
           :has-more-pages="!!dataObject.pagination?.hasMorePages"
           :total-items="dataObject.pagination?.totalPrefetched"
@@ -237,6 +235,16 @@ const dataObject = computed<DataObject | null>(() => {
     return props.data;
   }
   return null;
+});
+
+const hasData = computed(() => {
+  return (
+    dataObject.value &&
+    (dataObject.value.type === 'follows' ||
+      dataObject.value.type === 'lists') &&
+    dataObject.value.data &&
+    dataObject.value.data.length > 0
+  );
 });
 
 const isLoading = computed(() => {

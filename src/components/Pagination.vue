@@ -3,7 +3,7 @@
     <span class="pagination__info">
       Page {{ currentPage }} of {{ totalPages }}
       <span v-if="totalItems" class="pagination__details">
-        ({{ totalItems }} users loaded)
+        ({{ totalItems }} {{ typeLabel }} loaded)
       </span>
     </span>
     <div class="pagination__buttons">
@@ -63,6 +63,7 @@ const props = defineProps<{
   hasMorePages: boolean;
   totalItems?: number;
   isTop?: boolean;
+  dataType?: string;
 }>();
 
 const emit = defineEmits<{
@@ -72,25 +73,25 @@ const emit = defineEmits<{
 const lastPage = computed(() => {
   if (props.currentPage === undefined) return 1;
 
-  // Calculate last page based on the view type (follows or lists)
   if (state.follows.currentPage === props.currentPage) {
-    // This is the follows view
     if (!state.follows.allFollows.length) return 1;
     return Math.ceil(
       state.follows.allFollows.length / state.follows.itemsPerPage
     );
   } else if (state.lists.currentPage === props.currentPage) {
-    // This is the lists view
     if (!state.lists.allLists.length) return 1;
     return Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage);
   }
 
-  // Default fallback
   return props.totalPages || 1;
 });
 
 const isLastPage = computed(() => {
   return props.currentPage >= lastPage.value || !props.hasMorePages;
+});
+
+const typeLabel = computed(() => {
+  return props.dataType === 'follows' ? 'profiles' : 'lists';
 });
 
 const handlePageChange = (newPage: number) => {

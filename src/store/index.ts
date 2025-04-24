@@ -25,7 +25,7 @@ export const state = reactive({
   },
   lists: {
     currentPage: 1,
-    itemsPerPage: 5, // 5 items per page as specified in the requirements
+    itemsPerPage: 5,
     cursor: null as string | null,
     hasMorePages: false,
     allLists: [] as ListItem[],
