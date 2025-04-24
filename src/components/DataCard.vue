@@ -5,6 +5,7 @@
       'data-card--timeline': item.type === 'timeline',
       'data-card--list': item.type === 'lists',
       'data-card--follow': item.type === 'follows',
+      'data-card--loading': state.isProcessingSuggestions,
     }"
   >
     <!-- Timeline Item -->
@@ -68,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { state } from '../store';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
 import type {

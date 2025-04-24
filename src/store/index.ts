@@ -32,4 +32,5 @@ export const state = reactive({
     prefetchedPages: 0,
     isFetching: false,
   },
+  isProcessingSuggestions: false,
 });

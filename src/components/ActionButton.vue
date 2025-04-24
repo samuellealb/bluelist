@@ -1,11 +1,17 @@
 <template>
-  <button class="action-button" @click="onClick">
+  <button
+    class="action-button"
+    :class="state.isProcessingSuggestions ? 'action-button--disabled' : ''"
+    :disabled="state.isProcessingSuggestions"
+    @click="onClick"
+  >
     <span class="action-button__icon">{{ icon }}</span>
     <span class="action-button__label">{{ label }}</span>
   </button>
 </template>
 
 <script setup lang="ts">
+import { state } from '~/src/store';
 defineOptions({
   name: 'ActionButton',
 });

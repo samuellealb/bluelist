@@ -47,7 +47,6 @@ export interface DataObject {
     | SuggestionItem[]
     | { message: string }[];
   pagination?: { totalPrefetched: number; hasMorePages: boolean };
-  isProcessingSuggestions?: boolean;
 }
 
 // API response related interfaces

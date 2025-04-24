@@ -128,6 +128,12 @@
   transform: none;
 }
 
+.data-display__suggestions-button--processing {
+  background-color: var(--primary-transparent-20);
+  color: var(--text-light);
+  cursor: not-allowed;
+}
+
 /* Common icon styles - apply to all button icons */
 .data-display__refresh-icon,
 .data-display__accept-all-icon,

@@ -21,6 +21,26 @@
   background-color: var(--primary-color);
 }
 
+.data-card--loading::before {
+  pointer-events: none;
+}
+.data-card--loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--card-bg-transparent-80);
+  cursor: not-allowed;
+}
+
+.data-card--loading:hover {
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+
 .data-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px var(--card-shadow);

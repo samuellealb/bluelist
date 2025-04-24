@@ -1,5 +1,8 @@
 <template>
-  <div class="buttons-panel">
+  <div
+    class="buttons-panel"
+    :class="{ 'buttons-panel--disabled': state.isProcessingSuggestions }"
+  >
     <ActionButton icon="[#]" label="Lists" @click="displayLists" />
     <ActionButton icon="[o]" label="Follows" @click="displayFollows" />
     <ActionButton icon="[≡]" label="Feed" @click="displayFeed" />

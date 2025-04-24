@@ -25,7 +25,9 @@
           <button
             class="data-display__refresh-button"
             title="Refresh data from API"
-            :disabled="isLoading || isAcceptingAll"
+            :disabled="
+              isLoading || isAcceptingAll || state.isProcessingSuggestions
+            "
             @click="handleRefresh"
           >
             <span class="data-display__refresh-icon">[R]</span>
@@ -64,16 +66,26 @@
         <button
           class="data-display__suggestions-button"
           title="Get suggestions for your follows"
-          :disabled="isLoading || isAcceptingAll"
+          :class="{
+            'data-display__suggestions-button--processing':
+              state.isProcessingSuggestions,
+          }"
+          :disabled="
+            isLoading || isAcceptingAll || state.isProcessingSuggestions
+          "
           @click="handleSuggestions"
         >
           <span class="data-display__suggestions-icon">[*]</span>
-          <span class="data-display__suggestions-text">Suggest Lists</span>
+          <span class="data-display__suggestions-text">{{
+            state.isProcessingSuggestions ? 'Processing' : 'Suggest Lists'
+          }}</span>
         </button>
         <button
           class="data-display__toggle-all-button"
           title="Toggle all list options between enabled and disabled states"
-          :disabled="isLoading || isAcceptingAll"
+          :disabled="
+            isLoading || isAcceptingAll || state.isProcessingSuggestions
+          "
           @click="handleToggleFollowsLists"
         >
           <span class="data-display__toggle-all-icon">[↕]</span>
@@ -82,7 +94,9 @@
         <button
           class="data-display__accept-all-button"
           title="Add all follows to their enabled lists"
-          :disabled="isLoading || isAcceptingAll"
+          :disabled="
+            isLoading || isAcceptingAll || state.isProcessingSuggestions
+          "
           @click="handleAcceptFollowsLists"
         >
           <span class="data-display__accept-all-icon">[+]</span>
@@ -422,13 +436,7 @@ const handleSuggestions = async () => {
   if (!dataObject.value || dataObject.value.type !== 'follows') return;
 
   // Show loading state
-  const originalButtonText = document.querySelector(
-    '.data-display__suggestions-text'
-  )?.textContent;
-  if (document.querySelector('.data-display__suggestions-text')) {
-    document.querySelector('.data-display__suggestions-text')!.textContent =
-      'Processing...';
-  }
+  state.isProcessingSuggestions = true;
 
   try {
     // First, get suggestions from the API for the current follows
@@ -456,13 +464,7 @@ const handleSuggestions = async () => {
     acceptAllError.value = true;
   } finally {
     // Restore button text
-    if (
-      document.querySelector('.data-display__suggestions-text') &&
-      originalButtonText
-    ) {
-      document.querySelector('.data-display__suggestions-text')!.textContent =
-        originalButtonText;
-    }
+    state.isProcessingSuggestions = false;
   }
 };
 

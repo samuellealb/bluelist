@@ -9,7 +9,9 @@
     <div class="pagination__buttons">
       <button
         class="pagination__button"
-        :disabled="currentPage === 1 || isLoading"
+        :disabled="
+          currentPage === 1 || isLoading || state.isProcessingSuggestions
+        "
         title="First page"
         @click="handlePageChange(1)"
       >
@@ -17,7 +19,9 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="currentPage === 1 || isLoading"
+        :disabled="
+          currentPage === 1 || isLoading || state.isProcessingSuggestions
+        "
         title="Previous page"
         @click="handlePageChange(currentPage - 1)"
       >
@@ -25,7 +29,7 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="!hasMorePages || isLoading"
+        :disabled="!hasMorePages || isLoading || state.isProcessingSuggestions"
         title="Next page"
         @click="handlePageChange(currentPage + 1)"
       >
@@ -33,7 +37,7 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="isLastPage || isLoading"
+        :disabled="isLastPage || isLoading || state.isProcessingSuggestions"
         title="Skip to last loaded page"
         @click="handlePageChange(lastPage)"
       >
