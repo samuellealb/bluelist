@@ -476,6 +476,14 @@ const applySuggestionsToFollows = (suggestionsData: {
 }) => {
   if (!dataCardRefs.value.length || !dataObject.value) return;
 
+  const suggestionsMap = suggestionsData.data.reduce(
+    (map: Record<string, SuggestionItem>, item: SuggestionItem) => {
+      map[item.did] = item;
+      return map;
+    },
+    {}
+  );
+
   for (const cardRef of dataCardRefs.value) {
     if (!cardRef) continue;
 
@@ -484,9 +492,7 @@ const applySuggestionsToFollows = (suggestionsData: {
     ] as FollowItem;
     if (!followItem) continue;
 
-    const matchingSuggestion = suggestionsData.data.find(
-      (item: SuggestionItem) => item.did === followItem.did
-    );
+    const matchingSuggestion = suggestionsMap[followItem.did];
 
     if (
       matchingSuggestion &&
