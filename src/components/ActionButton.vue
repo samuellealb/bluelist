@@ -1,7 +1,7 @@
 <template>
   <button
     class="action-button"
-    :class="state.isProcessingSuggestions ? 'action-button--disabled' : ''"
+    :class="state.isProcessingSuggestions ? 'action-button--processing' : ''"
     :disabled="state.isProcessingSuggestions"
     @click="onClick"
   >

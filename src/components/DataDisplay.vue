@@ -286,7 +286,6 @@ const detailedResults = ref<DetailedResult[]>([]);
 const handleToggleFollowsLists = () => {
   if (!dataObject.value || !dataCardRefs.value.length) return;
 
-  // Call toggleFollowAllLists for each card
   for (const cardRef of dataCardRefs.value) {
     if (!cardRef) continue;
     cardRef.toggleFollowAllLists(undefined, true);
@@ -319,7 +318,6 @@ const handleAcceptFollowsLists = async () => {
 
     const profilePrefix = `${followItem.did}-`;
 
-    // Process all enabled lists for this follow
     for (const key in cardRef.followEnabledLists) {
       if (key.startsWith(profilePrefix) && cardRef.followEnabledLists[key]) {
         const listUri = key.substring(profilePrefix.length);
@@ -362,7 +360,6 @@ const handleAcceptFollowsLists = async () => {
     }
   }
 
-  // Generate result message
   if ((successCount > 0 || duplicateCount > 0) && errorCount === 0) {
     acceptAllResult.value = `Successfully processed ${
       successCount + duplicateCount
@@ -443,24 +440,19 @@ watch(
 const handleSuggestions = async () => {
   if (!dataObject.value || dataObject.value.type !== 'follows') return;
 
-  // Show loading state
   state.isProcessingSuggestions = true;
 
   try {
-    // First, get suggestions from the API for the current follows
     const { suggestionsJSON } = await curateUserLists();
 
     if (!suggestionsJSON) {
       throw new Error('Failed to get suggestions');
     }
 
-    // Parse suggestions
     const suggestionsData = JSON.parse(suggestionsJSON);
 
-    // Apply suggestions to the current follows view
     applySuggestionsToFollows(suggestionsData);
 
-    // Show success message
     acceptAllResult.value =
       'Successfully applied list suggestions to current follows';
     acceptAllError.value = false;
@@ -471,7 +463,6 @@ const handleSuggestions = async () => {
     }`;
     acceptAllError.value = true;
   } finally {
-    // Restore button text
     state.isProcessingSuggestions = false;
   }
 };
@@ -485,7 +476,6 @@ const applySuggestionsToFollows = (suggestionsData: {
 }) => {
   if (!dataCardRefs.value.length || !dataObject.value) return;
 
-  // Process each follow card
   for (const cardRef of dataCardRefs.value) {
     if (!cardRef) continue;
 
@@ -494,7 +484,6 @@ const applySuggestionsToFollows = (suggestionsData: {
     ] as FollowItem;
     if (!followItem) continue;
 
-    // Find matching suggestion for this follow
     const matchingSuggestion = suggestionsData.data.find(
       (item: SuggestionItem) => item.did === followItem.did
     );
@@ -504,13 +493,12 @@ const applySuggestionsToFollows = (suggestionsData: {
       matchingSuggestion.suggestedLists &&
       matchingSuggestion.suggestedLists.length > 0
     ) {
-      // We have suggestions for this follow, toggle the corresponding list chips
+      if (!cardRef.followEnabledLists) continue;
+
       for (const list of matchingSuggestion.suggestedLists) {
         const key = `${followItem.did}-${list.uri}`;
 
-        // If the follow has this list enabled option, set it to enabled
         if (typeof cardRef.followEnabledLists[key] !== 'undefined') {
-          // Set this chip to enabled
           cardRef.followEnabledLists[key] = true;
         }
       }
@@ -523,7 +511,6 @@ const applySuggestionsToFollows = (suggestionsData: {
  * Uses multiple sources to ensure we find the correct name
  */
 const findListNameByUri = (listUri: string): string => {
-  // First try to find the list in state.lists.allLists
   if (state.lists.allLists && state.lists.allLists.length > 0) {
     const foundList = state.lists.allLists.find(
       (list: ListItem) => list.uri === listUri
@@ -533,16 +520,18 @@ const findListNameByUri = (listUri: string): string => {
     }
   }
 
-  // Next try to parse from state.listsJSON
   if (state.listsJSON) {
     try {
       const listsData = JSON.parse(state.listsJSON);
+      const listMap = new Map<string, string>();
       if (listsData.data && Array.isArray(listsData.data)) {
-        const foundList = listsData.data.find(
-          (list: ListItem) => list.uri === listUri
-        );
-        if (foundList) {
-          return foundList.name;
+        for (const list of listsData.data) {
+          listMap.set(list.uri, list.name);
+        }
+
+        const foundName = listMap.get(listUri);
+        if (foundName) {
+          return foundName;
         }
       }
     } catch (error) {
@@ -550,12 +539,9 @@ const findListNameByUri = (listUri: string): string => {
     }
   }
 
-  // Extract list name from URI as a last resort
-  // URIs typically end with something like "app.bsky.graph.list/3jui4lcvpba2z"
   try {
     const uriParts = listUri.split('/');
     if (uriParts.length > 0) {
-      // Try to get the list ID at the end of the URI
       return `List ${uriParts[uriParts.length - 1]}`;
     }
   } catch (error) {
