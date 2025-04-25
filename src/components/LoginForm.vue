@@ -39,21 +39,23 @@
     </div>
 
     <button type="submit" class="login-form__submit">Sign In</button>
-    <p v-if="state.loginError" class="login-form__error">
-      <span class="login-form__error-prefix">[!]</span> {{ state.loginError }}
+    <p v-if="authStore.loginError" class="login-form__error">
+      <span class="login-form__error-prefix">[!]</span>
+      {{ authStore.loginError }}
     </p>
   </form>
 </template>
 
 <script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
-import { state } from '~/src/store';
+import { useAuthStore } from '~/src/stores/auth';
 import { loginUser } from '~/src/lib/bsky';
 
 defineOptions({
   name: 'LoginForm',
 });
 
+const authStore = useAuthStore();
 const identifier = ref('');
 const password = ref('');
 const emailError = ref('');
@@ -73,6 +75,6 @@ const validateAndLogin = async () => {
 
 const clearError = () => {
   emailError.value = '';
-  state.loginError = '';
+  authStore.setLoginError('');
 };
 </script>

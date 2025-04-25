@@ -10,7 +10,7 @@
       <button
         class="pagination__button"
         :disabled="
-          currentPage === 1 || isLoading || state.isProcessingSuggestions
+          currentPage === 1 || isLoading || uiStore.isProcessingSuggestions
         "
         title="First page"
         @click="handlePageChange(1)"
@@ -20,7 +20,7 @@
       <button
         class="pagination__button"
         :disabled="
-          currentPage === 1 || isLoading || state.isProcessingSuggestions
+          currentPage === 1 || isLoading || uiStore.isProcessingSuggestions
         "
         title="Previous page"
         @click="handlePageChange(currentPage - 1)"
@@ -29,7 +29,9 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="!hasMorePages || isLoading || state.isProcessingSuggestions"
+        :disabled="
+          !hasMorePages || isLoading || uiStore.isProcessingSuggestions
+        "
         title="Next page"
         @click="handlePageChange(currentPage + 1)"
       >
@@ -37,7 +39,7 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="isLastPage || isLoading || state.isProcessingSuggestions"
+        :disabled="isLastPage || isLoading || uiStore.isProcessingSuggestions"
         title="Skip to last loaded page"
         @click="handlePageChange(lastPage)"
       >
@@ -50,11 +52,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import '~/src/assets/styles/pagination.css';
-import { state } from '~/src/store';
+import { useFollowsStore } from '~/src/stores/follows';
+import { useListsStore } from '~/src/stores/lists';
+import { useUiStore } from '~/src/stores/ui';
 
 defineOptions({
   name: 'PaginationControls',
 });
+
+const followsStore = useFollowsStore();
+const listsStore = useListsStore();
+const uiStore = useUiStore();
 
 const props = defineProps<{
   currentPage: number;
@@ -73,14 +81,16 @@ const emit = defineEmits<{
 const lastPage = computed(() => {
   if (props.currentPage === undefined) return 1;
 
-  if (state.follows.currentPage === props.currentPage) {
-    if (!state.follows.allFollows.length) return 1;
+  if (followsStore.follows.currentPage === props.currentPage) {
+    if (!followsStore.follows.allFollows.length) return 1;
     return Math.ceil(
-      state.follows.allFollows.length / state.follows.itemsPerPage
+      followsStore.follows.allFollows.length / followsStore.follows.itemsPerPage
     );
-  } else if (state.lists.currentPage === props.currentPage) {
-    if (!state.lists.allLists.length) return 1;
-    return Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage);
+  } else if (listsStore.lists.currentPage === props.currentPage) {
+    if (!listsStore.lists.allLists.length) return 1;
+    return Math.ceil(
+      listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+    );
   }
 
   return props.totalPages || 1;

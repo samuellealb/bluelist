@@ -1,23 +1,25 @@
-import { state } from '~/src/store';
+import { useAuthStore } from '~/src/stores/auth';
 import { checkLoginSession } from '~/src/lib/bsky';
-
-let authInitialized = false;
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) return;
 
-  if (!authInitialized) {
-    authInitialized = true;
-    await checkLoginSession();
+  const authStore = useAuthStore();
+
+  if (!authStore.initialized) {
+    try {
+      await checkLoginSession();
+      authStore.setInitialized(true);
+    } catch (error) {
+      console.error('Error initializing auth session:', error);
+    }
   }
 
-  const isLoggedIn = state.isLoggedIn;
-
-  if (!isLoggedIn && to.path !== '/') {
-    return navigateTo('/');
+  if (!authStore.isLoggedIn && to.path !== '/') {
+    return navigateTo('/', { replace: true });
   }
 
-  if (isLoggedIn && to.path === '/') {
-    return navigateTo('/lists');
+  if (authStore.isLoggedIn && to.path === '/') {
+    return navigateTo('/lists', { replace: true });
   }
 });

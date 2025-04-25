@@ -26,7 +26,7 @@
             class="data-display__refresh-button"
             title="Refresh data from API"
             :disabled="
-              isLoading || isAcceptingAll || state.isProcessingSuggestions
+              isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
             "
             @click="handleRefresh"
           >
@@ -40,13 +40,13 @@
         v-if="hasData"
         :current-page="
           dataObject.type === 'follows'
-            ? state.follows.currentPage
-            : state.lists.currentPage
+            ? followsStore.follows.currentPage
+            : listsStore.lists.currentPage
         "
         :total-pages="
           dataObject.type === 'follows'
-            ? state.follows.prefetchedPages
-            : state.lists.prefetchedPages
+            ? followsStore.follows.prefetchedPages
+            : listsStore.lists.prefetchedPages
         "
         :data-type="dataObject.type"
         :is-loading="isLoading"
@@ -65,23 +65,23 @@
           title="Get suggestions for your follows"
           :class="{
             'data-display__suggestions-button--processing':
-              state.isProcessingSuggestions,
+              uiStore.isProcessingSuggestions,
           }"
           :disabled="
-            isLoading || isAcceptingAll || state.isProcessingSuggestions
+            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
           "
           @click="handleSuggestions"
         >
           <span class="data-display__suggestions-icon">[*]</span>
           <span class="data-display__suggestions-text">{{
-            state.isProcessingSuggestions ? 'Processing' : 'Suggest Lists'
+            uiStore.isProcessingSuggestions ? 'Processing' : 'Suggest Lists'
           }}</span>
         </button>
         <button
           class="data-display__toggle-all-button"
           title="Toggle all list options between enabled and disabled states"
           :disabled="
-            isLoading || isAcceptingAll || state.isProcessingSuggestions
+            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
           "
           @click="handleToggleFollowsLists"
         >
@@ -92,7 +92,7 @@
           class="data-display__accept-all-button"
           title="Add all follows to their enabled lists"
           :disabled="
-            isLoading || isAcceptingAll || state.isProcessingSuggestions
+            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
           "
           @click="handleAcceptFollowsLists"
         >
@@ -161,13 +161,13 @@
           v-if="hasData"
           :current-page="
             dataObject.type === 'follows'
-              ? state.follows.currentPage
-              : state.lists.currentPage
+              ? followsStore.follows.currentPage
+              : listsStore.lists.currentPage
           "
           :total-pages="
             dataObject.type === 'follows'
-              ? state.follows.prefetchedPages
-              : state.lists.prefetchedPages
+              ? followsStore.follows.prefetchedPages
+              : listsStore.lists.prefetchedPages
           "
           :data-type="dataObject.type"
           :is-loading="isLoading"
@@ -204,7 +204,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { state } from '~/src/store';
+import { useFollowsStore } from '~/src/stores/follows';
+import { useListsStore } from '~/src/stores/lists';
+import { useUiStore } from '~/src/stores/ui';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
@@ -221,6 +223,10 @@ import type { ComponentPublicInstance } from 'vue';
 defineOptions({
   name: 'DataDisplay',
 });
+
+const followsStore = useFollowsStore();
+const listsStore = useListsStore();
+const uiStore = useUiStore();
 
 const props = defineProps<{
   data: DataObject | null;
@@ -440,7 +446,7 @@ watch(
 const handleSuggestions = async () => {
   if (!dataObject.value || dataObject.value.type !== 'follows') return;
 
-  state.isProcessingSuggestions = true;
+  uiStore.setIsProcessingSuggestions(true);
 
   try {
     const { suggestionsJSON } = await curateUserLists();
@@ -463,7 +469,7 @@ const handleSuggestions = async () => {
     }`;
     acceptAllError.value = true;
   } finally {
-    state.isProcessingSuggestions = false;
+    uiStore.setIsProcessingSuggestions(false);
   }
 };
 
@@ -517,8 +523,8 @@ const applySuggestionsToFollows = (suggestionsData: {
  * Uses multiple sources to ensure we find the correct name
  */
 const findListNameByUri = (listUri: string): string => {
-  if (state.lists.allLists && state.lists.allLists.length > 0) {
-    const foundList = state.lists.allLists.find(
+  if (listsStore.lists.allLists && listsStore.lists.allLists.length > 0) {
+    const foundList = listsStore.lists.allLists.find(
       (list: ListItem) => list.uri === listUri
     );
     if (foundList) {
@@ -526,9 +532,9 @@ const findListNameByUri = (listUri: string): string => {
     }
   }
 
-  if (state.listsJSON) {
+  if (listsStore.listsJSON) {
     try {
-      const listsData = JSON.parse(state.listsJSON);
+      const listsData = JSON.parse(listsStore.listsJSON);
       const listMap = new Map<string, string>();
       if (listsData.data && Array.isArray(listsData.data)) {
         for (const list of listsData.data) {

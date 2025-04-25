@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Show suggested lists (if available) -->
     <div v-if="displayableLists.length > 0" class="list-chips">
       <h4 class="list-chips__title">{{ effectiveTitle }}:</h4>
       <div class="list-chips__buttons">
@@ -35,7 +34,6 @@
       </div>
     </div>
 
-    <!-- Show message when no lists are available -->
     <div v-else-if="showNoListsMessage" class="list-chips__no-lists">
       <p class="list-chips__message">
         <span class="list-chips__icon">[!]</span>
@@ -49,12 +47,14 @@
 <script setup lang="ts">
 import '~/src/assets/styles/list-chips.css';
 import { addUserToList } from '~/src/lib/bsky';
-import { state } from '~/src/store';
+import { useListsStore } from '~/src/stores/lists';
 import type { SuggestedList, ListItem } from '~/src/types/index';
 
 defineOptions({
   name: 'ListChips',
 });
+
+const listsStore = useListsStore();
 
 const props = defineProps<{
   profileDid: string;
@@ -85,24 +85,21 @@ const enabledLists = ref<Record<string, boolean>>({});
  * Get available lists from state or cached JSON
  */
 const availableLists = computed((): SuggestedList[] => {
-  // If props.lists is provided, don't use global lists
   if (props.lists && props.lists.length > 0) {
     return [];
   }
 
-  // Try to get lists from state first
-  if (state.lists.allLists && state.lists.allLists.length > 0) {
-    return state.lists.allLists.map((list: ListItem) => ({
+  if (listsStore.lists.allLists && listsStore.lists.allLists.length > 0) {
+    return listsStore.lists.allLists.map((list: ListItem) => ({
       name: list.name,
       description: list.description || '',
       uri: list.uri,
     }));
   }
 
-  // Fall back to parsing listsJSON if available
-  if (state.listsJSON) {
+  if (listsStore.listsJSON) {
     try {
-      const listsData = JSON.parse(state.listsJSON);
+      const listsData = JSON.parse(listsStore.listsJSON);
       if (listsData.data && Array.isArray(listsData.data)) {
         return listsData.data.map((list: ListItem) => ({
           name: list.name,
@@ -122,12 +119,10 @@ const availableLists = computed((): SuggestedList[] => {
  * Determine which lists to display based on available sources
  */
 const displayableLists = computed((): SuggestedList[] => {
-  // Use provided lists if available
   if (props.lists && props.lists.length > 0) {
     return props.lists;
   }
 
-  // Otherwise use available lists from the store/JSON
   if (
     availableLists.value.length > 0 &&
     (props.hideWarningButShowLists || !props.showNoListsMessage)
@@ -149,7 +144,6 @@ const effectiveTitle = computed((): string => {
  * Initialize enabled state for all lists
  */
 watchEffect(() => {
-  // Initialize state for explicitly provided lists (typically enabled by default)
   if (props.lists && props.lists.length > 0) {
     props.lists.forEach((list) => {
       const key = `${props.profileDid}-${list.uri}`;
@@ -159,7 +153,6 @@ watchEffect(() => {
     });
   }
 
-  // Initialize state for available lists (typically disabled by default)
   if (availableLists.value.length > 0) {
     availableLists.value.forEach((list: SuggestedList) => {
       const key = `${props.profileDid}-${list.uri}`;
