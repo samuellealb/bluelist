@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia';
-import { AtpAgent } from '@atproto/api';
-
-let agentInstance: AtpAgent | null = null;
+import { AtpService } from '~/src/lib/AtpService';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -34,7 +32,8 @@ export const useAuthStore = defineStore('auth', {
       this.loginError = '';
       this.did = '';
       this.isLoggedIn = false;
-      agentInstance = null;
+      // Use the centralized API service to reset the agent
+      AtpService.resetAgent();
     },
 
     setInitialized(value: boolean) {
@@ -42,12 +41,8 @@ export const useAuthStore = defineStore('auth', {
     },
 
     getAgent() {
-      if (!agentInstance) {
-        agentInstance = new AtpAgent({
-          service: 'https://bsky.social',
-        });
-      }
-      return agentInstance;
+      // Use the centralized API service instead of maintaining agent instance here
+      return AtpService.getAgent();
     },
   },
 });

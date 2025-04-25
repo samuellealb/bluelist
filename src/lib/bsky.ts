@@ -2,6 +2,7 @@ import { useAuthStore } from '~/src/stores/auth';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
 import { useUiStore } from '~/src/stores/ui';
+import { AtpService } from '~/src/lib/AtpService';
 import type {
   DataObject,
   FollowsStore,
@@ -23,11 +24,7 @@ export async function loginUser(
   const authStore = useAuthStore();
 
   authStore.setLoginError('');
-  const agent = authStore.getAgent();
-  if (!agent) {
-    authStore.setFormInfo('Agent not created');
-    return;
-  }
+  const agent = AtpService.getAgent();
 
   try {
     if (!identifier.includes('@')) {
@@ -100,8 +97,8 @@ export async function checkLoginSession(): Promise<void> {
     authStore.setDid(loginData.did);
     authStore.login();
 
-    const agent = authStore.getAgent();
-    agent.api.setHeader('Authorization', `Bearer ${loginData.accessJwt}`);
+    // Set the auth token using the centralized API Service
+    AtpService.setAuthToken(loginData.accessJwt);
 
     const jwtExpiry = getJwtExpiry(loginData.accessJwt);
     if (jwtExpiry && isTokenExpiringSoon(jwtExpiry)) {
@@ -131,12 +128,12 @@ export const getTimeline = async (): Promise<{
   const authStore = useAuthStore();
   const uiStore = useUiStore();
 
-  const agent = authStore.getAgent();
-  if (!agent) {
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
+    const agent = AtpService.getAgent();
     const { data } = await agent.getTimeline({
       limit: 30,
     });
@@ -160,8 +157,11 @@ export const getTimeline = async (): Promise<{
 
     const jsonData = JSON.stringify(timelineData);
 
-    uiStore.setTimelineJSON(jsonData);
-    uiStore.setDisplayData(timelineData as DataObject);
+    // Instead of separate state updates, perform them in one operation
+    uiStore.$patch({
+      timelineJSON: jsonData,
+      displayData: timelineData as DataObject,
+    });
 
     return {
       displayData: timelineData as DataObject,
@@ -196,8 +196,7 @@ export const getLists = async (
   const listsStore = useListsStore() as ListsStore;
   const uiStore = useUiStore();
 
-  const agent = authStore.getAgent();
-  if (!agent) {
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
@@ -226,12 +225,10 @@ export const getLists = async (
     listsStore.setIsFetching(true);
 
     try {
+      const agent = AtpService.getBskyAgent();
+
       if (listsStore.lists.allLists.length === 0 || refresh) {
-        const firstBatch = await fetchListsBatch(
-          null,
-          authStore.did,
-          agent as unknown as BskyAgent
-        );
+        const firstBatch = await fetchListsBatch(null, authStore.did, agent);
         listsStore.setLists(firstBatch.lists);
         listsStore.setPrefetchedPages(1);
         listsStore.setCursor(firstBatch.cursor);
@@ -240,7 +237,7 @@ export const getLists = async (
         const newBatch = await fetchListsBatch(
           listsStore.lists.cursor,
           authStore.did,
-          agent as unknown as BskyAgent
+          agent
         );
 
         if (newBatch.lists.length > 0) {
@@ -290,6 +287,7 @@ export const getLists = async (
 
       const pageData = getCurrentListsPageData(validPage, listsStore);
 
+      // Consolidate state updates
       uiStore.setDisplayData(pageData.displayData);
       listsStore.setListsJSON(pageData.listsJSON);
 
@@ -327,8 +325,7 @@ export const getFollows = async (
   const followsStore = useFollowsStore() as FollowsStore;
   const uiStore = useUiStore();
 
-  const agent = authStore.getAgent();
-  if (!agent) {
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
@@ -358,12 +355,10 @@ export const getFollows = async (
     followsStore.setIsFetching(true);
 
     try {
+      const agent = AtpService.getBskyAgent();
+
       if (followsStore.follows.allFollows.length === 0 || refresh) {
-        const firstBatch = await fetchFollowsBatch(
-          null,
-          authStore.did,
-          agent as unknown as BskyAgent
-        );
+        const firstBatch = await fetchFollowsBatch(null, authStore.did, agent);
         followsStore.setFollows(firstBatch.follows);
         followsStore.setPrefetchedPages(1);
         followsStore.setCursor(firstBatch.cursor);
@@ -372,7 +367,7 @@ export const getFollows = async (
         const newBatch = await fetchFollowsBatch(
           followsStore.follows.cursor,
           authStore.did,
-          agent as unknown as BskyAgent
+          agent
         );
 
         if (newBatch.follows.length > 0) {
@@ -401,7 +396,7 @@ export const getFollows = async (
       }
 
       if (prefetchOnly) {
-        const currentPageData = getCurrentPageData(
+        const currentPageData = getCurrentFollowsPageData(
           followsStore.follows.currentPage,
           followsStore
         );
@@ -427,8 +422,9 @@ export const getFollows = async (
 
       followsStore.setCurrentPage(validPage);
 
-      const pageData = getCurrentPageData(validPage, followsStore);
+      const pageData = getCurrentFollowsPageData(validPage, followsStore);
 
+      // Consolidate state updates
       uiStore.setDisplayData(pageData.displayData);
       followsStore.setUsersJSON(pageData.usersJSON);
 
@@ -491,7 +487,10 @@ const fetchFollowsBatch = async (
  * @returns {DataObject} - displayData Formatted follows data
  * @returns {string} - usersJSON JSON string representation of the formatted data
  */
-const getCurrentPageData = (page: number, followsStore: FollowsStore) => {
+const getCurrentFollowsPageData = (
+  page: number,
+  followsStore: FollowsStore
+) => {
   const startIndex = (page - 1) * followsStore.follows.itemsPerPage;
   const endIndex = startIndex + followsStore.follows.itemsPerPage;
   const pageFollows = followsStore.follows.allFollows.slice(
@@ -627,12 +626,12 @@ export const addUserToList = async (
 ): Promise<string> => {
   const authStore = useAuthStore();
 
-  const agent = authStore.getAgent();
-  if (!agent) {
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
+    const agent = AtpService.getAgent();
     const { data } = await agent.app.bsky.graph.getList({
       list: listUri,
       limit: 100,
@@ -690,8 +689,7 @@ export const addUsersToLists = async (
 > => {
   const authStore = useAuthStore();
 
-  const agent = authStore.getAgent();
-  if (!agent) {
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
@@ -708,6 +706,7 @@ export const addUsersToLists = async (
 
     for (const list of lists) {
       try {
+        const agent = AtpService.getAgent();
         const { data } = await agent.app.bsky.graph.getList({
           list: list.uri,
           limit: 100,
