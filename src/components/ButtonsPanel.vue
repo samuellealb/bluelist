@@ -3,9 +3,15 @@
     class="buttons-panel"
     :class="{ 'buttons-panel--disabled': state.isProcessingSuggestions }"
   >
-    <ActionButton icon="[#]" label="Lists" @click="displayLists" />
-    <ActionButton icon="[o]" label="Follows" @click="displayFollows" />
-    <ActionButton icon="[≡]" label="Feed" @click="displayFeed" />
+    <NuxtLink v-slot="{ navigate }" to="/list" custom>
+      <ActionButton icon="[#]" label="Lists" @click="() => navigate()" />
+    </NuxtLink>
+    <NuxtLink v-slot="{ navigate }" to="/follows" custom>
+      <ActionButton icon="[o]" label="Follows" @click="() => navigate()" />
+    </NuxtLink>
+    <NuxtLink v-slot="{ navigate }" to="/feed" custom>
+      <ActionButton icon="[≡]" label="Feed" @click="() => navigate()" />
+    </NuxtLink>
   </div>
 </template>
 

@@ -30,31 +30,53 @@ defineOptions({
   name: 'UserDashboard',
 });
 
-const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
+const props = defineProps({
+  defaultView: {
+    type: String,
+    default: 'lists',
+    validator: (value: string) => ['lists', 'follows', 'feed'].includes(value),
+  },
+});
 
-// Function to safely load lists with a force refresh
-const loadListsView = async () => {
-  // Use nextTick to ensure DOM is updated and components are available
+const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
+const justLoggedInKey = 'bluelist_just_logged_in';
+
+const loadView = async (viewType: string, forceRefresh = false) => {
   await nextTick();
 
-  // Small delay to ensure component is fully initialized
-  setTimeout(() => {
-    if (state.isLoggedIn && buttonsPanelRef.value) {
-      buttonsPanelRef.value.displayLists(true); // Force refresh
+  if (state.isLoggedIn && buttonsPanelRef.value) {
+    switch (viewType) {
+      case 'lists':
+        buttonsPanelRef.value.displayLists(forceRefresh);
+        break;
+      case 'follows':
+        buttonsPanelRef.value.displayFollows(forceRefresh);
+        break;
+      case 'feed':
+        buttonsPanelRef.value.displayFeed(forceRefresh);
+        break;
+      default:
+        buttonsPanelRef.value.displayLists(forceRefresh);
     }
-  }, 100);
+  }
 };
 
 onMounted(() => {
-  loadListsView();
+  const justLoggedIn = sessionStorage.getItem(justLoggedInKey) === 'true';
+  const shouldForceRefresh = justLoggedIn && props.defaultView === 'lists';
+
+  if (justLoggedIn) {
+    sessionStorage.removeItem(justLoggedInKey);
+  }
+
+  loadView(props.defaultView, shouldForceRefresh);
 });
 
-// Watch for login state changes to display Lists when user logs in
 watch(
   () => state.isLoggedIn,
-  (isLoggedIn) => {
-    if (isLoggedIn) {
-      loadListsView();
+  (isLoggedIn, wasLoggedIn) => {
+    if (isLoggedIn && !wasLoggedIn) {
+      sessionStorage.setItem(justLoggedInKey, 'true');
     }
   }
 );
@@ -80,4 +102,9 @@ const handleRefresh = async (type: string, page?: number) => {
       console.error('Unknown data type for refresh:', type);
   }
 };
+
+defineExpose({
+  buttonsPanelRef,
+  loadView,
+});
 </script>

@@ -12,7 +12,7 @@
     </header>
 
     <div class="app__content">
-      <Dashboard />
+      <NuxtPage />
     </div>
   </div>
 </template>
@@ -20,7 +20,6 @@
 <script setup lang="ts">
 import { state } from '~/src/store';
 import { checkLoginSession } from '~/src/lib/bsky';
-import Dashboard from '~/src/components/Dashboard.vue';
 import ThemeToggle from '~/src/components/ThemeToggle.vue';
 import '~/src/assets/styles/app.css';
 
