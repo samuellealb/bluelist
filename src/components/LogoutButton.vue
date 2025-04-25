@@ -1,6 +1,6 @@
 <template>
   <button
-    v-if="state.isLoggedIn"
+    v-if="authStore.isLoggedIn"
     class="data-display__refresh-button logout-button"
     @click="logout"
   >
@@ -10,21 +10,18 @@
 </template>
 
 <script setup lang="ts">
-import { state } from '~/src/store';
-import { AtpAgent } from '@atproto/api';
+import { useAuthStore } from '~/src/stores/auth';
+import { useUiStore } from '~/src/stores/ui';
 import '~/src/assets/styles/data-display.css';
+
+const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 const logout = () => {
   localStorage.removeItem('loginData');
 
-  state.isLoggedIn = false;
-  state.did = '';
-  state.formInfo = '';
-  state.displayData = null;
-
-  state.agent = new AtpAgent({
-    service: 'https://bsky.social',
-  });
+  authStore.logout();
+  uiStore.setDisplayData(null);
 
   navigateTo('/');
 };

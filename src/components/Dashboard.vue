@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!state.isLoggedIn" class="dashboard-login">
+  <div v-if="!authStore.isLoggedIn" class="dashboard-login">
     <div class="dashboard-login__card">
       <h2>Login [_]</h2>
       <LoginForm />
@@ -12,22 +12,26 @@
     </div>
 
     <div class="dashboard__data-panel">
-      <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
+      <DataDisplay :data="uiStore.displayData" @refresh="handleRefresh" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from 'vue';
+import { useAuthStore } from '~/src/stores/auth';
+import { useUiStore } from '~/src/stores/ui';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ButtonsPanel from '~/src/components/ButtonsPanel.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
-import { state } from '~/src/store';
 import '~/src/assets/styles/dashboard.css';
 
 defineOptions({
   name: 'UserDashboard',
 });
+
+const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 const props = defineProps({
   defaultView: {
@@ -43,7 +47,7 @@ const justLoggedInKey = 'bluelist_just_logged_in';
 const loadView = async (viewType: string, forceRefresh = false) => {
   await nextTick();
 
-  if (state.isLoggedIn && buttonsPanelRef.value) {
+  if (authStore.isLoggedIn && buttonsPanelRef.value) {
     switch (viewType) {
       case 'lists':
         buttonsPanelRef.value.displayLists(forceRefresh);
@@ -72,7 +76,7 @@ onMounted(() => {
 });
 
 watch(
-  () => state.isLoggedIn,
+  () => authStore.isLoggedIn,
   (isLoggedIn, wasLoggedIn) => {
     if (isLoggedIn && !wasLoggedIn) {
       localStorage.setItem(justLoggedInKey, 'true');

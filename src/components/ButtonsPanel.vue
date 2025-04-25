@@ -1,7 +1,7 @@
 <template>
   <div
     class="buttons-panel"
-    :class="{ 'buttons-panel--disabled': state.isProcessingSuggestions }"
+    :class="{ 'buttons-panel--disabled': uiStore.isProcessingSuggestions }"
   >
     <NuxtLink v-slot="{ navigate }" to="/lists" custom>
       <ActionButton icon="[#]" label="Lists" @click="() => navigate()" />
@@ -18,7 +18,9 @@
 <script setup lang="ts">
 import '~/src/assets/styles/action-buttons.css';
 import { getTimeline, getLists, getFollows } from '~/src/lib/bsky';
-import { state } from '~/src/store';
+import { useFollowsStore } from '~/src/stores/follows';
+import { useListsStore } from '~/src/stores/lists';
+import { useUiStore } from '~/src/stores/ui';
 import ActionButton from '~/src/components/ActionButton.vue';
 import type { DataObject } from '~/src/types/index';
 
@@ -26,31 +28,43 @@ defineOptions({
   name: 'ButtonsPanel',
 });
 
+const followsStore = useFollowsStore();
+const listsStore = useListsStore();
+const uiStore = useUiStore();
+
 const setLoading = () => {
-  state.displayData = {
+  uiStore.setDisplayData({
     type: 'loading',
     data: [],
-  } as DataObject;
+  } as DataObject);
 };
 
 const setError = (error: Error) => {
-  state.displayData = {
+  uiStore.setDisplayData({
     type: 'error',
     data: [{ message: error.message }],
-  } as unknown as DataObject;
+  } as unknown as DataObject);
 };
 
+/**
+ * Display feed from the user's timeline
+ * @param forceRefresh Whether to refresh data even if cached
+ */
 const displayFeed = async (forceRefresh = false) => {
   try {
-    if (!forceRefresh && state.timelineJSON) {
-      state.displayData = JSON.parse(state.timelineJSON);
+    if (forceRefresh) {
+      uiStore.setTimelineJSON('');
+    }
+
+    if (!forceRefresh && uiStore.timelineJSON) {
+      uiStore.setDisplayData(JSON.parse(uiStore.timelineJSON));
       return;
     }
 
     setLoading();
     const result = await getTimeline();
-    state.displayData = result.displayData;
-    state.timelineJSON = result.timelineJSON;
+    uiStore.setDisplayData(result.displayData);
+    uiStore.setTimelineJSON(result.timelineJSON);
   } catch (error) {
     setError(error as Error);
     console.error(error);
@@ -64,18 +78,23 @@ const displayFeed = async (forceRefresh = false) => {
  */
 const displayLists = async (forceRefresh = false, page?: number) => {
   try {
-    if (!forceRefresh && !page && state.listsJSON) {
-      state.displayData = JSON.parse(state.listsJSON);
+    if (forceRefresh) {
+      listsStore.setListsJSON('');
+      listsStore.resetPagination();
+    }
+
+    if (!forceRefresh && !page && listsStore.listsJSON) {
+      uiStore.setDisplayData(JSON.parse(listsStore.listsJSON));
       return;
     }
 
     setLoading();
     const result = await getLists(
-      page || state.lists.currentPage,
+      page || listsStore.lists.currentPage,
       forceRefresh
     );
-    state.displayData = result.displayData;
-    state.listsJSON = result.listsJSON;
+    uiStore.setDisplayData(result.displayData);
+    listsStore.setListsJSON(result.listsJSON);
   } catch (error) {
     setError(error as Error);
     console.error('Error displaying lists:', error);
@@ -89,18 +108,23 @@ const displayLists = async (forceRefresh = false, page?: number) => {
  */
 const displayFollows = async (forceRefresh = false, page?: number) => {
   try {
-    if (!forceRefresh && !page && state.usersJSON) {
-      state.displayData = JSON.parse(state.usersJSON);
+    if (forceRefresh) {
+      followsStore.setUsersJSON('');
+      followsStore.resetPagination();
+    }
+
+    if (!forceRefresh && !page && followsStore.usersJSON) {
+      uiStore.setDisplayData(JSON.parse(followsStore.usersJSON));
       return;
     }
 
     setLoading();
     const result = await getFollows(
-      page || state.follows.currentPage,
+      page || followsStore.follows.currentPage,
       forceRefresh
     );
-    state.displayData = result.displayData;
-    state.usersJSON = result.usersJSON;
+    uiStore.setDisplayData(result.displayData);
+    followsStore.setUsersJSON(result.usersJSON);
   } catch (error) {
     setError(error as Error);
     console.error('Error displaying follows:', error);

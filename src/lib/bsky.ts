@@ -1,6 +1,14 @@
-import { state } from '~/src/store';
-import { AtpAgent } from '@atproto/api';
-import type { DataObject } from '~/src/types/index';
+import { useAuthStore } from '~/src/stores/auth';
+import { useFollowsStore } from '~/src/stores/follows';
+import { useListsStore } from '~/src/stores/lists';
+import { useUiStore } from '~/src/stores/ui';
+import { AtpService } from '~/src/lib/AtpService';
+import type {
+  DataObject,
+  FollowsStore,
+  ListsStore,
+  BskyAgent,
+} from '~/src/types/index';
 
 /**
  * Logs in a user to Bluesky using their credentials
@@ -13,40 +21,41 @@ export async function loginUser(
   identifier: string,
   password: string
 ): Promise<void> {
-  state.loginError = '';
-  if (!state.agent) {
-    state.formInfo = 'Agent not created';
-    return;
-  }
+  const authStore = useAuthStore();
+
+  authStore.setLoginError('');
+  const agent = AtpService.getAgent();
 
   try {
     if (!identifier.includes('@')) {
-      state.loginError =
-        'Please use your email address to login, not your handle';
+      authStore.setLoginError(
+        'Please use your email address to login, not your handle'
+      );
       return;
     }
 
-    const { data: loginData, success } = await state.agent.login({
+    const { data: loginData, success } = await agent.login({
       identifier,
       password,
     });
 
     if (success) {
       const { did: userDid, handle } = loginData;
-      state.formInfo = `Logged in as ${handle} with DID ${userDid}`;
-      state.did = userDid;
-      state.isLoggedIn = true;
+      authStore.setFormInfo(`Logged in as ${handle} with DID ${userDid}`);
+      authStore.setDid(userDid);
+      authStore.login();
 
       localStorage.setItem('loginData', JSON.stringify({ loginData }));
     } else {
-      state.formInfo = 'Login Failed';
+      authStore.setFormInfo('Login Failed');
     }
   } catch (error) {
     if ((error as Error).message.includes('Rate Limit Exceeded')) {
-      state.loginError =
-        'Login failed: Rate limit exceeded. Please use your email address to login.';
+      authStore.setLoginError(
+        'Login failed: Rate limit exceeded. Please use your email address to login.'
+      );
     } else {
-      state.loginError = `Login failed: ${(error as Error).message}`;
+      authStore.setLoginError(`Login failed: ${(error as Error).message}`);
     }
     console.error('Login error:', error);
   }
@@ -58,45 +67,39 @@ export async function loginUser(
  * @throws {Error} - If session data cannot be parsed or is invalid
  */
 export async function checkLoginSession(): Promise<void> {
+  const authStore = useAuthStore();
+
   const storedData = localStorage.getItem('loginData');
   if (!storedData) {
-    // No stored session data found
     return;
   }
 
   try {
     const parsedData = JSON.parse(storedData);
 
-    // Validate the parsed data structure
     if (!parsedData || typeof parsedData !== 'object') {
       throw new Error('Invalid session data format');
     }
 
-    // Check if loginData exists and has required properties
     if (!parsedData.loginData) {
       throw new Error('Missing login data in stored session');
     }
 
     const { loginData } = parsedData;
 
-    // Validate required login data properties
     if (!loginData.did || !loginData.handle || !loginData.accessJwt) {
       throw new Error('Incomplete login data in stored session');
     }
 
-    // Set state with validated data
-    state.formInfo = `Logged in as ${loginData.handle} with DID ${loginData.did}`;
-    state.did = loginData.did;
-    state.isLoggedIn = true;
+    authStore.setFormInfo(
+      `Logged in as ${loginData.handle} with DID ${loginData.did}`
+    );
+    authStore.setDid(loginData.did);
+    authStore.login();
 
-    // Initialize the agent with the stored credentials
-    state.agent = new AtpAgent({
-      service: 'https://bsky.social',
-    });
+    // Set the auth token using the centralized API Service
+    AtpService.setAuthToken(loginData.accessJwt);
 
-    state.agent.api.setHeader('Authorization', `Bearer ${loginData.accessJwt}`);
-
-    // Check if JWT is close to expiry (optional enhancement)
     const jwtExpiry = getJwtExpiry(loginData.accessJwt);
     if (jwtExpiry && isTokenExpiringSoon(jwtExpiry)) {
       console.warn(
@@ -105,12 +108,11 @@ export async function checkLoginSession(): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to restore session:', error);
-    // Clean up invalid session data
+
     localStorage.removeItem('loginData');
-    // Reset application state
-    state.isLoggedIn = false;
-    state.did = '';
-    state.formInfo = 'Session could not be restored. Please login again.';
+
+    authStore.logout();
+    authStore.setFormInfo('Session could not be restored. Please login again.');
   }
 }
 
@@ -123,12 +125,16 @@ export const getTimeline = async (): Promise<{
   displayData: DataObject;
   timelineJSON: string;
 }> => {
-  if (!state.agent) {
+  const authStore = useAuthStore();
+  const uiStore = useUiStore();
+
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
-    const { data } = await state.agent.getTimeline({
+    const agent = AtpService.getAgent();
+    const { data } = await agent.getTimeline({
       limit: 30,
     });
 
@@ -150,6 +156,12 @@ export const getTimeline = async (): Promise<{
     };
 
     const jsonData = JSON.stringify(timelineData);
+
+    // Instead of separate state updates, perform them in one operation
+    uiStore.$patch({
+      timelineJSON: jsonData,
+      displayData: timelineData as DataObject,
+    });
 
     return {
       displayData: timelineData as DataObject,
@@ -180,65 +192,77 @@ export const getLists = async (
   displayData: DataObject;
   listsJSON: string;
 }> => {
-  if (!state.agent) {
+  const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
+  const uiStore = useUiStore();
+
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
     if (refresh) {
-      state.lists.currentPage = 1;
-      state.lists.cursor = null;
-      state.lists.allLists = [];
-      state.lists.prefetchedPages = 0;
+      listsStore.resetPagination();
+      listsStore.setLists([]);
     }
 
-    const requestedPage = page || state.lists.currentPage;
+    const requestedPage = page || listsStore.lists.currentPage;
     const maxAvailablePage = Math.max(
       1,
-      Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage)
+      Math.ceil(
+        listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+      )
     );
     const needsMoreData =
-      requestedPage > maxAvailablePage && !!state.lists.cursor;
+      (requestedPage > maxAvailablePage && !!listsStore.lists.cursor) ||
+      (refresh && listsStore.lists.allLists.length === 0);
 
-    if (state.lists.isFetching) {
+    if (listsStore.lists.isFetching && !refresh) {
       console.info('Already fetching lists data, will wait');
       throw new Error('Already fetching lists data');
     }
 
-    state.lists.isFetching = true;
+    listsStore.setIsFetching(true);
 
     try {
-      if (state.lists.allLists.length === 0) {
-        const firstBatch = await fetchListsBatch(null);
-        state.lists.allLists.push(...firstBatch.lists);
-        state.lists.prefetchedPages = 1;
-        state.lists.cursor = firstBatch.cursor;
-        state.lists.hasMorePages = !!firstBatch.cursor;
+      const agent = AtpService.getBskyAgent();
+
+      if (listsStore.lists.allLists.length === 0 || refresh) {
+        const firstBatch = await fetchListsBatch(null, authStore.did, agent);
+        listsStore.setLists(firstBatch.lists);
+        listsStore.setPrefetchedPages(1);
+        listsStore.setCursor(firstBatch.cursor);
+        listsStore.setHasMorePages(!!firstBatch.cursor);
       } else if (needsMoreData) {
-        const newBatch = await fetchListsBatch(state.lists.cursor);
+        const newBatch = await fetchListsBatch(
+          listsStore.lists.cursor,
+          authStore.did,
+          agent
+        );
 
         if (newBatch.lists.length > 0) {
-          state.lists.allLists.push(...newBatch.lists);
-          state.lists.prefetchedPages++;
-          state.lists.cursor = newBatch.cursor;
-          state.lists.hasMorePages = !!newBatch.cursor;
+          listsStore.addLists(newBatch.lists);
+          listsStore.setPrefetchedPages(listsStore.lists.prefetchedPages + 1);
+          listsStore.setCursor(newBatch.cursor);
+          listsStore.setHasMorePages(!!newBatch.cursor);
 
           const newMaxAvailablePage = Math.ceil(
-            state.lists.allLists.length / state.lists.itemsPerPage
+            listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
           );
 
-          if (requestedPage > newMaxAvailablePage && state.lists.cursor) {
+          if (requestedPage > newMaxAvailablePage && listsStore.lists.cursor) {
             return await getLists(requestedPage, false, prefetchOnly);
           }
         } else {
-          state.lists.hasMorePages = false;
-          state.lists.cursor = null;
+          listsStore.setHasMorePages(false);
+          listsStore.setCursor(null);
         }
       }
 
       if (prefetchOnly) {
         const currentPageData = getCurrentListsPageData(
-          state.lists.currentPage
+          listsStore.lists.currentPage,
+          listsStore
         );
         return {
           displayData: currentPageData.displayData,
@@ -248,7 +272,9 @@ export const getLists = async (
 
       const validPage = Math.min(
         requestedPage,
-        Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage)
+        Math.ceil(
+          listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+        )
       );
 
       if (validPage !== requestedPage) {
@@ -257,16 +283,20 @@ export const getLists = async (
         );
       }
 
-      state.lists.currentPage = validPage;
+      listsStore.setCurrentPage(validPage);
 
-      const pageData = getCurrentListsPageData(validPage);
+      const pageData = getCurrentListsPageData(validPage, listsStore);
+
+      // Consolidate state updates
+      uiStore.setDisplayData(pageData.displayData);
+      listsStore.setListsJSON(pageData.listsJSON);
 
       return pageData;
     } finally {
-      state.lists.isFetching = false;
+      listsStore.setIsFetching(false);
     }
   } catch (error) {
-    state.lists.isFetching = false;
+    listsStore.setIsFetching(false);
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();
     }
@@ -291,64 +321,85 @@ export const getFollows = async (
   displayData: DataObject;
   usersJSON: string;
 }> => {
-  if (!state.agent) {
+  const authStore = useAuthStore();
+  const followsStore = useFollowsStore() as FollowsStore;
+  const uiStore = useUiStore();
+
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
     if (refresh) {
-      state.follows.currentPage = 1;
-      state.follows.cursor = null;
-      state.follows.allFollows = [];
-      state.follows.prefetchedPages = 0;
+      followsStore.resetPagination();
+      followsStore.setFollows([]);
     }
 
-    const requestedPage = page || state.follows.currentPage;
+    const requestedPage = page || followsStore.follows.currentPage;
     const maxAvailablePage = Math.max(
       1,
-      Math.ceil(state.follows.allFollows.length / state.follows.itemsPerPage)
+      Math.ceil(
+        followsStore.follows.allFollows.length /
+          followsStore.follows.itemsPerPage
+      )
     );
     const needsMoreData =
-      requestedPage > maxAvailablePage && !!state.follows.cursor;
+      (requestedPage > maxAvailablePage && !!followsStore.follows.cursor) ||
+      (refresh && followsStore.follows.allFollows.length === 0);
 
-    if (state.follows.isFetching) {
+    if (followsStore.follows.isFetching && !refresh) {
       console.info('Already fetching follows data, will wait');
       throw new Error('Already fetching follows data');
     }
 
-    state.follows.isFetching = true;
+    followsStore.setIsFetching(true);
 
     try {
-      if (state.follows.allFollows.length === 0) {
-        const firstBatch = await fetchFollowsBatch(null);
-        state.follows.allFollows.push(...firstBatch.follows);
-        state.follows.prefetchedPages = 1;
-        state.follows.cursor = firstBatch.cursor;
-        state.follows.hasMorePages = !!firstBatch.cursor;
+      const agent = AtpService.getBskyAgent();
+
+      if (followsStore.follows.allFollows.length === 0 || refresh) {
+        const firstBatch = await fetchFollowsBatch(null, authStore.did, agent);
+        followsStore.setFollows(firstBatch.follows);
+        followsStore.setPrefetchedPages(1);
+        followsStore.setCursor(firstBatch.cursor);
+        followsStore.setHasMorePages(!!firstBatch.cursor);
       } else if (needsMoreData) {
-        const newBatch = await fetchFollowsBatch(state.follows.cursor);
+        const newBatch = await fetchFollowsBatch(
+          followsStore.follows.cursor,
+          authStore.did,
+          agent
+        );
 
         if (newBatch.follows.length > 0) {
-          state.follows.allFollows.push(...newBatch.follows);
-          state.follows.prefetchedPages++;
-          state.follows.cursor = newBatch.cursor;
-          state.follows.hasMorePages = !!newBatch.cursor;
+          followsStore.addFollows(newBatch.follows);
+          followsStore.setPrefetchedPages(
+            followsStore.follows.prefetchedPages + 1
+          );
+          followsStore.setCursor(newBatch.cursor);
+          followsStore.setHasMorePages(!!newBatch.cursor);
 
           const newMaxAvailablePage = Math.ceil(
-            state.follows.allFollows.length / state.follows.itemsPerPage
+            followsStore.follows.allFollows.length /
+              followsStore.follows.itemsPerPage
           );
 
-          if (requestedPage > newMaxAvailablePage && state.follows.cursor) {
+          if (
+            requestedPage > newMaxAvailablePage &&
+            followsStore.follows.cursor
+          ) {
             return await getFollows(requestedPage, false, prefetchOnly);
           }
         } else {
-          state.follows.hasMorePages = false;
-          state.follows.cursor = null;
+          followsStore.setHasMorePages(false);
+          followsStore.setCursor(null);
         }
       }
 
       if (prefetchOnly) {
-        const currentPageData = getCurrentPageData(state.follows.currentPage);
+        const currentPageData = getCurrentFollowsPageData(
+          followsStore.follows.currentPage,
+          followsStore
+        );
         return {
           displayData: currentPageData.displayData,
           usersJSON: currentPageData.usersJSON,
@@ -357,7 +408,10 @@ export const getFollows = async (
 
       const validPage = Math.min(
         requestedPage,
-        Math.ceil(state.follows.allFollows.length / state.follows.itemsPerPage)
+        Math.ceil(
+          followsStore.follows.allFollows.length /
+            followsStore.follows.itemsPerPage
+        )
       );
 
       if (validPage !== requestedPage) {
@@ -366,16 +420,20 @@ export const getFollows = async (
         );
       }
 
-      state.follows.currentPage = validPage;
+      followsStore.setCurrentPage(validPage);
 
-      const pageData = getCurrentPageData(validPage);
+      const pageData = getCurrentFollowsPageData(validPage, followsStore);
+
+      // Consolidate state updates
+      uiStore.setDisplayData(pageData.displayData);
+      followsStore.setUsersJSON(pageData.usersJSON);
 
       return pageData;
     } finally {
-      state.follows.isFetching = false;
+      followsStore.setIsFetching(false);
     }
   } catch (error) {
-    state.follows.isFetching = false;
+    followsStore.setIsFetching(false);
     if ((error as Error).message === 'Token has expired') {
       handleSessionExpired();
     }
@@ -387,20 +445,26 @@ export const getFollows = async (
 /**
  * Helper function to fetch a single batch of follows from the API
  * @param {string|null} cursor - Optional cursor for pagination
+ * @param {string} did - User's DID
+ * @param {BskyAgent} agent - The API agent
  * @returns {Promise<{follows: Array, cursor: string|null}>} - Object containing follows data and next cursor
  * @throws {Error} - When API request fails
  */
-const fetchFollowsBatch = async (cursor: string | null) => {
+const fetchFollowsBatch = async (
+  cursor: string | null,
+  did: string,
+  agent: BskyAgent
+) => {
   const apiParams: { actor: string; limit: number; cursor?: string } = {
-    actor: state.did,
-    limit: state.follows.itemsPerPage,
+    actor: did,
+    limit: 20,
   };
 
   if (cursor) {
     apiParams.cursor = cursor;
   }
 
-  const { data } = await state.agent.app.bsky.graph.getFollows(apiParams);
+  const { data } = await agent.app.bsky.graph.getFollows(apiParams);
 
   const follows = data.follows.map((follow) => ({
     did: follow.did,
@@ -418,14 +482,21 @@ const fetchFollowsBatch = async (cursor: string | null) => {
 /**
  * Get the data for the current page from the prefetched follows
  * @param {number} page - The page number to get
+ * @param {FollowsStore} followsStore - The follows store
  * @returns {Object} - Object containing formatted follows data and JSON for the requested page
  * @returns {DataObject} - displayData Formatted follows data
  * @returns {string} - usersJSON JSON string representation of the formatted data
  */
-const getCurrentPageData = (page: number) => {
-  const startIndex = (page - 1) * state.follows.itemsPerPage;
-  const endIndex = startIndex + state.follows.itemsPerPage;
-  const pageFollows = state.follows.allFollows.slice(startIndex, endIndex);
+const getCurrentFollowsPageData = (
+  page: number,
+  followsStore: FollowsStore
+) => {
+  const startIndex = (page - 1) * followsStore.follows.itemsPerPage;
+  const endIndex = startIndex + followsStore.follows.itemsPerPage;
+  const pageFollows = followsStore.follows.allFollows.slice(
+    startIndex,
+    endIndex
+  );
 
   const followsData = {
     type: 'follows',
@@ -433,13 +504,14 @@ const getCurrentPageData = (page: number) => {
     pagination: {
       currentPage: page,
       hasMorePages:
-        state.follows.hasMorePages ||
-        endIndex < state.follows.allFollows.length,
+        followsStore.follows.hasMorePages ||
+        endIndex < followsStore.follows.allFollows.length,
       totalPages:
         Math.ceil(
-          state.follows.allFollows.length / state.follows.itemsPerPage
-        ) + (state.follows.hasMorePages ? 1 : 0),
-      totalPrefetched: state.follows.allFollows.length,
+          followsStore.follows.allFollows.length /
+            followsStore.follows.itemsPerPage
+        ) + (followsStore.follows.hasMorePages ? 1 : 0),
+      totalPrefetched: followsStore.follows.allFollows.length,
     },
   };
 
@@ -454,12 +526,18 @@ const getCurrentPageData = (page: number) => {
 /**
  * Helper function to fetch a single batch of lists from the API
  * @param {string|null} cursor - Optional cursor for pagination
+ * @param {string} did - User's DID
+ * @param {BskyAgent} agent - The API agent
  * @returns {Promise<{lists: Array, cursor: string|null}>} - Object containing lists data and next cursor
  * @throws {Error} - When API request fails
  */
-const fetchListsBatch = async (cursor: string | null) => {
+const fetchListsBatch = async (
+  cursor: string | null,
+  did: string,
+  agent: BskyAgent
+) => {
   const apiParams: { actor: string; limit: number; cursor?: string } = {
-    actor: state.did,
+    actor: did,
     limit: 50,
   };
 
@@ -467,7 +545,7 @@ const fetchListsBatch = async (cursor: string | null) => {
     apiParams.cursor = cursor;
   }
 
-  const { data } = await state.agent.app.bsky.graph.getLists(apiParams);
+  const { data } = await agent.app.bsky.graph.getLists(apiParams);
 
   const lists = data.lists.map((list) => ({
     name: list.name,
@@ -484,18 +562,20 @@ const fetchListsBatch = async (cursor: string | null) => {
 /**
  * Get the data for the current page from the prefetched lists
  * @param {number} page - The page number to get
+ * @param {ListsStore} listsStore - The lists store
  * @returns {Object} - Object containing formatted lists data and JSON for the requested page
  * @returns {DataObject} - displayData Formatted lists data
  * @returns {string} - listsJSON JSON string representation of the formatted data
  */
-const getCurrentListsPageData = (page: number) => {
-  const startIndex = (page - 1) * state.lists.itemsPerPage;
-  const endIndex = startIndex + state.lists.itemsPerPage;
-  const pageLists = state.lists.allLists.slice(startIndex, endIndex);
+const getCurrentListsPageData = (page: number, listsStore: ListsStore) => {
+  const startIndex = (page - 1) * listsStore.lists.itemsPerPage;
+  const endIndex = startIndex + listsStore.lists.itemsPerPage;
+  const pageLists = listsStore.lists.allLists.slice(startIndex, endIndex);
 
-  state.lists.prefetchedPages = Math.ceil(
-    state.lists.allLists.length / state.lists.itemsPerPage
+  const prefetchedPages = Math.ceil(
+    listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
   );
+  listsStore.setPrefetchedPages(prefetchedPages);
 
   const listsData = {
     type: 'lists',
@@ -503,11 +583,13 @@ const getCurrentListsPageData = (page: number) => {
     pagination: {
       currentPage: page,
       hasMorePages:
-        state.lists.hasMorePages || endIndex < state.lists.allLists.length,
+        listsStore.lists.hasMorePages ||
+        endIndex < listsStore.lists.allLists.length,
       totalPages:
-        Math.ceil(state.lists.allLists.length / state.lists.itemsPerPage) +
-        (state.lists.hasMorePages ? 1 : 0),
-      totalPrefetched: state.lists.allLists.length,
+        Math.ceil(
+          listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+        ) + (listsStore.lists.hasMorePages ? 1 : 0),
+      totalPrefetched: listsStore.lists.allLists.length,
     },
   };
 
@@ -524,7 +606,9 @@ const getCurrentListsPageData = (page: number) => {
  * @returns {void} - No return value
  */
 const handleSessionExpired = (): void => {
-  state.formInfo = 'Session expired. Please login again.';
+  const authStore = useAuthStore();
+
+  authStore.setFormInfo('Session expired. Please login again.');
   localStorage.removeItem('loginData');
   window.location.reload();
 };
@@ -540,12 +624,15 @@ export const addUserToList = async (
   userDid: string,
   listUri: string
 ): Promise<string> => {
-  if (!state.agent) {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
-    const { data } = await state.agent.app.bsky.graph.getList({
+    const agent = AtpService.getAgent();
+    const { data } = await agent.app.bsky.graph.getList({
       list: listUri,
       limit: 100,
     });
@@ -558,8 +645,8 @@ export const addUserToList = async (
       return 'User is already in this list';
     }
 
-    await state.agent.com.atproto.repo.createRecord({
-      repo: state.did,
+    await agent.com.atproto.repo.createRecord({
+      repo: authStore.did,
       collection: 'app.bsky.graph.listitem',
       record: {
         $type: 'app.bsky.graph.listitem',
@@ -600,7 +687,9 @@ export const addUsersToLists = async (
     message: string;
   }>
 > => {
-  if (!state.agent) {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
@@ -617,7 +706,8 @@ export const addUsersToLists = async (
 
     for (const list of lists) {
       try {
-        const { data } = await state.agent.app.bsky.graph.getList({
+        const agent = AtpService.getAgent();
+        const { data } = await agent.app.bsky.graph.getList({
           list: list.uri,
           limit: 100,
         });
@@ -637,8 +727,8 @@ export const addUsersToLists = async (
           continue;
         }
 
-        await state.agent.com.atproto.repo.createRecord({
-          repo: state.did,
+        await agent.com.atproto.repo.createRecord({
+          repo: authStore.did,
           collection: 'app.bsky.graph.listitem',
           record: {
             $type: 'app.bsky.graph.listitem',
@@ -687,18 +777,46 @@ function getJwtExpiry(jwt: string): number | null {
     if (!base64Url) return null;
 
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
+
+    const jsonPayload = decodeBase64(base64);
 
     const payload = JSON.parse(jsonPayload);
-    return payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+    return payload.exp ? payload.exp * 1000 : null;
   } catch (error) {
     console.error('Error decoding JWT:', error);
     return null;
+  }
+}
+
+/**
+ * Helper function to decode base64 safely
+ * @param {string} str - The base64 string to decode
+ * @returns {string} - The decoded string
+ */
+function decodeBase64(str: string): string {
+  try {
+    if (typeof window !== 'undefined' && window.atob) {
+      return decodeURIComponent(
+        window
+          .atob(str)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+    } else if (typeof Buffer !== 'undefined') {
+      return Buffer.from(str, 'base64').toString('utf-8');
+    } else {
+      const binaryString = atob(str);
+      return decodeURIComponent(
+        binaryString
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+    }
+  } catch (error) {
+    console.error('Error decoding base64:', error);
+    return '';
   }
 }
 

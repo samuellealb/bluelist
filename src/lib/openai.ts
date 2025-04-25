@@ -1,5 +1,8 @@
 import { $fetch } from 'ofetch';
-import { state } from '~/src/store';
+import { useAuthStore } from '~/src/stores/auth';
+import { useFollowsStore } from '~/src/stores/follows';
+import { useListsStore } from '~/src/stores/lists';
+import { useUiStore } from '~/src/stores/ui';
 import type {
   ApiResponse,
   ApiResponseItem,
@@ -45,43 +48,51 @@ const callOpenAiAPI = async (users: string, lists: string) => {
 export const curateUserLists = async (): Promise<{
   suggestionsJSON: string;
 }> => {
-  if (!state.agent || !state.isLoggedIn) {
+  const authStore = useAuthStore();
+  const followsStore = useFollowsStore();
+  const listsStore = useListsStore();
+  const uiStore = useUiStore();
+
+  const agent = authStore.getAgent();
+  if (!agent || !authStore.isLoggedIn) {
     throw new Error('Please login first');
   }
 
   try {
-    if (!state.follows.allFollows.length && !state.usersJSON) {
+    if (!followsStore.follows.allFollows.length && !followsStore.usersJSON) {
       throw new Error('Please fetch your follows first before curating');
     }
 
-    if (!state.lists.allLists.length && !state.listsJSON) {
+    if (!listsStore.lists.allLists.length && !listsStore.listsJSON) {
       throw new Error('Please fetch your lists first before curating');
     }
 
     let allFollows: FollowItem[] = [];
-    if (state.follows.allFollows.length > 0) {
-      allFollows = state.follows.allFollows;
-    } else if (state.usersJSON) {
-      const followsData = JSON.parse(state.usersJSON);
+    if (followsStore.follows.allFollows.length > 0) {
+      allFollows = followsStore.follows.allFollows;
+    } else if (followsStore.usersJSON) {
+      const followsData = JSON.parse(followsStore.usersJSON);
       allFollows = followsData.data;
     }
 
     let allLists: ListItem[] = [];
-    if (state.lists.allLists.length > 0) {
-      allLists = state.lists.allLists;
-    } else if (state.listsJSON) {
-      const listsData = JSON.parse(state.listsJSON);
+    if (listsStore.lists.allLists.length > 0) {
+      allLists = listsStore.lists.allLists;
+    } else if (listsStore.listsJSON) {
+      const listsData = JSON.parse(listsStore.listsJSON);
       allLists = listsData.data;
     }
 
-    const currentPage = state.follows.currentPage;
-    const startIndex = (currentPage - 1) * state.follows.itemsPerPage;
-    const endIndex = startIndex + state.follows.itemsPerPage;
+    const currentPage = followsStore.follows.currentPage;
+    const startIndex = (currentPage - 1) * followsStore.follows.itemsPerPage;
+    const endIndex = startIndex + followsStore.follows.itemsPerPage;
     const currentPageFollows = allFollows.slice(startIndex, endIndex);
 
     if (currentPageFollows.length === 0) {
       throw new Error('No follows available on the current page to curate');
     }
+
+    uiStore.setIsProcessingSuggestions(true);
 
     const simplifiedFollows = currentPageFollows.map(
       (user: {
@@ -115,6 +126,8 @@ export const curateUserLists = async (): Promise<{
     } catch (parseError) {
       console.error('Error parsing response:', parseError);
       throw new Error('Failed to parse API response');
+    } finally {
+      uiStore.setIsProcessingSuggestions(false);
     }
 
     const followsData = {
@@ -141,6 +154,7 @@ export const curateUserLists = async (): Promise<{
       suggestionsJSON: JSON.stringify(suggestionsData),
     };
   } catch (error) {
+    uiStore.setIsProcessingSuggestions(false);
     console.error('Error curating lists:', error);
     throw new Error((error as Error).message);
   }
