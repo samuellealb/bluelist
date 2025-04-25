@@ -3,6 +3,8 @@
   flex-direction: column;
   gap: 1.25rem;
   font-family: var(--font-mono);
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .login-form__group {

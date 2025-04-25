@@ -8,9 +8,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!authInitialized) {
     authInitialized = true;
-    checkLoginSession();
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await checkLoginSession();
   }
 
   const isLoggedIn = state.isLoggedIn;

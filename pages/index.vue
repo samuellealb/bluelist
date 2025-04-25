@@ -1,11 +1,9 @@
 <template>
-  <div>
-    <LoginForm v-if="!state.isLoggedIn" />
-    <div v-else>
-      <ClientOnly>
-        <NuxtLink to="/list" class="visually-hidden">Go to Lists</NuxtLink>
-      </ClientOnly>
-    </div>
+  <LoginForm v-if="!state.isLoggedIn" />
+  <div v-else>
+    <ClientOnly>
+      <NuxtLink to="/list" class="visually-hidden">Go to Lists</NuxtLink>
+    </ClientOnly>
   </div>
 </template>
 
@@ -26,7 +24,7 @@ watch(
   () => state.isLoggedIn,
   (isLoggedIn) => {
     if (isLoggedIn) {
-      sessionStorage.setItem('bluelist_just_logged_in', 'true');
+      localStorage.setItem('bluelist_just_logged_in', 'true');
       navigateTo('/list');
     }
   }

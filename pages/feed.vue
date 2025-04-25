@@ -1,9 +1,7 @@
 <template>
-  <div class="auth-protected">
-    <client-only>
-      <Dashboard ref="dashboardRef" default-view="feed" />
-    </client-only>
-  </div>
+  <client-only>
+    <Dashboard ref="dashboardRef" default-view="feed" />
+  </client-only>
 </template>
 
 <script setup lang="ts">
@@ -17,9 +15,3 @@ definePageMeta({
   middleware: ['router'],
 });
 </script>
-
-<style scoped>
-.auth-protected {
-  width: 100%;
-}
-</style>

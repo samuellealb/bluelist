@@ -57,7 +57,7 @@ export async function loginUser(
  * @returns {void} - No return value
  * @throws {Error} - If session data cannot be parsed
  */
-export function checkLoginSession(): void {
+export async function checkLoginSession(): Promise<void> {
   const storedData = localStorage.getItem('loginData');
   if (storedData) {
     try {

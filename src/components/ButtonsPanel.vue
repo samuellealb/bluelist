@@ -3,7 +3,7 @@
     class="buttons-panel"
     :class="{ 'buttons-panel--disabled': state.isProcessingSuggestions }"
   >
-    <NuxtLink v-slot="{ navigate }" to="/list" custom>
+    <NuxtLink v-slot="{ navigate }" to="/lists" custom>
       <ActionButton icon="[#]" label="Lists" @click="() => navigate()" />
     </NuxtLink>
     <NuxtLink v-slot="{ navigate }" to="/follows" custom>

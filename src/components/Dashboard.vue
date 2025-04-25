@@ -1,25 +1,24 @@
 <template>
-  <div>
-    <div v-if="!state.isLoggedIn" class="dashboard-login">
-      <div class="dashboard-login__card">
-        <h2>Login [_]</h2>
-        <LoginForm />
-      </div>
+  <div v-if="!state.isLoggedIn" class="dashboard-login">
+    <div class="dashboard-login__card">
+      <h2>Login [_]</h2>
+      <LoginForm />
+    </div>
+  </div>
+
+  <div v-else class="dashboard">
+    <div class="dashboard__actions-panel">
+      <ButtonsPanel ref="buttonsPanelRef" />
     </div>
 
-    <div v-else class="dashboard">
-      <div class="dashboard__actions-panel">
-        <ButtonsPanel ref="buttonsPanelRef" />
-      </div>
-
-      <div class="dashboard__data-panel">
-        <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
-      </div>
+    <div class="dashboard__data-panel">
+      <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, watch, nextTick, onMounted } from 'vue';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ButtonsPanel from '~/src/components/ButtonsPanel.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
@@ -62,11 +61,11 @@ const loadView = async (viewType: string, forceRefresh = false) => {
 };
 
 onMounted(() => {
-  const justLoggedIn = sessionStorage.getItem(justLoggedInKey) === 'true';
+  const justLoggedIn = localStorage.getItem(justLoggedInKey) === 'true';
   const shouldForceRefresh = justLoggedIn && props.defaultView === 'lists';
 
   if (justLoggedIn) {
-    sessionStorage.removeItem(justLoggedInKey);
+    localStorage.removeItem(justLoggedInKey);
   }
 
   loadView(props.defaultView, shouldForceRefresh);
@@ -76,7 +75,9 @@ watch(
   () => state.isLoggedIn,
   (isLoggedIn, wasLoggedIn) => {
     if (isLoggedIn && !wasLoggedIn) {
-      sessionStorage.setItem(justLoggedInKey, 'true');
+      localStorage.setItem(justLoggedInKey, 'true');
+    } else if (!isLoggedIn && wasLoggedIn) {
+      localStorage.removeItem(justLoggedInKey);
     }
   }
 );
