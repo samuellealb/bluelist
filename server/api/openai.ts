@@ -1,9 +1,27 @@
 import { defineEventHandler, readBody, createError } from 'h3';
 import OpenAI from 'openai';
+import { useRuntimeConfig } from '#imports';
 
 export default defineEventHandler(async (event) => {
   try {
-    const openAI = new OpenAI({ apiKey: process.env['NUXT_OPENAI_API_KEY'] });
+    const config = useRuntimeConfig();
+    const apiKey = config.openaiApiKey;
+
+    if (!apiKey) {
+      console.error(
+        'OpenAI API key is missing from both runtime config and environment variables'
+      );
+      throw createError({
+        statusCode: 500,
+        message:
+          'The OpenAI API key environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option.',
+      });
+    }
+
+    const openAI = new OpenAI({
+      apiKey: apiKey,
+    });
+
     const { users, lists } = await readBody(event);
 
     if (!users || !lists) {

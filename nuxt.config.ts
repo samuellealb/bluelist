@@ -7,8 +7,9 @@ export default defineNuxtConfig({
     typeCheck: true,
   },
   runtimeConfig: {
+    openaiApiKey: process.env.NUXT_OPENAI_API_KEY,
     public: {
-      atpService: 'https://bsky.social',
+      atpService: process.env.NUXT_ATP_SERVICE,
     },
   },
 });

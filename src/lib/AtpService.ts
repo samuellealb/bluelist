@@ -1,5 +1,6 @@
 import { AtpAgent } from '@atproto/api';
 import type { BskyAgent } from '~/src/types/index';
+import { useRuntimeConfig } from '#imports';
 
 let agentInstance: AtpAgent | null = null;
 
@@ -13,8 +14,9 @@ export const AtpService = {
    */
   getAgent(): AtpAgent {
     if (!agentInstance) {
+      const config = useRuntimeConfig();
       agentInstance = new AtpAgent({
-        service: 'https://bsky.social',
+        service: config.public.atpService as string,
       });
     }
     return agentInstance;
