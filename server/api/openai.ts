@@ -26,7 +26,6 @@ export default defineEventHandler(async (event) => {
 
     const userPrompt = `These are the users I follow: ${users}. These are my existing lists: ${lists}. Please organize the profiles into these lists only.`;
 
-    // Safety check for token limit
     if (userPrompt.length > 100000) {
       throw createError({
         statusCode: 400,
@@ -45,7 +44,6 @@ export default defineEventHandler(async (event) => {
 
     return response.choices[0].message.content;
   } catch (error: unknown) {
-    // Handle OpenAI API specific errors
     if (
       error instanceof Error &&
       (error.name === 'OpenAIError' ||
@@ -60,7 +58,6 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Handle other errors
     console.error('Server error:', error);
     throw createError({
       statusCode: 500,

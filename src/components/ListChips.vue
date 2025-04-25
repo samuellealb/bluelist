@@ -148,22 +148,18 @@ const actionMessage = ref('');
 const actionError = ref(false);
 const enabledLists = ref<Record<string, boolean>>({});
 
-// Get all available lists for profiles with no suggestions
 const availableLists = computed(() => {
   if (props.lists && props.lists.length > 0) {
     return [];
   }
 
-  // First, try to use all lists from state cache
   if (state.lists.allLists && state.lists.allLists.length > 0) {
     return state.lists.allLists.map((list: ListItem) => ({
       name: list.name,
       description: list.description || '',
       uri: list.uri,
     }));
-  }
-  // Fallback to listsJSON if state cache isn't available
-  else if (state.listsJSON) {
+  } else if (state.listsJSON) {
     try {
       const listsData = JSON.parse(state.listsJSON);
       if (listsData.data && Array.isArray(listsData.data)) {
@@ -182,7 +178,6 @@ const availableLists = computed(() => {
 });
 
 watchEffect(() => {
-  // Initialize enabled state for suggested lists
   if (props.lists && props.lists.length > 0) {
     props.lists.forEach((list) => {
       const key = `${props.profileDid}-${list.uri}`;
@@ -192,17 +187,15 @@ watchEffect(() => {
     });
   }
 
-  // Initialize all available lists as disabled by default
   if (availableLists.value.length > 0) {
     availableLists.value.forEach((list: SuggestedList) => {
       const key = `${props.profileDid}-${list.uri}`;
       if (enabledLists.value[key] === undefined) {
-        enabledLists.value[key] = false; // Default to disabled state
+        enabledLists.value[key] = false;
       }
     });
   }
 
-  // Emit the updated enabledLists
   emit('update:enabledLists', enabledLists.value);
 });
 
@@ -223,13 +216,12 @@ const toggleListEnabled = (profileDid: string, listUri: string) => {
 const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
   let lists: SuggestedList[] = [];
 
-  // Use suggested lists if available, otherwise use all available lists
   if (props.lists && props.lists.length > 0) {
     lists = props.lists;
   } else if (availableLists.value.length > 0) {
     lists = availableLists.value;
   } else {
-    return; // No lists to toggle
+    return;
   }
 
   const allKeys = lists.map(
@@ -237,25 +229,20 @@ const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
   );
 
   if (invertEach) {
-    // Invert each suggestion's current state individually
     allKeys.forEach((key: string) => {
       enabledLists.value[key] = !enabledLists.value[key];
     });
   } else {
-    // Determine the target state
     let targetState: boolean;
     if (enable !== undefined) {
-      // Use the provided state
       targetState = enable;
     } else {
-      // Toggle: check if all are currently enabled; if so, disable all, otherwise enable all
       const allEnabled = allKeys.every(
         (key: string) => enabledLists.value[key]
       );
       targetState = !allEnabled;
     }
 
-    // Set all to the target state
     allKeys.forEach((key: string) => {
       enabledLists.value[key] = targetState;
     });

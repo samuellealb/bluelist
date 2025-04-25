@@ -8,7 +8,6 @@
       'data-card--loading': state.isProcessingSuggestions,
     }"
   >
-    <!-- Timeline Item -->
     <div v-if="item.type === 'timeline' && timelineItem">
       <div class="data-card__header">
         <span class="data-card__author">{{
@@ -29,7 +28,6 @@
       </div>
     </div>
 
-    <!-- List Item -->
     <div v-else-if="item.type === 'lists' && listItem">
       <div class="data-card__header">
         <h3 class="data-card__title">{{ listItem.name }}</h3>
@@ -39,9 +37,8 @@
       </div>
     </div>
 
-    <!-- Follow Item -->
     <div v-else-if="item.type === 'follows' && followItem">
-      <div class="data-card__avatar">[o]</div>
+      <!-- <div class="data-card__avatar">[o]</div> -->
       <div class="data-card__info">
         <h3 class="data-card__title">
           {{ followItem.name || followItem.handle }}
@@ -50,7 +47,6 @@
         <p v-if="followItem.description">{{ followItem.description }}</p>
       </div>
 
-      <!-- Footer for follows with list chips -->
       <div class="data-card__footer">
         <ListChips
           v-if="followItem"

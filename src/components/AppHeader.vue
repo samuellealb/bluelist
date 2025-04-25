@@ -27,21 +27,17 @@ import '~/src/assets/styles/app-header.css';
 import '~/src/assets/styles/data-display.css';
 
 const logout = () => {
-  // Clear authentication data
   localStorage.removeItem('loginData');
 
-  // Reset state values
   state.isLoggedIn = false;
   state.did = '';
   state.formInfo = '';
   state.displayData = null;
 
-  // Reset agent
   state.agent = new AtpAgent({
     service: 'https://bsky.social',
   });
 
-  // Redirect to root URL
   navigateTo('/');
 };
 </script>

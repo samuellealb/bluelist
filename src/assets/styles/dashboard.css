@@ -217,10 +217,4 @@
   .dashboard__data-panel {
     padding: 1rem;
   }
-
-  /* Adjust sticky behavior on mobile */
-  .dashboard__actions-panel {
-    position: relative;
-    top: 0;
-  }
 }

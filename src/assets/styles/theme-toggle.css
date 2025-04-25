@@ -29,12 +29,10 @@
   color: var(--text-color);
 }
 
-/* In light mode, ensure icons have appropriate contrast */
 .light-theme .theme-toggle__svg {
   filter: invert(30%);
 }
 
-/* In dark mode, ensure icons have appropriate contrast */
 :root:not(.light-theme) .theme-toggle__svg {
   filter: invert(70%);
 }

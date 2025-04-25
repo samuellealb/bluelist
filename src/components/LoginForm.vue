@@ -60,7 +60,6 @@ const emailError = ref('');
 const showEmailHint = ref(false);
 
 const validateAndLogin = async () => {
-  // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!emailRegex.test(identifier.value)) {

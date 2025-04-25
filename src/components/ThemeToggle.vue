@@ -39,7 +39,6 @@ const updateTheme = () => {
 };
 
 onMounted(() => {
-  // Check for saved theme preference
   const savedTheme = localStorage.getItem('theme') || 'dark';
   isDark.value = savedTheme === 'dark';
   updateTheme();

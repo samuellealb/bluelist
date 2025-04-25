@@ -9,9 +9,9 @@
     <NuxtLink v-slot="{ navigate }" to="/follows" custom>
       <ActionButton icon="[o]" label="Follows" @click="() => navigate()" />
     </NuxtLink>
-    <NuxtLink v-slot="{ navigate }" to="/feed" custom>
+    <!-- <NuxtLink v-slot="{ navigate }" to="/feed" custom>
       <ActionButton icon="[≡]" label="Feed" @click="() => navigate()" />
-    </NuxtLink>
+    </NuxtLink> -->
   </div>
 </template>
 

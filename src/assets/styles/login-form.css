@@ -69,7 +69,6 @@
   animation: blink 1s step-end infinite;
 }
 
-/* Email hint popup styling */
 .login-form__hint-popup {
   position: absolute;
   top: -50px;
