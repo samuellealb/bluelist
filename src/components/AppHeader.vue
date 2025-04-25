@@ -7,37 +7,14 @@
         <span class="app-header__status-dot app-header__status-dot--online" />
         {{ state.formInfo.substring(0, state.formInfo.indexOf('with')) }}
       </div>
-      <button
-        v-if="state.isLoggedIn"
-        class="data-display__refresh-button"
-        @click="logout"
-      >
-        <span class="data-display__refresh-icon">[→]</span>
-        <span class="data-display__refresh-text">Logout</span>
-      </button>
+      <LogoutButton />
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
 import { state } from '~/src/store';
-import { AtpAgent } from '@atproto/api';
 import ThemeToggle from '~/src/components/ThemeToggle.vue';
+import LogoutButton from '~/src/components/LogoutButton.vue';
 import '~/src/assets/styles/app-header.css';
-import '~/src/assets/styles/data-display.css';
-
-const logout = () => {
-  localStorage.removeItem('loginData');
-
-  state.isLoggedIn = false;
-  state.did = '';
-  state.formInfo = '';
-  state.displayData = null;
-
-  state.agent = new AtpAgent({
-    service: 'https://bsky.social',
-  });
-
-  navigateTo('/');
-};
 </script>
