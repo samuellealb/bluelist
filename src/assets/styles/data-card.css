@@ -108,7 +108,6 @@
   color: var(--accent-color);
 }
 
-/* Timeline specific styles */
 .data-card--timeline .data-card__author {
   font-weight: 600;
   margin-right: 8px;
@@ -125,13 +124,11 @@
   line-height: 1.4;
 }
 
-/* List specific styles */
 .data-card--list .data-card__header {
   border-bottom: 1px dashed var(--text-light);
   padding-bottom: 8px;
 }
 
-/* Follow specific styles */
 .data-card--follow {
   display: flex;
   align-items: center;

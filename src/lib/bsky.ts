@@ -54,30 +54,63 @@ export async function loginUser(
 
 /**
  * Checks for an existing login session and restores it
- * @returns {void} - No return value
- * @throws {Error} - If session data cannot be parsed
+ * @returns {Promise<void>} - No return value
+ * @throws {Error} - If session data cannot be parsed or is invalid
  */
-export function checkLoginSession(): void {
+export async function checkLoginSession(): Promise<void> {
   const storedData = localStorage.getItem('loginData');
-  if (storedData) {
-    try {
-      const { loginData } = JSON.parse(storedData);
-      state.formInfo = `Logged in as ${loginData.handle} with DID ${loginData.did}`;
-      state.did = loginData.did;
-      state.isLoggedIn = true;
+  if (!storedData) {
+    // No stored session data found
+    return;
+  }
 
-      state.agent = new AtpAgent({
-        service: 'https://bsky.social',
-      });
+  try {
+    const parsedData = JSON.parse(storedData);
 
-      state.agent.api.setHeader(
-        'Authorization',
-        `Bearer ${loginData.accessJwt}`
-      );
-    } catch (error) {
-      console.error('Failed to parse session data:', error);
-      localStorage.removeItem('loginData');
+    // Validate the parsed data structure
+    if (!parsedData || typeof parsedData !== 'object') {
+      throw new Error('Invalid session data format');
     }
+
+    // Check if loginData exists and has required properties
+    if (!parsedData.loginData) {
+      throw new Error('Missing login data in stored session');
+    }
+
+    const { loginData } = parsedData;
+
+    // Validate required login data properties
+    if (!loginData.did || !loginData.handle || !loginData.accessJwt) {
+      throw new Error('Incomplete login data in stored session');
+    }
+
+    // Set state with validated data
+    state.formInfo = `Logged in as ${loginData.handle} with DID ${loginData.did}`;
+    state.did = loginData.did;
+    state.isLoggedIn = true;
+
+    // Initialize the agent with the stored credentials
+    state.agent = new AtpAgent({
+      service: 'https://bsky.social',
+    });
+
+    state.agent.api.setHeader('Authorization', `Bearer ${loginData.accessJwt}`);
+
+    // Check if JWT is close to expiry (optional enhancement)
+    const jwtExpiry = getJwtExpiry(loginData.accessJwt);
+    if (jwtExpiry && isTokenExpiringSoon(jwtExpiry)) {
+      console.warn(
+        'Auth token expiring soon - user may need to re-authenticate'
+      );
+    }
+  } catch (error) {
+    console.error('Failed to restore session:', error);
+    // Clean up invalid session data
+    localStorage.removeItem('loginData');
+    // Reset application state
+    state.isLoggedIn = false;
+    state.did = '';
+    state.formInfo = 'Session could not be restored. Please login again.';
   }
 }
 
@@ -642,3 +675,39 @@ export const addUsersToLists = async (
 
   return results;
 };
+
+/**
+ * Helper function to decode JWT and extract expiry time
+ * @param {string} jwt - The JWT token
+ * @returns {number|null} - Timestamp of token expiry or null if invalid
+ */
+function getJwtExpiry(jwt: string): number | null {
+  try {
+    const base64Url = jwt.split('.')[1];
+    if (!base64Url) return null;
+
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+
+    const payload = JSON.parse(jsonPayload);
+    return payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+}
+
+/**
+ * Check if token is expiring within the next 5 minutes
+ * @param {number} expiryTime - Token expiry timestamp
+ * @returns {boolean} - True if token expires soon
+ */
+function isTokenExpiringSoon(expiryTime: number): boolean {
+  const fiveMinutesInMs = 5 * 60 * 1000;
+  return Date.now() + fiveMinutesInMs > expiryTime;
+}

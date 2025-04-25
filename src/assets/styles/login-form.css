@@ -3,6 +3,8 @@
   flex-direction: column;
   gap: 1.25rem;
   font-family: var(--font-mono);
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .login-form__group {
@@ -67,7 +69,6 @@
   animation: blink 1s step-end infinite;
 }
 
-/* Email hint popup styling */
 .login-form__hint-popup {
   position: absolute;
   top: -50px;

@@ -49,7 +49,6 @@ export interface DataObject {
   pagination?: { totalPrefetched: number; hasMorePages: boolean };
 }
 
-// API response related interfaces
 export interface ApiResponseList {
   name: string;
   uri: string;
@@ -67,7 +66,6 @@ export interface ApiResponse {
   error?: string;
 }
 
-// Simplified data structures used for API requests
 export interface SimplifiedUser {
   name: string;
   description: string;

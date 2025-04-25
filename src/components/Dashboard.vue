@@ -1,25 +1,24 @@
 <template>
-  <div>
-    <div v-if="!state.isLoggedIn" class="dashboard-login">
-      <div class="dashboard-login__card">
-        <h2>Login [_]</h2>
-        <LoginForm />
-      </div>
+  <div v-if="!state.isLoggedIn" class="dashboard-login">
+    <div class="dashboard-login__card">
+      <h2>Login [_]</h2>
+      <LoginForm />
+    </div>
+  </div>
+
+  <div v-else class="dashboard">
+    <div class="dashboard__actions-panel">
+      <ButtonsPanel ref="buttonsPanelRef" />
     </div>
 
-    <div v-else class="dashboard">
-      <div class="dashboard__actions-panel">
-        <ButtonsPanel ref="buttonsPanelRef" />
-      </div>
-
-      <div class="dashboard__data-panel">
-        <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
-      </div>
+    <div class="dashboard__data-panel">
+      <DataDisplay :data="state.displayData" @refresh="handleRefresh" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, watch, nextTick, onMounted } from 'vue';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ButtonsPanel from '~/src/components/ButtonsPanel.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
@@ -30,31 +29,55 @@ defineOptions({
   name: 'UserDashboard',
 });
 
-const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
+const props = defineProps({
+  defaultView: {
+    type: String,
+    default: 'lists',
+    validator: (value: string) => ['lists', 'follows', 'feed'].includes(value),
+  },
+});
 
-// Function to safely load lists with a force refresh
-const loadListsView = async () => {
-  // Use nextTick to ensure DOM is updated and components are available
+const buttonsPanelRef = ref<InstanceType<typeof ButtonsPanel> | null>(null);
+const justLoggedInKey = 'bluelist_just_logged_in';
+
+const loadView = async (viewType: string, forceRefresh = false) => {
   await nextTick();
 
-  // Small delay to ensure component is fully initialized
-  setTimeout(() => {
-    if (state.isLoggedIn && buttonsPanelRef.value) {
-      buttonsPanelRef.value.displayLists(true); // Force refresh
+  if (state.isLoggedIn && buttonsPanelRef.value) {
+    switch (viewType) {
+      case 'lists':
+        buttonsPanelRef.value.displayLists(forceRefresh);
+        break;
+      case 'follows':
+        buttonsPanelRef.value.displayFollows(forceRefresh);
+        break;
+      case 'feed':
+        buttonsPanelRef.value.displayFeed(forceRefresh);
+        break;
+      default:
+        buttonsPanelRef.value.displayLists(forceRefresh);
     }
-  }, 100);
+  }
 };
 
 onMounted(() => {
-  loadListsView();
+  const justLoggedIn = localStorage.getItem(justLoggedInKey) === 'true';
+  const shouldForceRefresh = justLoggedIn && props.defaultView === 'lists';
+
+  if (justLoggedIn) {
+    localStorage.removeItem(justLoggedInKey);
+  }
+
+  loadView(props.defaultView, shouldForceRefresh);
 });
 
-// Watch for login state changes to display Lists when user logs in
 watch(
   () => state.isLoggedIn,
-  (isLoggedIn) => {
-    if (isLoggedIn) {
-      loadListsView();
+  (isLoggedIn, wasLoggedIn) => {
+    if (isLoggedIn && !wasLoggedIn) {
+      localStorage.setItem(justLoggedInKey, 'true');
+    } else if (!isLoggedIn && wasLoggedIn) {
+      localStorage.removeItem(justLoggedInKey);
     }
   }
 );
@@ -80,4 +103,9 @@ const handleRefresh = async (type: string, page?: number) => {
       console.error('Unknown data type for refresh:', type);
   }
 };
+
+defineExpose({
+  buttonsPanelRef,
+  loadView,
+});
 </script>

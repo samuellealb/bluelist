@@ -8,12 +8,12 @@
     <div v-else-if="isError" class="data-display__error">
       <div class="data-display__ascii-art">
         <pre>
-+---------+
-|  ERROR  |
-|  x   x  |
-|    !    |
-| \____/  |
-+---------+
+          +---------+
+          |  ERROR  |
+          |  x   x  |
+          |    !    |
+          | \____/  |
+          +---------+
         </pre>
       </div>
       <p>{{ errorMessage }}</p>
@@ -179,21 +179,21 @@
 
       <div v-else class="data-display__empty">
         <pre>
-+----------+
-|  EMPTY   |
-|          |
-| No items |
-+----------+
+          +----------+
+          |  EMPTY   |
+          |          |
+          | No items |
+          +----------+
         </pre>
       </div>
     </div>
     <div v-else class="data-display__no-data">
       <div class="data-display__ascii-empty">
         <pre>
-+-----------+
-|   DATA    |
-|  PENDING  |
-+-----------+
+          +-----------+
+          |   DATA    |
+          |  PENDING  |
+          +-----------+
         </pre>
       </div>
       <p>No data to display yet</p>

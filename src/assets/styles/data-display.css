@@ -84,7 +84,6 @@
   margin-bottom: 1.5rem;
 }
 
-/* Common button styles - apply to all buttons */
 .data-display__refresh-button,
 .data-display__accept-all-button,
 .data-display__toggle-all-button,
@@ -134,7 +133,6 @@
   cursor: not-allowed;
 }
 
-/* Common icon styles - apply to all button icons */
 .data-display__refresh-icon,
 .data-display__accept-all-icon,
 .data-display__toggle-all-icon,

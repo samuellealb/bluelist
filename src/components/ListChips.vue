@@ -1,10 +1,11 @@
 <template>
   <div>
-    <div v-if="lists && lists.length > 0" class="list-chips">
-      <h4 class="list-chips__title">{{ title }}:</h4>
+    <!-- Show suggested lists (if available) -->
+    <div v-if="displayableLists.length > 0" class="list-chips">
+      <h4 class="list-chips__title">{{ effectiveTitle }}:</h4>
       <div class="list-chips__buttons">
         <button
-          v-for="(list, idx) in lists"
+          v-for="(list, idx) in displayableLists"
           :key="idx"
           class="list-chips__button"
           :class="{
@@ -33,82 +34,14 @@
         {{ actionMessage }}
       </div>
     </div>
+
+    <!-- Show message when no lists are available -->
     <div v-else-if="showNoListsMessage" class="list-chips__no-lists">
       <p class="list-chips__message">
         <span class="list-chips__icon">[!]</span>
         No list suggestions found for this profile. This profile doesn't match
         any of your existing lists.
       </p>
-
-      <div v-if="availableLists.length > 0" class="list-chips">
-        <h4 class="list-chips__title">Available Lists:</h4>
-        <div class="list-chips__buttons">
-          <button
-            v-for="(list, idx) in availableLists"
-            :key="idx"
-            class="list-chips__button"
-            :class="{
-              'list-chips__button--disabled':
-                !enabledLists[`${profileDid}-${list.uri}`],
-            }"
-            :title="list.description"
-            :disabled="loading"
-            @click="handleAddToList(profileDid, list.uri, list.name)"
-          >
-            <span
-              class="list-chips__checkbox"
-              @click.stop="toggleListEnabled(profileDid, list.uri)"
-            />
-            <span class="list-chips__name">
-              {{ list.name }}
-            </span>
-            <span v-if="activeList === list.uri && loading">...</span>
-          </button>
-        </div>
-        <div
-          v-if="actionMessage"
-          class="list-chips__action-message"
-          :class="{ 'list-chips__action-message--error': actionError }"
-        >
-          {{ actionMessage }}
-        </div>
-      </div>
-    </div>
-    <div
-      v-else-if="availableLists.length > 0 && hideWarningButShowLists"
-      class="list-chips"
-    >
-      <h4 class="list-chips__title">{{ title }}:</h4>
-      <div class="list-chips__buttons">
-        <button
-          v-for="(list, idx) in availableLists"
-          :key="idx"
-          class="list-chips__button"
-          :class="{
-            'list-chips__button--disabled':
-              !enabledLists[`${profileDid}-${list.uri}`],
-          }"
-          :title="list.description"
-          :disabled="loading"
-          @click="handleAddToList(profileDid, list.uri, list.name)"
-        >
-          <span
-            class="list-chips__checkbox"
-            @click.stop="toggleListEnabled(profileDid, list.uri)"
-          />
-          <span class="list-chips__name">
-            {{ list.name }}
-          </span>
-          <span v-if="activeList === list.uri && loading">...</span>
-        </button>
-      </div>
-      <div
-        v-if="actionMessage"
-        class="list-chips__action-message"
-        :class="{ 'list-chips__action-message--error': actionError }"
-      >
-        {{ actionMessage }}
-      </div>
     </div>
   </div>
 </template>
@@ -148,13 +81,16 @@ const actionMessage = ref('');
 const actionError = ref(false);
 const enabledLists = ref<Record<string, boolean>>({});
 
-// Get all available lists for profiles with no suggestions
-const availableLists = computed(() => {
+/**
+ * Get available lists from state or cached JSON
+ */
+const availableLists = computed((): SuggestedList[] => {
+  // If props.lists is provided, don't use global lists
   if (props.lists && props.lists.length > 0) {
     return [];
   }
 
-  // First, try to use all lists from state cache
+  // Try to get lists from state first
   if (state.lists.allLists && state.lists.allLists.length > 0) {
     return state.lists.allLists.map((list: ListItem) => ({
       name: list.name,
@@ -162,8 +98,9 @@ const availableLists = computed(() => {
       uri: list.uri,
     }));
   }
-  // Fallback to listsJSON if state cache isn't available
-  else if (state.listsJSON) {
+
+  // Fall back to parsing listsJSON if available
+  if (state.listsJSON) {
     try {
       const listsData = JSON.parse(state.listsJSON);
       if (listsData.data && Array.isArray(listsData.data)) {
@@ -181,8 +118,38 @@ const availableLists = computed(() => {
   return [];
 });
 
+/**
+ * Determine which lists to display based on available sources
+ */
+const displayableLists = computed((): SuggestedList[] => {
+  // Use provided lists if available
+  if (props.lists && props.lists.length > 0) {
+    return props.lists;
+  }
+
+  // Otherwise use available lists from the store/JSON
+  if (
+    availableLists.value.length > 0 &&
+    (props.hideWarningButShowLists || !props.showNoListsMessage)
+  ) {
+    return availableLists.value;
+  }
+
+  return [];
+});
+
+/**
+ * Dynamic title based on which lists are being displayed
+ */
+const effectiveTitle = computed((): string => {
+  return props.title || 'Available Lists';
+});
+
+/**
+ * Initialize enabled state for all lists
+ */
 watchEffect(() => {
-  // Initialize enabled state for suggested lists
+  // Initialize state for explicitly provided lists (typically enabled by default)
   if (props.lists && props.lists.length > 0) {
     props.lists.forEach((list) => {
       const key = `${props.profileDid}-${list.uri}`;
@@ -192,17 +159,16 @@ watchEffect(() => {
     });
   }
 
-  // Initialize all available lists as disabled by default
+  // Initialize state for available lists (typically disabled by default)
   if (availableLists.value.length > 0) {
     availableLists.value.forEach((list: SuggestedList) => {
       const key = `${props.profileDid}-${list.uri}`;
       if (enabledLists.value[key] === undefined) {
-        enabledLists.value[key] = false; // Default to disabled state
+        enabledLists.value[key] = false;
       }
     });
   }
 
-  // Emit the updated enabledLists
   emit('update:enabledLists', enabledLists.value);
 });
 
@@ -221,41 +187,23 @@ const toggleListEnabled = (profileDid: string, listUri: string) => {
  * @param invertEach If true, invert each suggestion's current state individually
  */
 const toggleAllLists = (enable?: boolean, invertEach: boolean = false) => {
-  let lists: SuggestedList[] = [];
-
-  // Use suggested lists if available, otherwise use all available lists
-  if (props.lists && props.lists.length > 0) {
-    lists = props.lists;
-  } else if (availableLists.value.length > 0) {
-    lists = availableLists.value;
-  } else {
-    return; // No lists to toggle
-  }
+  const lists = displayableLists.value;
+  if (lists.length === 0) return;
 
   const allKeys = lists.map(
     (list: SuggestedList) => `${props.profileDid}-${list.uri}`
   );
 
   if (invertEach) {
-    // Invert each suggestion's current state individually
     allKeys.forEach((key: string) => {
       enabledLists.value[key] = !enabledLists.value[key];
     });
   } else {
-    // Determine the target state
-    let targetState: boolean;
-    if (enable !== undefined) {
-      // Use the provided state
-      targetState = enable;
-    } else {
-      // Toggle: check if all are currently enabled; if so, disable all, otherwise enable all
-      const allEnabled = allKeys.every(
-        (key: string) => enabledLists.value[key]
-      );
-      targetState = !allEnabled;
-    }
+    const targetState =
+      enable !== undefined
+        ? enable
+        : !allKeys.every((key: string) => enabledLists.value[key]);
 
-    // Set all to the target state
     allKeys.forEach((key: string) => {
       enabledLists.value[key] = targetState;
     });

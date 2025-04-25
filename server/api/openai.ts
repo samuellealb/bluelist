@@ -22,11 +22,10 @@ export default defineEventHandler(async (event) => {
       5) Read through each profile name, description, and posts carefully to determine which list they should be in.
       6) Format your response as JSON object. The only root level property should be named 'data'. Data is an Array of objects, each one having the properties 'name' (string), description (string) and lists(Array). Each lists object should have the property name.
       7) A single profile can have multiple lists suggested, as long as they are existing lists and considered a fit for that profile.
-      8) Return a valid JSON object. Do not return any other text or HTML. The JSON object should be formatted as a string, and the string should be escaped properly so that it can be parsed as JSON.`;
+      8) Return a valid JSON object. Do not return any other text or HTML. The JSON object should be formatted as a string, and the string should be escaped properly so that it can be parsed as JSON. Do not add markdown or any other formatting to the JSON object.`;
 
     const userPrompt = `These are the users I follow: ${users}. These are my existing lists: ${lists}. Please organize the profiles into these lists only.`;
 
-    // Safety check for token limit
     if (userPrompt.length > 100000) {
       throw createError({
         statusCode: 400,
@@ -45,7 +44,6 @@ export default defineEventHandler(async (event) => {
 
     return response.choices[0].message.content;
   } catch (error: unknown) {
-    // Handle OpenAI API specific errors
     if (
       error instanceof Error &&
       (error.name === 'OpenAIError' ||
@@ -60,7 +58,6 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Handle other errors
     console.error('Server error:', error);
     throw createError({
       statusCode: 500,

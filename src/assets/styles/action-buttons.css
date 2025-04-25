@@ -55,7 +55,7 @@
   border-radius: 0;
 }
 
-.action-button--disabled {
+.action-button--processing {
   background-color: transparent;
   color: var(--disabled-color);
   pointer-events: none;
