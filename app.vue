@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { checkLoginSession } from '~/src/lib/bsky';
+import { useAuthStore } from '~/src/stores/auth';
 import AppHeader from '~/src/components/AppHeader.vue';
 import '~/src/assets/styles/app.css';
 
@@ -17,7 +17,8 @@ defineOptions({
   name: 'BlueList',
 });
 
-onMounted(() => {
-  checkLoginSession();
+onMounted(async () => {
+  const authStore = useAuthStore();
+  await authStore.checkLoginSession();
 });
 </script>
