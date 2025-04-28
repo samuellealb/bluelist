@@ -1,8 +1,10 @@
 <template>
   <button
     class="action-button"
-    :class="uiStore.isProcessingSuggestions ? 'action-button--processing' : ''"
-    :disabled="uiStore.isProcessingSuggestions"
+    :class="
+      suggestionStore.isProcessingSuggestions ? 'action-button--processing' : ''
+    "
+    :disabled="suggestionStore.isProcessingSuggestions"
     @click="onClick"
   >
     <span class="action-button__icon">{{ icon }}</span>
@@ -11,13 +13,13 @@
 </template>
 
 <script setup lang="ts">
-import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 
 defineOptions({
   name: 'ActionButton',
 });
 
-const uiStore = useUiStore();
+const suggestionStore = useSuggestionsStore();
 
 defineProps<{
   icon: string;

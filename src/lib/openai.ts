@@ -2,7 +2,7 @@ import { $fetch } from 'ofetch';
 import { useAuthStore } from '~/src/stores/auth';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
-import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 import type {
   ApiResponse,
   ApiResponseItem,
@@ -51,11 +51,18 @@ export const curateUserLists = async (): Promise<{
   const authStore = useAuthStore();
   const followsStore = useFollowsStore();
   const listsStore = useListsStore();
-  const uiStore = useUiStore();
+  const suggestionsStore = useSuggestionsStore();
 
   const agent = authStore.getAgent();
   if (!agent || !authStore.isLoggedIn) {
     throw new Error('Please login first');
+  }
+
+  const hasReachedLimit = await suggestionsStore.hasReachedLimit();
+  if (hasReachedLimit) {
+    throw new Error(
+      `You've reached the limit of 5 suggestion requests per day. Please try again tomorrow.`
+    );
   }
 
   try {
@@ -92,7 +99,7 @@ export const curateUserLists = async (): Promise<{
       throw new Error('No follows available on the current page to curate');
     }
 
-    uiStore.setIsProcessingSuggestions(true);
+    suggestionsStore.setIsProcessing(true);
 
     const simplifiedFollows = currentPageFollows.map(
       (user: {
@@ -117,6 +124,8 @@ export const curateUserLists = async (): Promise<{
       JSON.stringify(simplifiedLists)
     );
 
+    suggestionsStore.trackRequest();
+
     let parsedResponse: ApiResponse;
     try {
       parsedResponse = JSON.parse(response);
@@ -127,7 +136,7 @@ export const curateUserLists = async (): Promise<{
       console.error('Error parsing response:', parseError);
       throw new Error('Failed to parse API response');
     } finally {
-      uiStore.setIsProcessingSuggestions(false);
+      suggestionsStore.setIsProcessing(false);
     }
 
     const followsData = {
@@ -150,11 +159,14 @@ export const curateUserLists = async (): Promise<{
       data: transformedSuggestions,
     };
 
+    const suggestionsJSON = JSON.stringify(suggestionsData);
+    suggestionsStore.setSuggestionsJSON(suggestionsJSON);
+
     return {
-      suggestionsJSON: JSON.stringify(suggestionsData),
+      suggestionsJSON,
     };
   } catch (error) {
-    uiStore.setIsProcessingSuggestions(false);
+    suggestionsStore.setIsProcessing(false);
     console.error('Error curating lists:', error);
     throw new Error((error as Error).message);
   }

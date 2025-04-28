@@ -10,7 +10,9 @@
       <button
         class="pagination__button"
         :disabled="
-          currentPage === 1 || isLoading || uiStore.isProcessingSuggestions
+          currentPage === 1 ||
+          isLoading ||
+          suggestionsStore.isProcessingSuggestions
         "
         title="First page"
         @click="handlePageChange(1)"
@@ -20,7 +22,9 @@
       <button
         class="pagination__button"
         :disabled="
-          currentPage === 1 || isLoading || uiStore.isProcessingSuggestions
+          currentPage === 1 ||
+          isLoading ||
+          suggestionsStore.isProcessingSuggestions
         "
         title="Previous page"
         @click="handlePageChange(currentPage - 1)"
@@ -30,7 +34,7 @@
       <button
         class="pagination__button"
         :disabled="
-          !hasMorePages || isLoading || uiStore.isProcessingSuggestions
+          !hasMorePages || isLoading || suggestionsStore.isProcessingSuggestions
         "
         title="Next page"
         @click="handlePageChange(currentPage + 1)"
@@ -39,7 +43,9 @@
       </button>
       <button
         class="pagination__button"
-        :disabled="isLastPage || isLoading || uiStore.isProcessingSuggestions"
+        :disabled="
+          isLastPage || isLoading || suggestionsStore.isProcessingSuggestions
+        "
         title="Skip to last loaded page"
         @click="handlePageChange(lastPage)"
       >
@@ -54,7 +60,7 @@ import { computed } from 'vue';
 import '~/src/assets/styles/pagination.css';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
-import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 
 defineOptions({
   name: 'PaginationControls',
@@ -62,7 +68,7 @@ defineOptions({
 
 const followsStore = useFollowsStore();
 const listsStore = useListsStore();
-const uiStore = useUiStore();
+const suggestionsStore = useSuggestionsStore();
 
 const props = defineProps<{
   currentPage: number;

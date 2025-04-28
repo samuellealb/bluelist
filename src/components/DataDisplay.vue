@@ -26,7 +26,9 @@
             class="data-display__refresh-button"
             title="Refresh data from API"
             :disabled="
-              isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+              isLoading ||
+              isAcceptingAll ||
+              suggestionsStore.isProcessingSuggestions
             "
             @click="handleRefresh"
           >
@@ -62,26 +64,31 @@
       >
         <button
           class="data-display__suggestions-button"
-          title="Get suggestions for your follows"
+          :title="suggestionsButtonTitle"
           :class="{
             'data-display__suggestions-button--processing':
-              uiStore.isProcessingSuggestions,
+              suggestionsStore.isProcessingSuggestions,
           }"
           :disabled="
-            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+            isLoading ||
+            isAcceptingAll ||
+            suggestionsStore.isProcessingSuggestions ||
+            hasReachedSuggestionLimit
           "
           @click="handleSuggestions"
         >
           <span class="data-display__suggestions-icon">[*]</span>
           <span class="data-display__suggestions-text">{{
-            uiStore.isProcessingSuggestions ? 'Processing' : 'Suggest Lists'
+            suggestionsButtonLabel
           }}</span>
         </button>
         <button
           class="data-display__toggle-all-button"
           title="Toggle all list options between enabled and disabled states"
           :disabled="
-            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+            isLoading ||
+            isAcceptingAll ||
+            suggestionsStore.isProcessingSuggestions
           "
           @click="handleToggleFollowsLists"
         >
@@ -92,7 +99,9 @@
           class="data-display__accept-all-button"
           title="Add all follows to their enabled lists"
           :disabled="
-            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+            isLoading ||
+            isAcceptingAll ||
+            suggestionsStore.isProcessingSuggestions
           "
           @click="handleAcceptFollowsLists"
         >
@@ -206,7 +215,7 @@
 import { ref, computed, watch } from 'vue';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
-import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
@@ -215,6 +224,7 @@ import type {
   ListItem,
   FollowItem,
   SuggestionItem,
+  DetailedResult,
 } from '~/src/types/index';
 import { addUserToList } from '~/src/lib/bsky';
 import { curateUserLists } from '~/src/lib/openai';
@@ -226,7 +236,7 @@ defineOptions({
 
 const followsStore = useFollowsStore();
 const listsStore = useListsStore();
-const uiStore = useUiStore();
+const suggestionsStore = useSuggestionsStore();
 
 const props = defineProps<{
   data: DataObject | null;
@@ -269,15 +279,24 @@ const errorMessage = computed(() => {
   return 'An unknown error occurred';
 });
 
-interface DetailedResult {
-  profileName: string;
-  profileDid: string;
-  listName: string;
-  listUri: string;
-  success: boolean;
-  message: string;
-  isDuplicate: boolean;
-}
+const suggestionsButtonTitle = computed(() => {
+  const buttonTitle =
+    remainingSuggestions.value === 999
+      ? 'You have unlimited suggestions available'
+      : `${remainingSuggestions.value}/5 suggestions request remaining today`;
+  return buttonTitle;
+});
+
+const suggestionsButtonLabel = computed(() => {
+  if (suggestionsStore.isProcessingSuggestions) {
+    return 'Processing';
+  } else if (hasReachedSuggestionLimit.value) {
+    return 'Limit Reached';
+  } else {
+    return 'Suggest Lists';
+  }
+});
+
 const dataCardRefs = ref<
   ComponentPublicInstance<InstanceType<typeof DataCard>>[]
 >([]);
@@ -446,7 +465,7 @@ watch(
 const handleSuggestions = async () => {
   if (!dataObject.value || dataObject.value.type !== 'follows') return;
 
-  uiStore.setIsProcessingSuggestions(true);
+  suggestionsStore.setIsProcessing(true);
 
   try {
     const { suggestionsJSON } = await curateUserLists();
@@ -469,7 +488,7 @@ const handleSuggestions = async () => {
     }`;
     acceptAllError.value = true;
   } finally {
-    uiStore.setIsProcessingSuggestions(false);
+    suggestionsStore.setIsProcessing(false);
   }
 };
 
@@ -562,4 +581,23 @@ const findListNameByUri = (listUri: string): string => {
 
   return 'Unknown List';
 };
+
+const hasReachedSuggestionLimit = ref(false);
+const remainingSuggestions = ref(5);
+
+const updateSuggestionLimits = async () => {
+  hasReachedSuggestionLimit.value = await suggestionsStore.hasReachedLimit();
+  remainingSuggestions.value = await suggestionsStore.getRemainingRequests();
+};
+
+updateSuggestionLimits();
+
+watch(
+  () => suggestionsStore.isProcessingSuggestions,
+  async (newValue, oldValue) => {
+    if (oldValue === true && newValue === false) {
+      await updateSuggestionLimits();
+    }
+  }
+);
 </script>
