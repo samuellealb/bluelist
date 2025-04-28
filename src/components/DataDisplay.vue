@@ -64,7 +64,7 @@
       >
         <button
           class="data-display__suggestions-button"
-          :title="`Get suggestions for your follows (${remainingSuggestions}/5 remaining today)`"
+          :title="suggestionsButtonTitle"
           :class="{
             'data-display__suggestions-button--processing':
               suggestionsStore.isProcessingSuggestions,
@@ -79,11 +79,7 @@
         >
           <span class="data-display__suggestions-icon">[*]</span>
           <span class="data-display__suggestions-text">{{
-            suggestionsStore.isProcessingSuggestions
-              ? 'Processing'
-              : hasReachedSuggestionLimit
-              ? 'Limit Reached'
-              : 'Suggest Lists'
+            suggestionsButtonLabel
           }}</span>
         </button>
         <button
@@ -228,6 +224,7 @@ import type {
   ListItem,
   FollowItem,
   SuggestionItem,
+  DetailedResult,
 } from '~/src/types/index';
 import { addUserToList } from '~/src/lib/bsky';
 import { curateUserLists } from '~/src/lib/openai';
@@ -282,15 +279,24 @@ const errorMessage = computed(() => {
   return 'An unknown error occurred';
 });
 
-interface DetailedResult {
-  profileName: string;
-  profileDid: string;
-  listName: string;
-  listUri: string;
-  success: boolean;
-  message: string;
-  isDuplicate: boolean;
-}
+const suggestionsButtonTitle = computed(() => {
+  const buttonTitle =
+    remainingSuggestions.value === 999
+      ? 'You have unlimited suggestions available'
+      : `${remainingSuggestions.value}/5 suggestions request remaining today`;
+  return buttonTitle;
+});
+
+const suggestionsButtonLabel = computed(() => {
+  if (suggestionsStore.isProcessingSuggestions) {
+    return 'Processing';
+  } else if (hasReachedSuggestionLimit.value) {
+    return 'Limit Reached';
+  } else {
+    return 'Suggest Lists';
+  }
+});
+
 const dataCardRefs = ref<
   ComponentPublicInstance<InstanceType<typeof DataCard>>[]
 >([]);

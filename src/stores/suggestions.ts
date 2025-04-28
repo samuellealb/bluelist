@@ -22,6 +22,7 @@ const isLimitOverridden = async () => {
       }
     } catch (error) {
       console.error('Failed to check exemption status:', error);
+      throw new Error('Failed to check exemption status');
     }
   }
 };

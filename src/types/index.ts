@@ -196,6 +196,16 @@ export interface BskyAgent {
   };
 }
 
+export interface DetailedResult {
+  profileName: string;
+  profileDid: string;
+  listName: string;
+  listUri: string;
+  success: boolean;
+  message: string;
+  isDuplicate: boolean;
+}
+
 export interface RequestCounts {
   [date: string]: number;
 }
