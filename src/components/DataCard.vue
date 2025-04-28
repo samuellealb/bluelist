@@ -5,7 +5,7 @@
       'data-card--timeline': item.type === 'timeline',
       'data-card--list': item.type === 'lists',
       'data-card--follow': item.type === 'follows',
-      'data-card--loading': uiStore.isProcessingSuggestions,
+      'data-card--loading': suggestionsStore.isProcessingSuggestions,
     }"
   >
     <div v-if="item.type === 'timeline' && timelineItem">
@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
 import type {
@@ -79,7 +79,7 @@ defineOptions({
   name: 'DataCard',
 });
 
-const uiStore = useUiStore();
+const suggestionsStore = useSuggestionsStore();
 
 const props = defineProps<{
   item: DataObject;

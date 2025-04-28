@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { AtpService } from '~/src/lib/AtpService';
+import { useSuggestionsStore } from './suggestions';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -25,6 +26,8 @@ export const useAuthStore = defineStore('auth', {
 
     login() {
       this.isLoggedIn = true;
+      const suggestionsStore = useSuggestionsStore();
+      suggestionsStore.loadRequestCounts();
     },
 
     logout() {
@@ -32,7 +35,6 @@ export const useAuthStore = defineStore('auth', {
       this.loginError = '';
       this.did = '';
       this.isLoggedIn = false;
-      // Use the centralized API service to reset the agent
       AtpService.resetAgent();
     },
 
@@ -41,7 +43,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     getAgent() {
-      // Use the centralized API service instead of maintaining agent instance here
       return AtpService.getAgent();
     },
   },

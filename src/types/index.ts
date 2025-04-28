@@ -195,3 +195,7 @@ export interface BskyAgent {
     setHeader: (name: string, value: string) => void;
   };
 }
+
+export interface RequestCounts {
+  [date: string]: number;
+}

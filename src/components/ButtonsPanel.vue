@@ -1,7 +1,9 @@
 <template>
   <div
     class="buttons-panel"
-    :class="{ 'buttons-panel--disabled': uiStore.isProcessingSuggestions }"
+    :class="{
+      'buttons-panel--disabled': suggestionsStore.isProcessingSuggestions,
+    }"
   >
     <NuxtLink v-slot="{ navigate }" to="/lists" custom>
       <ActionButton icon="[#]" label="Lists" @click="() => navigate()" />
@@ -21,6 +23,7 @@ import { getTimeline, getLists, getFollows } from '~/src/lib/bsky';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
 import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 import ActionButton from '~/src/components/ActionButton.vue';
 import type { DataObject } from '~/src/types/index';
 
@@ -31,6 +34,7 @@ defineOptions({
 const followsStore = useFollowsStore();
 const listsStore = useListsStore();
 const uiStore = useUiStore();
+const suggestionsStore = useSuggestionsStore();
 
 const setLoading = () => {
   uiStore.setDisplayData({

@@ -5,7 +5,6 @@ export const useUiStore = defineStore('ui', {
   state: () => ({
     displayData: null as DataObject | null,
     timelineJSON: '',
-    isProcessingSuggestions: false,
   }),
 
   actions: {
@@ -15,10 +14,6 @@ export const useUiStore = defineStore('ui', {
 
     setTimelineJSON(json: string) {
       this.timelineJSON = json;
-    },
-
-    setIsProcessingSuggestions(isProcessing: boolean) {
-      this.isProcessingSuggestions = isProcessing;
     },
   },
 });

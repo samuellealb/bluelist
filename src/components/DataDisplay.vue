@@ -26,7 +26,9 @@
             class="data-display__refresh-button"
             title="Refresh data from API"
             :disabled="
-              isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+              isLoading ||
+              isAcceptingAll ||
+              suggestionsStore.isProcessingSuggestions
             "
             @click="handleRefresh"
           >
@@ -62,26 +64,35 @@
       >
         <button
           class="data-display__suggestions-button"
-          title="Get suggestions for your follows"
+          :title="`Get suggestions for your follows (${remainingSuggestions}/5 remaining today)`"
           :class="{
             'data-display__suggestions-button--processing':
-              uiStore.isProcessingSuggestions,
+              suggestionsStore.isProcessingSuggestions,
           }"
           :disabled="
-            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+            isLoading ||
+            isAcceptingAll ||
+            suggestionsStore.isProcessingSuggestions ||
+            hasReachedSuggestionLimit
           "
           @click="handleSuggestions"
         >
           <span class="data-display__suggestions-icon">[*]</span>
           <span class="data-display__suggestions-text">{{
-            uiStore.isProcessingSuggestions ? 'Processing' : 'Suggest Lists'
+            suggestionsStore.isProcessingSuggestions
+              ? 'Processing'
+              : hasReachedSuggestionLimit
+              ? 'Limit Reached'
+              : 'Suggest Lists'
           }}</span>
         </button>
         <button
           class="data-display__toggle-all-button"
           title="Toggle all list options between enabled and disabled states"
           :disabled="
-            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+            isLoading ||
+            isAcceptingAll ||
+            suggestionsStore.isProcessingSuggestions
           "
           @click="handleToggleFollowsLists"
         >
@@ -92,7 +103,9 @@
           class="data-display__accept-all-button"
           title="Add all follows to their enabled lists"
           :disabled="
-            isLoading || isAcceptingAll || uiStore.isProcessingSuggestions
+            isLoading ||
+            isAcceptingAll ||
+            suggestionsStore.isProcessingSuggestions
           "
           @click="handleAcceptFollowsLists"
         >
@@ -206,7 +219,7 @@
 import { ref, computed, watch } from 'vue';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
-import { useUiStore } from '~/src/stores/ui';
+import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
@@ -226,7 +239,7 @@ defineOptions({
 
 const followsStore = useFollowsStore();
 const listsStore = useListsStore();
-const uiStore = useUiStore();
+const suggestionsStore = useSuggestionsStore();
 
 const props = defineProps<{
   data: DataObject | null;
@@ -446,7 +459,7 @@ watch(
 const handleSuggestions = async () => {
   if (!dataObject.value || dataObject.value.type !== 'follows') return;
 
-  uiStore.setIsProcessingSuggestions(true);
+  suggestionsStore.setIsProcessing(true);
 
   try {
     const { suggestionsJSON } = await curateUserLists();
@@ -469,7 +482,7 @@ const handleSuggestions = async () => {
     }`;
     acceptAllError.value = true;
   } finally {
-    uiStore.setIsProcessingSuggestions(false);
+    suggestionsStore.setIsProcessing(false);
   }
 };
 
@@ -562,4 +575,23 @@ const findListNameByUri = (listUri: string): string => {
 
   return 'Unknown List';
 };
+
+const hasReachedSuggestionLimit = ref(false);
+const remainingSuggestions = ref(5);
+
+const updateSuggestionLimits = async () => {
+  hasReachedSuggestionLimit.value = await suggestionsStore.hasReachedLimit();
+  remainingSuggestions.value = await suggestionsStore.getRemainingRequests();
+};
+
+updateSuggestionLimits();
+
+watch(
+  () => suggestionsStore.isProcessingSuggestions,
+  async (newValue, oldValue) => {
+    if (oldValue === true && newValue === false) {
+      await updateSuggestionLimits();
+    }
+  }
+);
 </script>
