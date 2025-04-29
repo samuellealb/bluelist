@@ -20,7 +20,17 @@
     </div>
     <div v-else-if="dataObject" class="data-display__container">
       <div class="data-display__header">
-        <h2>{{ getDataTitle(dataObject.type) }}</h2>
+        <div class="data-display__title-wrapper">
+          <button
+            v-if="showBackButton"
+            class="data-display__back-button"
+            title="Back to Lists"
+            @click="navigateBackToLists"
+          >
+            ← Back to Lists
+          </button>
+          <h2>{{ getDataTitle(dataObject.type) }}</h2>
+        </div>
         <div class="data-display__header-buttons">
           <button
             class="data-display__refresh-button"
@@ -498,7 +508,16 @@ const handleAcceptFollowsLists = async () => {
 
 const handleRefresh = () => {
   if (dataObject.value) {
-    emit('refresh', dataObject.value.type);
+    if (
+      dataObject.value.type === 'list-posts' &&
+      dataObject.value.listInfo?.uri
+    ) {
+      // For list posts, emit a refresh event with the list-posts type
+      // This will trigger the parent Dashboard component to refresh the list posts
+      emit('refresh', 'list-posts');
+    } else {
+      emit('refresh', dataObject.value.type);
+    }
   }
   detailedResults.value = [];
   acceptAllResult.value = '';
@@ -512,9 +531,23 @@ const getDataTitle = (type: string): string => {
       return 'Your Lists';
     case 'follows':
       return 'Your Follows';
+    case 'list-posts':
+      if (dataObject.value?.listInfo?.name) {
+        return `List: ${dataObject.value.listInfo.name}`;
+      }
+      return 'List Posts';
     default:
       return 'Data';
   }
+};
+
+const showBackButton = computed(() => {
+  return dataObject.value?.type === 'list-posts';
+});
+
+const navigateBackToLists = () => {
+  const router = useRouter();
+  router.push('/lists');
 };
 
 const dismissFeedbackMessage = () => {

@@ -135,9 +135,31 @@ const displayFollows = async (forceRefresh = false, page?: number) => {
   }
 };
 
+/**
+ * Display posts from a specific list
+ * @param {string} listUri - The URI of the list to display posts from
+ * @param {boolean} [forceRefresh=false] - Whether to force a refresh of the data
+ */
+const displayListPosts = async (listUri: string, _forceRefresh = false) => {
+  try {
+    if (!listUri) {
+      throw new Error('List URI is required');
+    }
+
+    setLoading();
+    const { getListPosts } = await import('~/src/lib/bskyService');
+    const result = await getListPosts(listUri);
+    uiStore.setDisplayData(result.displayData);
+  } catch (error) {
+    setError(error as Error);
+    console.error('Error displaying list posts:', error);
+  }
+};
+
 defineExpose({
   displayFeed,
   displayLists,
   displayFollows,
+  displayListPosts,
 });
 </script>

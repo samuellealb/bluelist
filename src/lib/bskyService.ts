@@ -496,6 +496,76 @@ const getCurrentListsPageData = (page: number, listsStore: ListsStore) => {
 };
 
 /**
+ * Fetches posts from a specific list
+ * @param {string} listUri - The URI of the list to fetch posts from
+ * @param {number} [limit=30] - The number of posts to fetch
+ * @returns {Promise<{displayData: DataObject, listPostsJSON: string}>} - Object containing formatted list posts data and raw JSON
+ * @throws {Error} - When user is not logged in, token has expired, or there's an error fetching the list posts
+ */
+export const getListPosts = async (
+  listUri: string,
+  limit: number = 30
+): Promise<{
+  displayData: DataObject;
+  listPostsJSON: string;
+}> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    const agent = AtpService.getAgent();
+    const { data } = await agent.app.bsky.feed.getListFeed({
+      list: listUri,
+      limit,
+    });
+
+    const posts = data.feed.map((item) => ({
+      uri: item.post.uri,
+      cid: item.post.cid,
+      author: {
+        did: item.post.author.did,
+        handle: item.post.author.handle,
+        name: item.post.author.displayName,
+      },
+      text: item.post.record.text,
+      indexedAt: item.post.indexedAt,
+    }));
+
+    // Get list details for title
+    const listDetails = await agent.app.bsky.graph.getList({
+      list: listUri,
+      limit: 1,
+    });
+
+    const listPostsData = {
+      type: 'list-posts',
+      data: posts,
+      listInfo: {
+        name: listDetails.data.list.name,
+        description: listDetails.data.list.description,
+        uri: listUri,
+      },
+    };
+
+    const jsonData = JSON.stringify(listPostsData);
+
+    return {
+      displayData: listPostsData as DataObject,
+      listPostsJSON: jsonData,
+    };
+  } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+    console.error('Error fetching list posts:', error);
+    throw new Error('Error fetching list posts');
+  }
+};
+
+/**
  * Adds a user to a specified list
  * @param {string} userDid - The DID of the user to add
  * @param {string} listUri - The URI of the list to add the user to

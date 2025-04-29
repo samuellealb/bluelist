@@ -5,6 +5,7 @@
       'data-card--timeline': item.type === 'timeline',
       'data-card--list': item.type === 'lists',
       'data-card--follow': item.type === 'follows',
+      'data-card--post': item.type === 'list-posts',
       'data-card--loading': suggestionsStore.isProcessingSuggestions,
     }"
   >
@@ -32,7 +33,9 @@
       <!-- List card content with all states: normal, edit, and delete confirmation -->
       <template v-if="cardState === 'normal'">
         <div class="data-card__header">
-          <h3 class="data-card__title">{{ listItem.name }}</h3>
+          <h3 class="data-card__title" @click="navigateToListPosts">
+            {{ listItem.name }}
+          </h3>
           <div class="data-card__actions">
             <button
               class="data-card__action-button data-card__action-button--edit"
@@ -132,6 +135,26 @@
         />
       </div>
     </div>
+
+    <div v-else-if="item.type === 'list-posts' && listPostItem">
+      <div class="data-card__header">
+        <span class="data-card__author">{{
+          listPostItem.author.name || listPostItem.author.handle
+        }}</span>
+        <span class="data-card__handle">@{{ listPostItem.author.handle }}</span>
+      </div>
+      <div class="data-card__content">
+        <p class="data-card__text">{{ listPostItem.text }}</p>
+      </div>
+      <div class="data-card__footer">
+        <div class="data-card__meta">
+          <span class="data-card__meta-item">
+            <span class="data-card__icon">[T]</span>
+            {{ formatDate(listPostItem.indexedAt) }}
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -189,6 +212,13 @@ const listItem = computed(() => {
 const followItem = computed(() => {
   if (props.item.type === 'follows' && props.item.data[props.index]) {
     return props.item.data[props.index] as FollowItem;
+  }
+  return null;
+});
+
+const listPostItem = computed(() => {
+  if (props.item.type === 'list-posts' && props.item.data[props.index]) {
+    return props.item.data[props.index] as TimelineItem;
   }
   return null;
 });
@@ -272,6 +302,22 @@ const handleListDeleted = (success: boolean) => {
   if (success) {
     setCardState('normal');
   }
+};
+
+/**
+ * Navigate to the list posts view when the user clicks on a list title
+ */
+const navigateToListPosts = () => {
+  if (!listItem.value || !listItem.value.uri) return;
+
+  // Store the URI in localStorage as a fallback mechanism
+  localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
+
+  const router = useRouter();
+  router.push({
+    path: '/list-posts',
+    query: { uri: listItem.value.uri },
+  });
 };
 
 defineExpose({

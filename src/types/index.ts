@@ -43,7 +43,7 @@ export interface SuggestionItem {
 }
 
 export interface DataObject {
-  type: 'timeline' | 'lists' | 'follows' | 'error' | 'loading';
+  type: 'timeline' | 'lists' | 'follows' | 'error' | 'loading' | 'list-posts';
   data:
     | TimelineItem[]
     | ListItem[]
@@ -55,6 +55,11 @@ export interface DataObject {
     totalPages?: number;
     totalPrefetched?: number;
     hasMorePages?: boolean;
+  };
+  listInfo?: {
+    name: string;
+    description?: string;
+    uri: string;
   };
 }
 
@@ -173,6 +178,12 @@ export interface BskyAgent {
           limit: number;
         }) => Promise<{ data: BskyListItemsResponse }>;
       };
+      feed: {
+        getListFeed: (params: {
+          list: string;
+          limit: number;
+        }) => Promise<{ data: BskyTimelineResponse }>;
+      };
     };
   };
   com: {
@@ -181,6 +192,17 @@ export interface BskyAgent {
         createRecord: (
           params: RepoCreateRecordParams
         ) => Promise<{ data: { uri: string; cid: string } }>;
+        deleteRecord: (params: {
+          repo: string;
+          collection: string;
+          rkey: string;
+        }) => Promise<void>;
+        putRecord: (params: {
+          repo: string;
+          collection: string;
+          rkey: string;
+          record: Record<string, unknown>;
+        }) => Promise<{ data: { uri: string; cid: string } }>;
       };
     };
   };
