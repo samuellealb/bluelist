@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import '~/src/assets/styles/action-buttons.css';
-import { getTimeline, getLists, getFollows } from '~/src/lib/bsky';
+import { getTimeline, getLists, getFollows } from '~/src/lib/bskyService';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
 import { useUiStore } from '~/src/stores/ui';

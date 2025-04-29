@@ -29,12 +29,83 @@
     </div>
 
     <div v-else-if="item.type === 'lists' && listItem">
-      <div class="data-card__header">
-        <h3 class="data-card__title">{{ listItem.name }}</h3>
-      </div>
-      <div v-if="listItem.description" class="data-card__content">
-        <p>{{ listItem.description }}</p>
-      </div>
+      <!-- List card content with all states: normal, edit, and delete confirmation -->
+      <template v-if="cardState === 'normal'">
+        <div class="data-card__header">
+          <h3 class="data-card__title">{{ listItem.name }}</h3>
+          <div class="data-card__actions">
+            <button
+              class="data-card__action-button data-card__action-button--edit"
+              title="Edit List"
+              @click="setCardState('edit')"
+            >
+              <span class="data-card__action-icon">[✎]</span>
+            </button>
+            <button
+              class="data-card__action-button data-card__action-button--delete"
+              title="Delete List"
+              @click="setCardState('delete')"
+            >
+              <span class="data-card__action-icon">[×]</span>
+            </button>
+          </div>
+        </div>
+        <div v-if="listItem.description" class="data-card__content">
+          <p>{{ listItem.description }}</p>
+        </div>
+      </template>
+
+      <!-- Edit List View -->
+      <template v-else-if="cardState === 'edit'">
+        <div class="data-card__edit-container">
+          <div class="data-card__edit-header">
+            <h3 class="data-card__edit-title">Edit List</h3>
+          </div>
+          <ListForm
+            v-if="listItem"
+            :is-edit-mode="true"
+            :list-data="{
+              uri: listItem.uri,
+              name: listItem.name,
+              description: listItem.description || '',
+            }"
+            @list-updated="handleListUpdated"
+            @list-deleted="handleListDeleted"
+            @delete-requested="setCardState('delete')"
+            @cancel-edit="setCardState('normal')"
+          />
+        </div>
+      </template>
+
+      <!-- Delete Confirmation View -->
+      <template v-else-if="cardState === 'delete'">
+        <div class="data-card__delete-container">
+          <div class="data-card__delete-header">
+            <h3 class="data-card__delete-title">Delete List</h3>
+          </div>
+          <div class="data-card__delete-content">
+            <p>
+              Are you sure you want to delete the list "{{ listItem.name }}"?
+            </p>
+            <p>This action cannot be undone.</p>
+            <div class="data-card__delete-actions">
+              <button
+                class="data-card__delete-cancel"
+                @click="setCardState('normal')"
+              >
+                Cancel
+              </button>
+              <button
+                class="data-card__delete-confirm-button"
+                :disabled="isDeleting"
+                @click="confirmDeleteList"
+              >
+                {{ isDeleting ? 'Deleting...' : 'Delete' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <div v-else-if="item.type === 'follows' && followItem">
@@ -68,6 +139,8 @@
 import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
+import ListForm from '~/src/components/ListForm.vue';
+import { deleteList } from '~/src/lib/bskyService';
 import type {
   DataObject,
   TimelineItem,
@@ -93,7 +166,11 @@ const emit = defineEmits<{
     listName: string,
     success: boolean
   ): void;
+  (e: 'list-updated' | 'list-deleted', success: boolean): void;
 }>();
+
+const isDeleting = ref(false);
+const cardState = ref<'normal' | 'edit' | 'delete'>('normal');
 
 const timelineItem = computed(() => {
   if (props.item.type === 'timeline' && props.item.data[props.index]) {
@@ -159,8 +236,47 @@ const toggleFollowAllLists = (
   }
 };
 
+const setCardState = (state: 'normal' | 'edit' | 'delete') => {
+  cardState.value = state;
+};
+
+const confirmDeleteList = async () => {
+  if (!listItem.value) return;
+
+  try {
+    isDeleting.value = true;
+    const result = await deleteList(listItem.value.uri);
+
+    if (result.success) {
+      emit('list-deleted', true);
+      setCardState('normal');
+    } else {
+      console.error('Failed to delete list:', result.message);
+    }
+  } catch (error) {
+    console.error('Error deleting list:', error);
+  } finally {
+    isDeleting.value = false;
+  }
+};
+
+const handleListUpdated = (success: boolean) => {
+  emit('list-updated', success);
+  if (success) {
+    setCardState('normal');
+  }
+};
+
+const handleListDeleted = (success: boolean) => {
+  emit('list-deleted', success);
+  if (success) {
+    setCardState('normal');
+  }
+};
+
 defineExpose({
   followEnabledLists,
   toggleFollowAllLists,
+  listItem, // Expose the listItem for external access
 });
 </script>

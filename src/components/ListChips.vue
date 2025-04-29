@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import '~/src/assets/styles/list-chips.css';
-import { addUserToList } from '~/src/lib/bsky';
+import { addUserToList } from '~/src/lib/bskyService';
 import { useListsStore } from '~/src/stores/lists';
 import type { SuggestedList, ListItem } from '~/src/types/index';
 

@@ -113,6 +113,25 @@
       </div>
 
       <div
+        v-if="dataObject.type === 'lists' && dataObject.data.length !== 0"
+        class="data-display__action-buttons"
+      >
+        <button
+          class="data-display__create-list-button"
+          title="Create a new list"
+          :disabled="
+            isLoading ||
+            suggestionsStore.isProcessingSuggestions ||
+            showingComponent !== null
+          "
+          @click="handleCreateList"
+        >
+          <span class="data-display__create-list-icon">[+]</span>
+          <span class="data-display__create-list-text">Create List</span>
+        </button>
+      </div>
+
+      <div
         v-if="acceptAllResult || detailedResults.length > 0"
         class="data-display__feedback-container"
       >
@@ -164,6 +183,9 @@
           :key="index"
           :item="dataObject"
           :index="index"
+          @list-updated="handleListUpdated"
+          @list-deleted="handleListDeleted"
+          @add-to-list="handleAddToList"
         />
 
         <Pagination
@@ -187,13 +209,76 @@
       </template>
 
       <div v-else class="data-display__empty">
-        <pre>
+        <template v-if="dataObject.type === 'lists'">
+          <!-- Display create, edit, or delete components based on state -->
+          <template v-if="showingComponent === 'edit' && currentListData">
+            <ListForm
+              :is-edit-mode="true"
+              :list-data="currentListData"
+              @list-updated="handleListUpdated"
+              @list-deleted="handleListDeleted"
+              @cancel-edit="resetComponentDisplay"
+            />
+          </template>
+
+          <template
+            v-else-if="showingComponent === 'delete' && currentListData"
+          >
+            <div class="data-display__delete-confirm">
+              <div class="data-display__component-header">
+                <h3>Delete List</h3>
+                <button
+                  class="data-display__back-button"
+                  title="Back to list creation"
+                  @click="resetComponentDisplay"
+                >
+                  Back
+                </button>
+              </div>
+              <div class="data-display__delete-content">
+                <p>
+                  Are you sure you want to delete the list "{{
+                    currentListData.name
+                  }}"?
+                </p>
+                <p>This action cannot be undone.</p>
+                <div class="data-display__delete-actions">
+                  <button
+                    class="data-display__delete-cancel"
+                    @click="resetComponentDisplay"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="data-display__delete-confirm-button"
+                    @click="confirmDeleteList"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <ListForm
+              :show-cancel-in-create-mode="
+                showingComponent === 'create' && hasExistingLists
+              "
+              @list-created="handleListCreated"
+              @cancel-edit="resetComponentDisplay"
+            />
+          </template>
+        </template>
+        <template v-else>
+          <pre>
 +----------+
 |  EMPTY   |
 |          |
 | No items |
 +----------+
-        </pre>
+          </pre>
+        </template>
       </div>
     </div>
     <div v-else class="data-display__no-data">
@@ -213,12 +298,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useUiStore } from '~/src/stores/ui';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
 import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
+import ListForm from '~/src/components/ListForm.vue';
 import type {
   DataObject,
   ListItem,
@@ -226,7 +313,7 @@ import type {
   SuggestionItem,
   DetailedResult,
 } from '~/src/types/index';
-import { addUserToList } from '~/src/lib/bsky';
+import { addUserToList } from '~/src/lib/bskyService';
 import { curateUserLists } from '~/src/lib/openai';
 import type { ComponentPublicInstance } from 'vue';
 
@@ -585,6 +672,99 @@ const findListNameByUri = (listUri: string): string => {
 const hasReachedSuggestionLimit = ref(false);
 const remainingSuggestions = ref(5);
 
+/**
+ * Checks if there are existing lists fetched
+ * Used to determine whether to show a cancel button in create mode
+ */
+const hasExistingLists = computed(() => {
+  // Check if we have lists data in the store
+  return listsStore.lists.allLists && listsStore.lists.allLists.length > 0;
+});
+
+// Track which component to show in the empty state
+const showingComponent = ref<'create' | 'edit' | 'delete' | null>(null);
+// Store the current list being edited or deleted
+const currentListData = ref<{
+  uri: string;
+  name: string;
+  description: string;
+} | null>(null);
+
+/**
+ * Reset component display to default state
+ */
+const resetComponentDisplay = () => {
+  const wasInCreateMode =
+    showingComponent.value === 'create' && hasExistingLists.value;
+
+  // First reset the component state
+  showingComponent.value = null;
+  currentListData.value = null;
+
+  // After resetting state, refresh the lists if needed
+  if (wasInCreateMode) {
+    // We use setTimeout to ensure the state reset happens first
+    // This allows the button to work again after cancellation
+    setTimeout(() => {
+      handleRefresh();
+    }, 0);
+  }
+};
+
+/**
+ * Handle list creation event from ListForm component
+ * Refreshes the lists view to show the newly created list
+ */
+const handleListCreated = (success: boolean) => {
+  if (success && dataObject.value?.type === 'lists') {
+    // Reset component state before refreshing
+    showingComponent.value = null;
+    currentListData.value = null;
+
+    // Use setTimeout to ensure the state reset happens first
+    // This allows the button to work again after list creation
+    setTimeout(() => {
+      handleRefresh();
+    }, 0);
+  }
+};
+
+/**
+ * Handle list updated event from DataCard component
+ * Refreshes the lists view to show the updated list
+ */
+const handleListUpdated = (success: boolean) => {
+  if (success && dataObject.value?.type === 'lists') {
+    handleRefresh();
+  }
+};
+
+/**
+ * Handle list deleted event from DataCard component
+ * Refreshes the lists view to reflect the deleted list
+ */
+const handleListDeleted = (success: boolean) => {
+  if (success && dataObject.value?.type === 'lists') {
+    handleRefresh();
+  }
+};
+
+/**
+ * Relay the add-to-list event from DataCard
+ */
+const handleAddToList = (
+  profileDid: string,
+  listName: string,
+  success: boolean
+) => {
+  // Handle any additional logic if needed
+  console.log(
+    `Profile ${profileDid} was ${
+      success ? 'added to' : 'not added to'
+    } list ${listName}`
+  );
+};
+
 const updateSuggestionLimits = async () => {
   hasReachedSuggestionLimit.value = await suggestionsStore.hasReachedLimit();
   remainingSuggestions.value = await suggestionsStore.getRemainingRequests();
@@ -600,4 +780,51 @@ watch(
     }
   }
 );
+
+/**
+ * Handle confirming list deletion
+ */
+const confirmDeleteList = async () => {
+  if (!currentListData.value) return;
+
+  try {
+    const { deleteList } = await import('~/src/lib/bskyService');
+    const result = await deleteList(currentListData.value.uri);
+
+    if (result.success) {
+      handleListDeleted(true);
+    } else {
+      console.error('Failed to delete list:', result.message);
+    }
+  } catch (error) {
+    console.error('Error deleting list:', error);
+  }
+};
+
+/**
+ * Handle creating a new list
+ * Shows the create list form in a modal
+ */
+const handleCreateList = () => {
+  // Hide any previously shown component
+  resetComponentDisplay();
+
+  // Create a modal or overlay to display the ListForm
+  if (!hasData.value && dataObject.value?.type === 'lists') {
+    // If no lists exist yet, the form is already shown in the empty state
+    return;
+  }
+
+  // Set the component to be shown in a modal
+  showingComponent.value = 'create';
+
+  // Hide the list of items temporarily to show the form
+  const tempData = {
+    ...dataObject.value,
+    data: [],
+    type: dataObject.value?.type || 'lists',
+  };
+  const uiStore = useUiStore();
+  uiStore.setDisplayData(tempData as DataObject);
+};
 </script>

@@ -71,135 +71,6 @@ export const getTimeline = async (): Promise<{
 };
 
 /**
- * Fetches the user's lists from Bluesky with pagination and prefetching support
- * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
- * @param {boolean} [refresh=false] - Whether to refresh and start from the first page
- * @param {boolean} [prefetchOnly=false] - If true, only prefetch data without updating display
- * @returns {Promise<{displayData: DataObject, listsJSON: string}>} - Object containing formatted lists data and raw JSON
- * @throws {Error} - When user is not logged in, token has expired, or already fetching data
- */
-export const getLists = async (
-  page?: number,
-  refresh: boolean = false,
-  prefetchOnly: boolean = false
-): Promise<{
-  displayData: DataObject;
-  listsJSON: string;
-}> => {
-  const authStore = useAuthStore();
-  const listsStore = useListsStore() as ListsStore;
-  const uiStore = useUiStore();
-
-  if (!authStore.isLoggedIn) {
-    throw new Error('Please login first');
-  }
-
-  try {
-    if (refresh) {
-      listsStore.resetPagination();
-      listsStore.setLists([]);
-    }
-
-    const requestedPage = page || listsStore.lists.currentPage;
-    const maxAvailablePage = Math.max(
-      1,
-      Math.ceil(
-        listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
-      )
-    );
-    const needsMoreData =
-      (requestedPage > maxAvailablePage && !!listsStore.lists.cursor) ||
-      (refresh && listsStore.lists.allLists.length === 0);
-
-    if (listsStore.lists.isFetching && !refresh) {
-      console.info('Already fetching lists data, will wait');
-      throw new Error('Already fetching lists data');
-    }
-
-    listsStore.setIsFetching(true);
-
-    try {
-      const agent = AtpService.getBskyAgent();
-
-      if (listsStore.lists.allLists.length === 0 || refresh) {
-        const firstBatch = await fetchListsBatch(null, authStore.did, agent);
-        listsStore.setLists(firstBatch.lists);
-        listsStore.setPrefetchedPages(1);
-        listsStore.setCursor(firstBatch.cursor);
-        listsStore.setHasMorePages(!!firstBatch.cursor);
-      } else if (needsMoreData) {
-        const newBatch = await fetchListsBatch(
-          listsStore.lists.cursor,
-          authStore.did,
-          agent
-        );
-
-        if (newBatch.lists.length > 0) {
-          listsStore.addLists(newBatch.lists);
-          listsStore.setPrefetchedPages(listsStore.lists.prefetchedPages + 1);
-          listsStore.setCursor(newBatch.cursor);
-          listsStore.setHasMorePages(!!newBatch.cursor);
-
-          const newMaxAvailablePage = Math.ceil(
-            listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
-          );
-
-          if (requestedPage > newMaxAvailablePage && listsStore.lists.cursor) {
-            return await getLists(requestedPage, false, prefetchOnly);
-          }
-        } else {
-          listsStore.setHasMorePages(false);
-          listsStore.setCursor(null);
-        }
-      }
-
-      if (prefetchOnly) {
-        const currentPageData = getCurrentListsPageData(
-          listsStore.lists.currentPage,
-          listsStore
-        );
-        return {
-          displayData: currentPageData.displayData,
-          listsJSON: currentPageData.listsJSON,
-        };
-      }
-
-      const validPage = Math.min(
-        requestedPage,
-        Math.ceil(
-          listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
-        )
-      );
-
-      if (validPage !== requestedPage) {
-        console.log(
-          `Requested page ${requestedPage} is out of bounds, using page ${validPage} instead`
-        );
-      }
-
-      listsStore.setCurrentPage(validPage);
-
-      const pageData = getCurrentListsPageData(validPage, listsStore);
-
-      // Consolidate state updates
-      uiStore.setDisplayData(pageData.displayData);
-      listsStore.setListsJSON(pageData.listsJSON);
-
-      return pageData;
-    } finally {
-      listsStore.setIsFetching(false);
-    }
-  } catch (error) {
-    listsStore.setIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-    console.error('Error fetching lists:', error);
-    throw new Error('Error fetching lists');
-  }
-};
-
-/**
  * Fetches the user's follows from Bluesky with pagination and prefetching support
  * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
  * @param {boolean} [refresh=false] - Whether to refresh and start from the first page
@@ -415,6 +286,135 @@ const getCurrentFollowsPageData = (
     displayData: followsData as DataObject,
     usersJSON: jsonData,
   };
+};
+
+/**
+ * Fetches the user's lists from Bluesky with pagination and prefetching support
+ * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
+ * @param {boolean} [refresh=false] - Whether to refresh and start from the first page
+ * @param {boolean} [prefetchOnly=false] - If true, only prefetch data without updating display
+ * @returns {Promise<{displayData: DataObject, listsJSON: string}>} - Object containing formatted lists data and raw JSON
+ * @throws {Error} - When user is not logged in, token has expired, or already fetching data
+ */
+export const getLists = async (
+  page?: number,
+  refresh: boolean = false,
+  prefetchOnly: boolean = false
+): Promise<{
+  displayData: DataObject;
+  listsJSON: string;
+}> => {
+  const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
+  const uiStore = useUiStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    if (refresh) {
+      listsStore.resetPagination();
+      listsStore.setLists([]);
+    }
+
+    const requestedPage = page || listsStore.lists.currentPage;
+    const maxAvailablePage = Math.max(
+      1,
+      Math.ceil(
+        listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+      )
+    );
+    const needsMoreData =
+      (requestedPage > maxAvailablePage && !!listsStore.lists.cursor) ||
+      (refresh && listsStore.lists.allLists.length === 0);
+
+    if (listsStore.lists.isFetching && !refresh) {
+      console.info('Already fetching lists data, will wait');
+      throw new Error('Already fetching lists data');
+    }
+
+    listsStore.setIsFetching(true);
+
+    try {
+      const agent = AtpService.getBskyAgent();
+
+      if (listsStore.lists.allLists.length === 0 || refresh) {
+        const firstBatch = await fetchListsBatch(null, authStore.did, agent);
+        listsStore.setLists(firstBatch.lists);
+        listsStore.setPrefetchedPages(1);
+        listsStore.setCursor(firstBatch.cursor);
+        listsStore.setHasMorePages(!!firstBatch.cursor);
+      } else if (needsMoreData) {
+        const newBatch = await fetchListsBatch(
+          listsStore.lists.cursor,
+          authStore.did,
+          agent
+        );
+
+        if (newBatch.lists.length > 0) {
+          listsStore.addLists(newBatch.lists);
+          listsStore.setPrefetchedPages(listsStore.lists.prefetchedPages + 1);
+          listsStore.setCursor(newBatch.cursor);
+          listsStore.setHasMorePages(!!newBatch.cursor);
+
+          const newMaxAvailablePage = Math.ceil(
+            listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+          );
+
+          if (requestedPage > newMaxAvailablePage && listsStore.lists.cursor) {
+            return await getLists(requestedPage, false, prefetchOnly);
+          }
+        } else {
+          listsStore.setHasMorePages(false);
+          listsStore.setCursor(null);
+        }
+      }
+
+      if (prefetchOnly) {
+        const currentPageData = getCurrentListsPageData(
+          listsStore.lists.currentPage,
+          listsStore
+        );
+        return {
+          displayData: currentPageData.displayData,
+          listsJSON: currentPageData.listsJSON,
+        };
+      }
+
+      const validPage = Math.min(
+        requestedPage,
+        Math.ceil(
+          listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
+        )
+      );
+
+      if (validPage !== requestedPage) {
+        console.log(
+          `Requested page ${requestedPage} is out of bounds, using page ${validPage} instead`
+        );
+      }
+
+      listsStore.setCurrentPage(validPage);
+
+      const pageData = getCurrentListsPageData(validPage, listsStore);
+
+      // Consolidate state updates
+      uiStore.setDisplayData(pageData.displayData);
+      listsStore.setListsJSON(pageData.listsJSON);
+
+      return pageData;
+    } finally {
+      listsStore.setIsFetching(false);
+    }
+  } catch (error) {
+    listsStore.setIsFetching(false);
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+    console.error('Error fetching lists:', error);
+    throw new Error('Error fetching lists');
+  }
 };
 
 /**
@@ -646,4 +646,143 @@ export const addUsersToLists = async (
   }
 
   return results;
+};
+
+/**
+ * Creates a new list
+ * @param {string} name - The name of the list
+ * @param {string} description - The description of the list
+ * @returns {Promise<{uri: string, success: boolean, message: string}>} - Object containing the URI of the created list and a success message
+ * @throws {Error} - When user is not logged in, session expired, or API request fails
+ */
+export const createList = async (
+  name: string,
+  description: string
+): Promise<{ uri: string; success: boolean; message: string }> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    const agent = AtpService.getAgent();
+    const result = await agent.com.atproto.repo.createRecord({
+      repo: authStore.did,
+      collection: 'app.bsky.graph.list',
+      record: {
+        $type: 'app.bsky.graph.list',
+        purpose: 'app.bsky.graph.defs#curatelist',
+        name,
+        description,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    return {
+      uri: result.data.uri,
+      success: true,
+      message: 'List created successfully',
+    };
+  } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+
+    console.error('Error creating list:', error);
+    throw new Error(`Failed to create list: ${(error as Error).message}`);
+  }
+};
+
+/**
+ * Updates an existing list
+ * @param {string} uri - The URI of the list to update
+ * @param {string} name - The new name of the list
+ * @param {string} description - The new description of the list
+ * @returns {Promise<{success: boolean, message: string}>} - Object containing a success flag and message
+ * @throws {Error} - When user is not logged in, session expired, or API request fails
+ */
+export const updateList = async (
+  uri: string,
+  name: string,
+  description: string
+): Promise<{ success: boolean; message: string }> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    // Extract record ID from URI
+    const parts = uri.split('/');
+    const rkey = parts[parts.length - 1];
+
+    const agent = AtpService.getAgent();
+    await agent.com.atproto.repo.putRecord({
+      repo: authStore.did,
+      collection: 'app.bsky.graph.list',
+      rkey,
+      record: {
+        $type: 'app.bsky.graph.list',
+        purpose: 'app.bsky.graph.defs#curatelist',
+        name,
+        description,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'List updated successfully',
+    };
+  } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+
+    console.error('Error updating list:', error);
+    throw new Error(`Failed to update list: ${(error as Error).message}`);
+  }
+};
+
+/**
+ * Deletes a list
+ * @param {string} uri - The URI of the list to delete
+ * @returns {Promise<{success: boolean, message: string}>} - Object containing a success flag and message
+ * @throws {Error} - When user is not logged in, session expired, or API request fails
+ */
+export const deleteList = async (
+  uri: string
+): Promise<{ success: boolean; message: string }> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    // Extract record ID from URI
+    const parts = uri.split('/');
+    const rkey = parts[parts.length - 1];
+
+    const agent = AtpService.getAgent();
+    await agent.com.atproto.repo.deleteRecord({
+      repo: authStore.did,
+      collection: 'app.bsky.graph.list',
+      rkey,
+    });
+
+    return {
+      success: true,
+      message: 'List deleted successfully',
+    };
+  } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+
+    console.error('Error deleting list:', error);
+    throw new Error(`Failed to delete list: ${(error as Error).message}`);
+  }
 };
