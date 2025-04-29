@@ -26,3 +26,4 @@ prototype.js
 .env
 .env.*
 !.env.example
+certs

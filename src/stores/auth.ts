@@ -9,9 +9,14 @@ export const useAuthStore = defineStore('auth', {
     did: '',
     isLoggedIn: false,
     initialized: false,
+    isOauthLoading: false,
+    handle: '',
+    avatar: '',
+    displayName: '',
   }),
 
   actions: {
+    // Existing actions
     setFormInfo(info: string) {
       this.formInfo = info;
     },
@@ -34,6 +39,9 @@ export const useAuthStore = defineStore('auth', {
       this.formInfo = '';
       this.loginError = '';
       this.did = '';
+      this.handle = '';
+      this.avatar = '';
+      this.displayName = '';
       this.isLoggedIn = false;
       AtpService.resetAgent();
       localStorage.removeItem('loginData');
@@ -97,55 +105,208 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
+     * Initiates OAuth login flow with Bluesky
+     * @param handle - The user's Bluesky handle (username.bsky.social)
+     * @returns {Promise<string>} - A Promise that resolves with the authorization URL
+     */
+    async initiateOAuthLogin(handle: string): Promise<string> {
+      this.isOauthLoading = true;
+      this.setLoginError('');
+
+      try {
+        const { data } = await useFetch<{ url?: string }>('/api/oauth/login', {
+          query: { handle },
+        });
+
+        if (data.value?.url) {
+          return data.value.url;
+        } else {
+          throw new Error('No authorization URL returned');
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.setLoginError(`OAuth login failed: ${message}`);
+        throw error;
+      } finally {
+        this.isOauthLoading = false;
+      }
+    },
+
+    /**
+     * Completes the OAuth flow after redirection
+     * @param code - Authorization code from the callback
+     * @param state - State parameter from the callback
+     * @returns {Promise<void>} - A Promise that resolves when login completes
+     */
+    async completeOAuthLogin(code: string, state: string): Promise<void> {
+      this.isOauthLoading = true;
+      this.setLoginError('');
+
+      try {
+        const { data } = await useFetch<{ success?: boolean; did?: string }>(
+          '/api/oauth/callback',
+          {
+            query: { code, state },
+          }
+        );
+
+        if (data.value?.success && data.value.did) {
+          await this.fetchUserProfile();
+        } else {
+          throw new Error('OAuth authentication failed');
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.setLoginError(`OAuth authentication failed: ${message}`);
+        throw error;
+      } finally {
+        this.isOauthLoading = false;
+      }
+    },
+
+    /**
+     * Fetches the user's profile after successful authentication
+     * @returns {Promise<void>} - A Promise that resolves when profile is fetched
+     */
+    async fetchUserProfile(): Promise<void> {
+      try {
+        const { data } = await useFetch<{
+          authenticated: boolean;
+          did?: string;
+          handle?: string;
+          displayName?: string;
+          avatar?: string;
+        }>('/api/oauth/me');
+
+        if (data.value?.authenticated && data.value.did) {
+          this.did = data.value.did;
+          this.handle = data.value.handle || '';
+          this.displayName = data.value.displayName || '';
+          this.avatar = data.value.avatar || '';
+          this.login();
+
+          this.setFormInfo(`Logged in as ${this.handle} with DID ${this.did}`);
+        } else {
+          this.logout();
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        this.logout();
+      }
+    },
+
+    /**
+     * Logs the user out via OAuth
+     * @returns {Promise<void>} - A Promise that resolves when logout completes
+     */
+    async oauthLogout(): Promise<void> {
+      try {
+        await useFetch('/api/oauth/logout');
+        this.logout();
+      } catch (error) {
+        console.error('Error during logout:', error);
+      }
+    },
+
+    /**
+     * Checks if the user is authenticated via OAuth
+     * @returns {Promise<boolean>} - A Promise that resolves with authentication status
+     */
+    async checkOAuthSession(): Promise<boolean> {
+      try {
+        // Use a unique cache key for each request to prevent stale authentication data
+        // This is critical for address bar navigation where we need fresh auth state
+        const { data } = await useFetch<{
+          authenticated: boolean;
+          did?: string;
+          handle?: string;
+          displayName?: string;
+          avatar?: string;
+        }>('/api/oauth/me', {
+          key: `oauth-session-${Date.now()}`,
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+
+        if (data.value?.authenticated && data.value.did) {
+          // Update local auth state with server data
+          this.did = data.value.did;
+          this.handle = data.value.handle || '';
+          this.displayName = data.value.displayName || '';
+          this.avatar = data.value.avatar || '';
+          this.login();
+
+          return true;
+        } else {
+          return false;
+        }
+      } catch (error) {
+        console.error('Error checking OAuth session:', error);
+        return false;
+      }
+    },
+
+    /**
      * Checks for an existing login session and restores it
      * @returns {Promise<void>} - No return value
      * @throws {Error} - If session data cannot be parsed or is invalid
      */
     async checkLoginSession(): Promise<void> {
-      const storedData = localStorage.getItem('loginData');
-      if (!storedData) {
-        return;
-      }
+      // First try OAuth session
+      const hasOAuthSession = await this.checkOAuthSession();
 
-      try {
-        const parsedData = JSON.parse(storedData);
-
-        if (!parsedData || typeof parsedData !== 'object') {
-          throw new Error('Invalid session data format');
+      // If no OAuth session, fall back to legacy session
+      if (!hasOAuthSession) {
+        const storedData = localStorage.getItem('loginData');
+        if (!storedData) {
+          return;
         }
 
-        if (!parsedData.loginData) {
-          throw new Error('Missing login data in stored session');
-        }
+        try {
+          const parsedData = JSON.parse(storedData);
 
-        const { loginData } = parsedData;
+          if (!parsedData || typeof parsedData !== 'object') {
+            throw new Error('Invalid session data format');
+          }
 
-        if (!loginData.did || !loginData.handle || !loginData.accessJwt) {
-          throw new Error('Incomplete login data in stored session');
-        }
+          if (!parsedData.loginData) {
+            throw new Error('Missing login data in stored session');
+          }
 
-        this.setFormInfo(
-          `Logged in as ${loginData.handle} with DID ${loginData.did}`
-        );
-        this.setDid(loginData.did);
-        this.login();
+          const { loginData } = parsedData;
 
-        // Set the auth token using the centralized API Service
-        AtpService.setAuthToken(loginData.accessJwt);
+          if (!loginData.did || !loginData.handle || !loginData.accessJwt) {
+            throw new Error('Incomplete login data in stored session');
+          }
 
-        const jwtExpiry = this.getJwtExpiry(loginData.accessJwt);
-        if (jwtExpiry && this.isTokenExpiringSoon(jwtExpiry)) {
-          console.warn(
-            'Auth token expiring soon - user may need to re-authenticate'
+          this.setFormInfo(
+            `Logged in as ${loginData.handle} with DID ${loginData.did}`
+          );
+          this.setDid(loginData.did);
+          this.login();
+
+          // Set the auth token using the centralized API Service
+          AtpService.setAuthToken(loginData.accessJwt);
+
+          const jwtExpiry = this.getJwtExpiry(loginData.accessJwt);
+          if (jwtExpiry && this.isTokenExpiringSoon(jwtExpiry)) {
+            console.warn(
+              'Auth token expiring soon - user may need to re-authenticate'
+            );
+          }
+        } catch (error) {
+          console.error('Failed to restore session:', error);
+
+          localStorage.removeItem('loginData');
+
+          this.logout();
+          this.setFormInfo(
+            'Session could not be restored. Please login again.'
           );
         }
-      } catch (error) {
-        console.error('Failed to restore session:', error);
-
-        localStorage.removeItem('loginData');
-
-        this.logout();
-        this.setFormInfo('Session could not be restored. Please login again.');
       }
     },
 

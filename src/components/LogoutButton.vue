@@ -2,10 +2,13 @@
   <button
     v-if="authStore.isLoggedIn"
     class="data-display__refresh-button logout-button"
+    :disabled="isLoggingOut"
     @click="logout"
   >
     <span class="data-display__refresh-icon">[→]</span>
-    <span class="data-display__refresh-text">Logout</span>
+    <span class="data-display__refresh-text">{{
+      isLoggingOut ? 'Logging out...' : 'Logout'
+    }}</span>
   </button>
 </template>
 
@@ -16,13 +19,40 @@ import '~/src/assets/styles/data-display.css';
 
 const authStore = useAuthStore();
 const uiStore = useUiStore();
+const isLoggingOut = ref(false);
 
-const logout = () => {
-  localStorage.removeItem('loginData');
+const logout = async () => {
+  isLoggingOut.value = true;
 
-  authStore.logout();
-  uiStore.setDisplayData(null);
+  try {
+    // Try to logout via OAuth first, which will handle server-side cleanup
+    await authStore.oauthLogout();
 
-  navigateTo('/');
+    // Also clear local storage for backward compatibility with password login
+    localStorage.removeItem('loginData');
+
+    // Reset UI state
+    uiStore.setDisplayData(null);
+
+    // Navigate to home page
+    navigateTo('/');
+  } catch (error) {
+    console.error('Error during logout:', error);
+
+    // Fallback to standard logout if OAuth logout fails
+    authStore.logout();
+    localStorage.removeItem('loginData');
+    uiStore.setDisplayData(null);
+    navigateTo('/');
+  } finally {
+    isLoggingOut.value = false;
+  }
 };
 </script>
+
+<style scoped>
+.logout-button[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+</style>
