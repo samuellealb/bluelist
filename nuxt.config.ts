@@ -1,5 +1,3 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
-
 import { resolve } from 'path';
 import fs from 'fs';
 

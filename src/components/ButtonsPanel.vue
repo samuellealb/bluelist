@@ -172,7 +172,6 @@ const displayListMembers = async (
       throw new Error('List URI is required');
     }
 
-    // Store the current list URI in localStorage for persistence across navigation
     if (import.meta.client) {
       localStorage.setItem('bluelist_current_list_uri', listUri);
     }

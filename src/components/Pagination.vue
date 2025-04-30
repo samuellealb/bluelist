@@ -90,27 +90,39 @@ const emit = defineEmits<{
 const lastPage = computed(() => {
   if (props.currentPage === undefined) return 1;
 
-  if (props.dataType === 'list-members') {
-    // For list-members view
-    if (!listsStore.members.allMembers.length) return 1;
-    return Math.max(
-      Math.ceil(
-        listsStore.members.allMembers.length / listsStore.members.itemsPerPage
-      ),
-      props.totalPages
-    );
-  } else if (followsStore.follows.currentPage === props.currentPage) {
-    // For follows view
-    if (!followsStore.follows.allFollows.length) return 1;
-    return Math.ceil(
-      followsStore.follows.allFollows.length / followsStore.follows.itemsPerPage
-    );
-  } else if (listsStore.lists.currentPage === props.currentPage) {
-    // For lists view
-    if (!listsStore.lists.allLists.length) return 1;
-    return Math.ceil(
-      listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
-    );
+  const getLastPageByType = (
+    items: unknown[],
+    itemsPerPage: number
+  ): number => {
+    if (!items.length) return 1;
+    return Math.ceil(items.length / itemsPerPage);
+  };
+
+  switch (props.dataType) {
+    case 'list-members':
+      return Math.max(
+        getLastPageByType(
+          listsStore.members.allMembers,
+          listsStore.members.itemsPerPage
+        ),
+        props.totalPages
+      );
+    case 'follows':
+      if (followsStore.follows.currentPage === props.currentPage) {
+        return getLastPageByType(
+          followsStore.follows.allFollows,
+          followsStore.follows.itemsPerPage
+        );
+      }
+      break;
+    case 'lists':
+      if (listsStore.lists.currentPage === props.currentPage) {
+        return getLastPageByType(
+          listsStore.lists.allLists,
+          listsStore.lists.itemsPerPage
+        );
+      }
+      break;
   }
 
   return props.totalPages || 1;

@@ -547,8 +547,6 @@ const handleRefresh = () => {
       dataObject.value.type === 'list-posts' &&
       dataObject.value.listInfo?.uri
     ) {
-      // For list posts, emit a refresh event with the list-posts type
-      // This will trigger the parent Dashboard component to refresh the list posts
       emit('refresh', 'list-posts');
     } else {
       emit('refresh', dataObject.value.type);
@@ -754,7 +752,6 @@ const remainingSuggestions = ref(5);
  * Used to determine whether to show a cancel button in create mode
  */
 const hasExistingLists = computed(() => {
-  // Check if we have lists data in the store
   return listsStore.lists.allLists && listsStore.lists.allLists.length > 0;
 });
 

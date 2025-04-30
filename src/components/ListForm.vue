@@ -261,7 +261,6 @@ const handleDeleteList = () => {
     return;
   }
 
-  // Instead of deleting directly, emit an event to request confirmation
   emit('delete-requested');
 };
 

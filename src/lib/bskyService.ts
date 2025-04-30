@@ -785,7 +785,6 @@ export const updateList = async (
   }
 
   try {
-    // Extract record ID from URI
     const parts = uri.split('/');
     const rkey = parts[parts.length - 1];
 
@@ -833,7 +832,6 @@ export const deleteList = async (
   }
 
   try {
-    // Extract record ID from URI
     const parts = uri.split('/');
     const rkey = parts[parts.length - 1];
 
@@ -874,7 +872,6 @@ export const removeUserFromList = async (
   }
 
   try {
-    // Extract record ID from URI
     const parts = itemUri.split('/');
     const rkey = parts[parts.length - 1];
 
@@ -928,7 +925,6 @@ export const removeUsersFromList = async (
 
   for (const itemUri of itemUris) {
     try {
-      // Extract record ID from URI
       const parts = itemUri.split('/');
       const rkey = parts[parts.length - 1];
 
@@ -1044,16 +1040,6 @@ export const getListMembers = async (
     try {
       const agent = AtpService.getBskyAgent();
 
-      // Get list details for title
-      // const listDetails = await agent.app.bsky.graph.getList({
-      //   list: listUri,
-      //   limit: 1,
-      // });
-
-      // const listName = listDetails.data.list?.name || 'Unknown List';
-      // const listDescription = listDetails.data.list?.description || '';
-
-      // If we're starting fresh (refresh or first load)
       if (listsStore.members.allMembers.length === 0 || refresh) {
         const firstBatch = await fetchMembersBatch(null, listUri, agent, limit);
         listsStore.setMembers(firstBatch.members);

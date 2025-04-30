@@ -14,9 +14,5 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const isExempt = EXEMPT_DIDS.includes(did);
-
-  return {
-    isExempt,
-  };
+  return { isExempt: EXEMPT_DIDS.includes(did) };
 });

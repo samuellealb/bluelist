@@ -126,7 +126,6 @@
     </div>
 
     <div v-else-if="item.type === 'follows' && followItem">
-      <!-- <div class="data-card__avatar">[o]</div> -->
       <div class="data-card__info">
         <h3 class="data-card__title">
           {{ followItem.name || followItem.handle }}
@@ -215,33 +214,17 @@ const cardState = ref<'normal' | 'edit' | 'delete'>('normal');
 const memberCount = ref(0);
 const memberCountLoading = ref(true);
 
-const timelineItem = computed(() => {
-  if (props.item.type === 'timeline' && props.item.data[props.index]) {
-    return props.item.data[props.index] as TimelineItem;
+const getItemData = function <T>(type: string): T | null {
+  if (props.item.type === type && props.item.data[props.index]) {
+    return props.item.data[props.index] as T;
   }
   return null;
-});
+};
 
-const listItem = computed(() => {
-  if (props.item.type === 'lists' && props.item.data[props.index]) {
-    return props.item.data[props.index] as ListItem;
-  }
-  return null;
-});
-
-const followItem = computed(() => {
-  if (props.item.type === 'follows' && props.item.data[props.index]) {
-    return props.item.data[props.index] as FollowItem;
-  }
-  return null;
-});
-
-const listPostItem = computed(() => {
-  if (props.item.type === 'list-posts' && props.item.data[props.index]) {
-    return props.item.data[props.index] as TimelineItem;
-  }
-  return null;
-});
+const timelineItem = computed(() => getItemData<TimelineItem>('timeline'));
+const listItem = computed(() => getItemData<ListItem>('lists'));
+const followItem = computed(() => getItemData<FollowItem>('follows'));
+const listPostItem = computed(() => getItemData<TimelineItem>('list-posts'));
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -330,7 +313,6 @@ const handleListDeleted = (success: boolean) => {
 const navigateToListPosts = () => {
   if (!listItem.value || !listItem.value.uri) return;
 
-  // Store the URI in localStorage as a fallback mechanism
   localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
 
   router.push({
@@ -345,7 +327,6 @@ const navigateToListPosts = () => {
 const navigateToListMembers = () => {
   if (!listItem.value || !listItem.value.uri) return;
 
-  // Store the URI in localStorage as a fallback mechanism
   localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
 
   router.push({
@@ -377,7 +358,6 @@ const fetchMemberCount = async () => {
   }
 };
 
-// Load member count when the component is mounted
 onMounted(() => {
   if (listItem.value) {
     fetchMemberCount();
@@ -387,6 +367,6 @@ onMounted(() => {
 defineExpose({
   followEnabledLists,
   toggleFollowAllLists,
-  listItem, // Expose the listItem for external access
+  listItem,
 });
 </script>

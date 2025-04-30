@@ -50,64 +50,43 @@ const justLoggedInKey = 'bluelist_just_logged_in';
 const loadView = async (viewType: string, forceRefresh = false) => {
   await nextTick();
 
-  if (authStore.isLoggedIn && buttonsPanelRef.value) {
-    switch (viewType) {
-      case 'lists':
-        buttonsPanelRef.value.displayLists(forceRefresh);
-        break;
-      case 'follows':
-        buttonsPanelRef.value.displayFollows(forceRefresh);
-        break;
-      case 'feed':
-        buttonsPanelRef.value.displayFeed(forceRefresh);
-        break;
-      case 'list-posts': {
-        const route = useRoute();
-        // Try to get URI from route query first
-        let listUri = route.query.uri as string;
+  if (!authStore.isLoggedIn || !buttonsPanelRef.value) return;
 
-        // If not available in route, try to get from localStorage as fallback
-        if (!listUri) {
-          listUri = localStorage.getItem('bluelist_current_list_uri') || '';
-        }
+  const router = useRouter();
+  const route = useRoute();
 
-        if (listUri) {
-          buttonsPanelRef.value.displayListPosts(listUri);
-        } else {
-          // If no list URI is provided, redirect to the lists page
-          console.warn(
-            'No list URI provided for list-posts view, redirecting to lists'
-          );
-          const router = useRouter();
-          router.push('/lists');
-        }
-        break;
+  switch (viewType) {
+    case 'lists':
+      buttonsPanelRef.value.displayLists(forceRefresh);
+      break;
+    case 'follows':
+      buttonsPanelRef.value.displayFollows(forceRefresh);
+      break;
+    case 'feed':
+      buttonsPanelRef.value.displayFeed(forceRefresh);
+      break;
+    case 'list-posts':
+    case 'list-members': {
+      let listUri = route.query.uri as string;
+
+      if (!listUri) {
+        listUri = localStorage.getItem('bluelist_current_list_uri') || '';
       }
-      case 'list-members': {
-        const route = useRoute();
-        // Try to get URI from route query first
-        let listUri = route.query.uri as string;
 
-        // If not available in route, try to get from localStorage as fallback
-        if (!listUri) {
-          listUri = localStorage.getItem('bluelist_current_list_uri') || '';
-        }
-
-        if (listUri) {
-          buttonsPanelRef.value.displayListMembers(listUri);
-        } else {
-          // If no list URI is provided, redirect to the lists page
-          console.warn(
-            'No list URI provided for list-members view, redirecting to lists'
-          );
-          const router = useRouter();
-          router.push('/lists');
-        }
-        break;
+      if (listUri) {
+        await (viewType === 'list-posts'
+          ? buttonsPanelRef.value.displayListPosts(listUri)
+          : buttonsPanelRef.value.displayListMembers(listUri));
+      } else {
+        console.warn(
+          `No list URI provided for ${viewType} view, redirecting to lists`
+        );
+        router.push('/lists');
       }
-      default:
-        buttonsPanelRef.value.displayLists(forceRefresh);
+      break;
     }
+    default:
+      buttonsPanelRef.value.displayLists(forceRefresh);
   }
 };
 
@@ -136,38 +115,32 @@ watch(
 const handleRefresh = async (type: string, page?: number) => {
   if (!buttonsPanelRef.value) return;
 
+  const route = useRoute();
+  const forceRefresh = page === undefined;
+
   switch (type) {
     case 'timeline':
       await buttonsPanelRef.value.displayFeed(true);
       break;
-    case 'lists': {
-      const forceRefresh = page === undefined;
+    case 'lists':
       await buttonsPanelRef.value.displayLists(forceRefresh, page);
       break;
-    }
-    case 'follows': {
-      const forceRefresh = page === undefined;
+    case 'follows':
       await buttonsPanelRef.value.displayFollows(forceRefresh, page);
       break;
-    }
-    case 'list-posts': {
-      const route = useRoute();
-      const listUri = route.query.uri as string;
-      if (listUri) {
-        await buttonsPanelRef.value.displayListPosts(listUri, true);
-      }
-      break;
-    }
+    case 'list-posts':
     case 'list-members': {
-      const route = useRoute();
       const listUri = route.query.uri as string;
       if (listUri) {
-        const forceRefresh = page === undefined;
-        await buttonsPanelRef.value.displayListMembers(
-          listUri,
-          forceRefresh,
-          page
-        );
+        if (type === 'list-posts') {
+          await buttonsPanelRef.value.displayListPosts(listUri, true);
+        } else {
+          await buttonsPanelRef.value.displayListMembers(
+            listUri,
+            forceRefresh,
+            page
+          );
+        }
       }
       break;
     }

@@ -93,7 +93,6 @@ const toggleSelected = () => {
  * Handle click on the remove tag - either toggle selection or remove directly
  */
 const handleToggleRemove = (event: MouseEvent) => {
-  // If clicked on the checkbox part, toggleSelected is already called via the @click.stop
   if (!(event.target as HTMLElement).closest('.list-chips__checkbox')) {
     handleRemoveFromList();
   }
@@ -103,7 +102,3 @@ defineExpose({
   isSelected,
 });
 </script>
-
-<style>
-/* We're removing all custom styles here since we want to use the default list-chips__button styling */
-</style>

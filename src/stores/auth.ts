@@ -77,7 +77,6 @@ export const useAuthStore = defineStore('auth', {
           this.setDid(userDid);
           this.login();
 
-          // Set the auth token using the centralized API Service
           AtpService.setAuthToken(accessJwt);
 
           localStorage.setItem('loginData', JSON.stringify({ loginData }));
@@ -130,7 +129,6 @@ export const useAuthStore = defineStore('auth', {
         this.setDid(loginData.did);
         this.login();
 
-        // Set the auth token using the centralized API Service
         AtpService.setAuthToken(loginData.accessJwt);
 
         const jwtExpiry = this.getJwtExpiry(loginData.accessJwt);

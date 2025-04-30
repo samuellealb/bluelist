@@ -1,38 +1,32 @@
 import { defineStore } from 'pinia';
-import type { ListItem, ListMemberItem } from '~/src/types/index';
+import type { ListItem, ListMemberItem } from '~/src/types';
 
 export const useListsStore = defineStore('lists', {
   state: () => ({
     listsJSON: '',
     lists: {
-      currentPage: 1,
-      itemsPerPage: 5,
-      cursor: null as string | null,
-      hasMorePages: false,
       allLists: [] as ListItem[],
+      currentPage: 1,
+      hasMorePages: false,
+      cursor: null as string | null,
       prefetchedPages: 0,
+      itemsPerPage: 10,
       isFetching: false,
     },
     members: {
-      currentPage: 1,
-      itemsPerPage: 20,
-      cursor: null as string | null,
-      hasMorePages: false,
       allMembers: [] as ListMemberItem[],
+      currentPage: 1,
+      hasMorePages: false,
+      cursor: null as string | null,
       prefetchedPages: 0,
+      itemsPerPage: 10,
       isFetching: false,
       activeListUri: null as string | null,
     },
   }),
 
   getters: {
-    getCurrentPageLists: (state) => {
-      const start = (state.lists.currentPage - 1) * state.lists.itemsPerPage;
-      return state.lists.allLists.slice(
-        start,
-        start + state.lists.itemsPerPage
-      );
-    },
+    hasLists: (state) => state.lists.allLists.length > 0,
 
     totalPages: (state) => {
       return state.lists.hasMorePages
@@ -42,7 +36,6 @@ export const useListsStore = defineStore('lists', {
     },
 
     activeList: (state) => {
-      // Find the list that matches the activeListUri
       if (state.members.activeListUri) {
         const foundList = state.lists.allLists.find(
           (list) => list.uri === state.members.activeListUri
@@ -99,7 +92,6 @@ export const useListsStore = defineStore('lists', {
       this.lists.prefetchedPages = 0;
     },
 
-    // Members pagination actions
     setMembersCurrentPage(page: number) {
       this.members.currentPage = page;
     },
@@ -121,11 +113,7 @@ export const useListsStore = defineStore('lists', {
     },
 
     setActiveListUri(uri: string | null) {
-      if (uri !== this.members.activeListUri) {
-        this.members.activeListUri = uri;
-        this.members.allMembers = [];
-        this.resetMembersPagination();
-      }
+      this.members.activeListUri = uri;
     },
 
     setMembers(members: ListMemberItem[]) {
@@ -145,7 +133,6 @@ export const useListsStore = defineStore('lists', {
     },
 
     getMembersTotalPages() {
-      // Calculate total pages based on total fetched items
       return (
         Math.ceil(this.members.allMembers.length / this.members.itemsPerPage) ||
         1
