@@ -38,7 +38,9 @@ const props = defineProps({
     type: String,
     default: 'lists',
     validator: (value: string) =>
-      ['lists', 'follows', 'feed', 'list-posts'].includes(value),
+      ['lists', 'follows', 'feed', 'list-posts', 'list-members'].includes(
+        value
+      ),
   },
 });
 
@@ -75,6 +77,28 @@ const loadView = async (viewType: string, forceRefresh = false) => {
           // If no list URI is provided, redirect to the lists page
           console.warn(
             'No list URI provided for list-posts view, redirecting to lists'
+          );
+          const router = useRouter();
+          router.push('/lists');
+        }
+        break;
+      }
+      case 'list-members': {
+        const route = useRoute();
+        // Try to get URI from route query first
+        let listUri = route.query.uri as string;
+
+        // If not available in route, try to get from localStorage as fallback
+        if (!listUri) {
+          listUri = localStorage.getItem('bluelist_current_list_uri') || '';
+        }
+
+        if (listUri) {
+          buttonsPanelRef.value.displayListMembers(listUri);
+        } else {
+          // If no list URI is provided, redirect to the lists page
+          console.warn(
+            'No list URI provided for list-members view, redirecting to lists'
           );
           const router = useRouter();
           router.push('/lists');
@@ -131,6 +155,19 @@ const handleRefresh = async (type: string, page?: number) => {
       const listUri = route.query.uri as string;
       if (listUri) {
         await buttonsPanelRef.value.displayListPosts(listUri, true);
+      }
+      break;
+    }
+    case 'list-members': {
+      const route = useRoute();
+      const listUri = route.query.uri as string;
+      if (listUri) {
+        const forceRefresh = page === undefined;
+        await buttonsPanelRef.value.displayListMembers(
+          listUri,
+          forceRefresh,
+          page
+        );
       }
       break;
     }

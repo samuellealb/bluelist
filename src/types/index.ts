@@ -43,7 +43,14 @@ export interface SuggestionItem {
 }
 
 export interface DataObject {
-  type: 'timeline' | 'lists' | 'follows' | 'error' | 'loading' | 'list-posts';
+  type:
+    | 'timeline'
+    | 'lists'
+    | 'follows'
+    | 'error'
+    | 'loading'
+    | 'list-posts'
+    | 'list-members';
   data:
     | TimelineItem[]
     | ListItem[]
@@ -120,7 +127,14 @@ export interface BskyListItemsResponse {
     subject: {
       did: string;
     };
+    uri?: string;
   }>;
+  cursor?: string;
+  list?: {
+    name: string;
+    description?: string;
+    uri: string;
+  };
 }
 
 export interface BskyTimelineResponse {
@@ -176,7 +190,25 @@ export interface BskyAgent {
         getList: (params: {
           list: string;
           limit: number;
+          cursor?: string;
         }) => Promise<{ data: BskyListItemsResponse }>;
+        getListMembers: (params: {
+          list: string;
+          limit: number;
+          cursor?: string;
+        }) => Promise<{
+          data: {
+            members: Array<{
+              did: string;
+              handle: string;
+              displayName?: string;
+              description?: string;
+              avatar?: string;
+              uri: string;
+            }>;
+            cursor?: string;
+          };
+        }>;
       };
       feed: {
         getListFeed: (params: {
@@ -209,6 +241,15 @@ export interface BskyAgent {
   getTimeline: (params: {
     limit: number;
   }) => Promise<{ data: BskyTimelineResponse }>;
+  getProfile: (params: { actor: string }) => Promise<{
+    data: {
+      did: string;
+      handle: string;
+      displayName?: string;
+      description?: string;
+      avatar?: string;
+    };
+  }>;
   login: (params: {
     identifier: string;
     password: string;
@@ -230,4 +271,13 @@ export interface DetailedResult {
 
 export interface RequestCounts {
   [date: string]: number;
+}
+
+export interface ListMemberItem {
+  did: string;
+  handle: string;
+  name?: string;
+  description?: string;
+  uri: string;
+  avatar?: string;
 }

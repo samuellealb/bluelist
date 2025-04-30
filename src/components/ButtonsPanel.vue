@@ -156,10 +156,42 @@ const displayListPosts = async (listUri: string, _forceRefresh = false) => {
   }
 };
 
+/**
+ * Display members from a specific list with pagination support
+ * @param {string} listUri - The URI of the list to display members from
+ * @param {boolean} [forceRefresh=false] - Whether to force a refresh of the data
+ * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
+ */
+const displayListMembers = async (
+  listUri: string,
+  forceRefresh = false,
+  page?: number
+) => {
+  try {
+    if (!listUri) {
+      throw new Error('List URI is required');
+    }
+
+    // Store the current list URI in localStorage for persistence across navigation
+    if (import.meta.client) {
+      localStorage.setItem('bluelist_current_list_uri', listUri);
+    }
+
+    setLoading();
+    const { getListMembers } = await import('~/src/lib/bskyService');
+    const result = await getListMembers(listUri, page, forceRefresh);
+    uiStore.setDisplayData(result.displayData);
+  } catch (error) {
+    setError(error as Error);
+    console.error('Error displaying list members:', error);
+  }
+};
+
 defineExpose({
   displayFeed,
   displayLists,
   displayFollows,
   displayListPosts,
+  displayListMembers,
 });
 </script>

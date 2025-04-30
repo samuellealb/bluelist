@@ -315,6 +315,38 @@
   background-color: var(--primary-transparent-20);
 }
 
+.data-display__remove-all-button {
+  background-color: var(--error-bg-transparent-10);
+  color: var(--error-text);
+  border: 1px solid var(--error-text);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.data-display__remove-all-button:hover:not(:disabled) {
+  background-color: var(--error-bg-transparent-20);
+  transform: translateY(-1px);
+}
+
+.data-display__remove-all-button:active:not(:disabled) {
+  background-color: var(--error-bg-transparent-30);
+  transform: translateY(1px);
+}
+
+.data-display__remove-all-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.data-display__remove-all-icon {
+  margin-right: 8px;
+}
+
 @media (max-width: 1100px) {
   .data-display__container {
     padding: 8px;

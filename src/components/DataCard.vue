@@ -38,6 +38,20 @@
           </h3>
           <div class="data-card__actions">
             <button
+              class="data-card__action-button data-card__action-button--members"
+              title="View List Members"
+              :disabled="memberCountLoading || memberCount === 0"
+              @click="navigateToListMembers"
+            >
+              <span class="data-card__action-icon">[👥]</span>
+              <span v-if="memberCountLoading" class="data-card__count-loading"
+                >...</span
+              >
+              <span v-else class="data-card__member-count">{{
+                memberCount
+              }}</span>
+            </button>
+            <button
               class="data-card__action-button data-card__action-button--edit"
               title="Edit List"
               @click="setCardState('edit')"
@@ -163,6 +177,7 @@ import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
 import ListForm from '~/src/components/ListForm.vue';
+import { AtpService } from '~/src/lib/AtpService';
 import { deleteList } from '~/src/lib/bskyService';
 import type {
   DataObject,
@@ -170,11 +185,14 @@ import type {
   ListItem,
   FollowItem,
 } from '~/src/types/index';
+import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
 
 defineOptions({
   name: 'DataCard',
 });
 
+const router = useRouter();
 const suggestionsStore = useSuggestionsStore();
 
 const props = defineProps<{
@@ -194,6 +212,8 @@ const emit = defineEmits<{
 
 const isDeleting = ref(false);
 const cardState = ref<'normal' | 'edit' | 'delete'>('normal');
+const memberCount = ref(0);
+const memberCountLoading = ref(true);
 
 const timelineItem = computed(() => {
   if (props.item.type === 'timeline' && props.item.data[props.index]) {
@@ -313,12 +333,56 @@ const navigateToListPosts = () => {
   // Store the URI in localStorage as a fallback mechanism
   localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
 
-  const router = useRouter();
   router.push({
     path: '/list-posts',
     query: { uri: listItem.value.uri },
   });
 };
+
+/**
+ * Navigate to the list members view
+ */
+const navigateToListMembers = () => {
+  if (!listItem.value || !listItem.value.uri) return;
+
+  // Store the URI in localStorage as a fallback mechanism
+  localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
+
+  router.push({
+    path: '/list-members',
+    query: { uri: listItem.value.uri },
+  });
+};
+
+/**
+ * Fetch the number of members in this list
+ */
+const fetchMemberCount = async () => {
+  if (!listItem.value || !listItem.value.uri) return;
+
+  memberCountLoading.value = true;
+  try {
+    const agent = AtpService.getAgent();
+    const { data } = await agent.app.bsky.graph.getList({
+      list: listItem.value.uri,
+      limit: 100,
+    });
+
+    memberCount.value = data.items.length;
+  } catch (error) {
+    console.error('Error fetching list member count:', error);
+    memberCount.value = 0;
+  } finally {
+    memberCountLoading.value = false;
+  }
+};
+
+// Load member count when the component is mounted
+onMounted(() => {
+  if (listItem.value) {
+    fetchMemberCount();
+  }
+});
 
 defineExpose({
   followEnabledLists,

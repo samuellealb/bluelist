@@ -8,6 +8,7 @@ import type {
   FollowsStore,
   ListsStore,
   BskyAgent,
+  ListMemberItem,
 } from '~/src/types/index';
 
 /**
@@ -855,4 +856,414 @@ export const deleteList = async (
     console.error('Error deleting list:', error);
     throw new Error(`Failed to delete list: ${(error as Error).message}`);
   }
+};
+
+/**
+ * Removes a user from a list
+ * @param {string} itemUri - The URI of the list item to remove
+ * @returns {Promise<{success: boolean, message: string}>} - Object containing a success flag and message
+ * @throws {Error} - When user is not logged in, token has expired, or API request fails
+ */
+export const removeUserFromList = async (
+  itemUri: string
+): Promise<{ success: boolean; message: string }> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    // Extract record ID from URI
+    const parts = itemUri.split('/');
+    const rkey = parts[parts.length - 1];
+
+    const agent = AtpService.getAgent();
+    await agent.com.atproto.repo.deleteRecord({
+      repo: authStore.did,
+      collection: 'app.bsky.graph.listitem',
+      rkey,
+    });
+
+    return {
+      success: true,
+      message: 'User successfully removed from list',
+    };
+  } catch (error) {
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+
+    console.error('Error removing user from list:', error);
+    throw new Error(`Failed to remove from list: ${(error as Error).message}`);
+  }
+};
+
+/**
+ * Removes multiple users from a list in batch
+ * @param {Array<string>} itemUris - Array of list item URIs to remove
+ * @returns {Promise<Array<{itemUri: string, success: boolean, message: string}>>} - An array of results for each operation
+ * @throws {Error} - When user is not logged in
+ */
+export const removeUsersFromList = async (
+  itemUris: Array<string>
+): Promise<
+  Array<{
+    itemUri: string;
+    success: boolean;
+    message: string;
+  }>
+> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  const results: Array<{
+    itemUri: string;
+    success: boolean;
+    message: string;
+  }> = [];
+
+  for (const itemUri of itemUris) {
+    try {
+      // Extract record ID from URI
+      const parts = itemUri.split('/');
+      const rkey = parts[parts.length - 1];
+
+      const agent = AtpService.getAgent();
+      await agent.com.atproto.repo.deleteRecord({
+        repo: authStore.did,
+        collection: 'app.bsky.graph.listitem',
+        rkey,
+      });
+
+      results.push({
+        itemUri,
+        success: true,
+        message: 'User successfully removed from list',
+      });
+    } catch (error) {
+      if ((error as Error).message === 'Token has expired') {
+        authStore.handleSessionExpired();
+      }
+
+      results.push({
+        itemUri,
+        success: false,
+        message: `Failed to remove from list: ${(error as Error).message}`,
+      });
+
+      console.error('Error removing user from list:', error);
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Fetches all members (profiles) from a specified list with pagination support
+ * @param {string} listUri - The URI of the list to fetch members from
+ * @param {number} [page] - Optional page number to fetch (defaults to current page in state)
+ * @param {boolean} [refresh=false] - Whether to refresh and start from the first page
+ * @param {number} [limit=20] - The maximum number of members to fetch per request
+ * @returns {Promise<{displayData: DataObject, membersJSON: string}>} - Object containing formatted list members data and raw JSON
+ * @throws {Error} - When user is not logged in, token has expired, or there's an error fetching the list members
+ */
+export const getListMembers = async (
+  listUri: string,
+  page?: number,
+  refresh: boolean = false,
+  limit: number = 20
+): Promise<{
+  displayData: DataObject;
+  membersJSON: string;
+}> => {
+  const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
+  const uiStore = useUiStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    // If the list URI is different from the active list, reset members data and set the new active list
+    listsStore.setActiveListUri(listUri);
+
+    if (refresh) {
+      listsStore.resetAllMembersData();
+      listsStore.setActiveListUri(listUri);
+    }
+
+    const requestedPage = page || listsStore.members.currentPage;
+    const maxAvailablePage = Math.max(
+      1,
+      Math.ceil(
+        listsStore.members.allMembers.length / listsStore.members.itemsPerPage
+      )
+    );
+
+    // Check if we need to fetch more data
+    const needsMoreData =
+      (requestedPage > maxAvailablePage && !!listsStore.members.cursor) ||
+      (refresh && listsStore.members.allMembers.length === 0);
+
+    // Return cached data if available and not forcing refresh
+    if (
+      !needsMoreData &&
+      !refresh &&
+      listsStore.members.allMembers.length > 0
+    ) {
+      const validPage = Math.min(
+        requestedPage,
+        Math.ceil(
+          listsStore.members.allMembers.length / listsStore.members.itemsPerPage
+        )
+      );
+
+      listsStore.setMembersCurrentPage(validPage);
+      const pageData = getCurrentMembersPageData(
+        validPage,
+        listUri,
+        listsStore
+      );
+
+      uiStore.setDisplayData(pageData.displayData);
+      return pageData;
+    }
+
+    if (listsStore.members.isFetching && !refresh) {
+      console.info('Already fetching list members data, will wait');
+      throw new Error('Already fetching list members data');
+    }
+
+    listsStore.setMembersIsFetching(true);
+
+    try {
+      const agent = AtpService.getBskyAgent();
+
+      // Get list details for title
+      // const listDetails = await agent.app.bsky.graph.getList({
+      //   list: listUri,
+      //   limit: 1,
+      // });
+
+      // const listName = listDetails.data.list?.name || 'Unknown List';
+      // const listDescription = listDetails.data.list?.description || '';
+
+      // If we're starting fresh (refresh or first load)
+      if (listsStore.members.allMembers.length === 0 || refresh) {
+        const firstBatch = await fetchMembersBatch(null, listUri, agent, limit);
+        listsStore.setMembers(firstBatch.members);
+        listsStore.setMembersPrefetchedPages(1);
+        listsStore.setMembersCursor(firstBatch.cursor);
+        listsStore.setMembersHasMorePages(!!firstBatch.cursor);
+      }
+      // Otherwise, if we need more data (for a later page)
+      else if (needsMoreData) {
+        const newBatch = await fetchMembersBatch(
+          listsStore.members.cursor,
+          listUri,
+          agent,
+          limit
+        );
+
+        if (newBatch.members.length > 0) {
+          listsStore.addMembers(newBatch.members);
+          listsStore.setMembersPrefetchedPages(
+            listsStore.members.prefetchedPages + 1
+          );
+          listsStore.setMembersCursor(newBatch.cursor);
+          listsStore.setMembersHasMorePages(!!newBatch.cursor);
+
+          const newMaxAvailablePage = Math.ceil(
+            listsStore.members.allMembers.length /
+              listsStore.members.itemsPerPage
+          );
+
+          // If we still need more pages, recursively call getListMembers
+          if (
+            requestedPage > newMaxAvailablePage &&
+            listsStore.members.cursor
+          ) {
+            return await getListMembers(listUri, requestedPage, false, limit);
+          }
+        } else {
+          listsStore.setMembersHasMorePages(false);
+          listsStore.setMembersCursor(null);
+        }
+      }
+
+      const validPage = Math.min(
+        requestedPage,
+        Math.ceil(
+          listsStore.members.allMembers.length / listsStore.members.itemsPerPage
+        )
+      );
+
+      if (validPage !== requestedPage) {
+        console.log(
+          `Requested page ${requestedPage} is out of bounds, using page ${validPage} instead`
+        );
+      }
+
+      listsStore.setMembersCurrentPage(validPage);
+      const pageData = getCurrentMembersPageData(
+        validPage,
+        listUri,
+        listsStore
+      );
+
+      uiStore.setDisplayData(pageData.displayData);
+      return pageData;
+    } finally {
+      listsStore.setMembersIsFetching(false);
+    }
+  } catch (error) {
+    listsStore.setMembersIsFetching(false);
+    if ((error as Error).message === 'Token has expired') {
+      authStore.handleSessionExpired();
+    }
+    console.error('Error fetching list members:', error);
+    throw new Error('Error fetching list members');
+  }
+};
+
+/**
+ * Helper function to fetch a single batch of members from the API
+ * @param {string|null} cursor - Optional cursor for pagination
+ * @param {string} listUri - The URI of the list
+ * @param {BskyAgent} agent - The API agent
+ * @param {number} limit - The maximum number of members to fetch per request
+ * @returns {Promise<{members: ListMemberItem[], cursor: string|null}>} - Object containing members data and next cursor
+ * @throws {Error} - When API request fails
+ */
+const fetchMembersBatch = async (
+  cursor: string | null,
+  listUri: string,
+  agent: BskyAgent,
+  limit: number
+): Promise<{
+  members: ListMemberItem[];
+  cursor: string | null;
+}> => {
+  const apiParams: { list: string; limit: number; cursor?: string } = {
+    list: listUri,
+    limit,
+  };
+
+  if (cursor) {
+    apiParams.cursor = cursor;
+  }
+
+  try {
+    // First, fetch the list items
+    const { data } = await agent.app.bsky.graph.getList(apiParams);
+
+    // Create an array to store the members with proper types
+    const members: ListMemberItem[] = [];
+
+    // Process each list item
+    for (const item of data.items) {
+      if (!item.subject?.did) {
+        continue; // Skip items without a valid subject DID
+      }
+
+      // We need to fetch the full profile for each member since the list items only contain DIDs
+      try {
+        const profileResponse = await agent.getProfile({
+          actor: item.subject.did,
+        });
+        const profile = profileResponse.data;
+
+        // Ensure we have a valid URI - required by ListMemberItem
+        const memberUri =
+          item.uri ||
+          `at://${profile.did}/app.bsky.graph.listitem/${Date.now()}`;
+
+        // Create a properly typed member object
+        members.push({
+          did: profile.did,
+          handle: profile.handle,
+          name: profile.displayName,
+          description: profile.description,
+          avatar: profile.avatar,
+          uri: memberUri,
+        });
+      } catch (error) {
+        // If profile fetch fails, create a minimal valid member with required fields
+        const fallbackUri =
+          item.uri ||
+          `at://${item.subject.did}/app.bsky.graph.listitem/${Date.now()}`;
+
+        members.push({
+          did: item.subject.did,
+          handle: item.subject.did, // Use DID as fallback handle when profile fetch fails
+          uri: fallbackUri,
+        });
+
+        console.error(
+          `Failed to fetch profile for ${item.subject.did}:`,
+          error
+        );
+      }
+    }
+
+    return {
+      members,
+      cursor: data.cursor || null,
+    };
+  } catch (error) {
+    console.error('Error fetching list members:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the data for the current page from the prefetched members
+ * @param {number} page - The page number to get
+ * @param {string} listUri - The URI of the list
+ * @param {ListsStore} listsStore - The lists store
+ * @returns {Object} - Object containing formatted members data and JSON for the requested page
+ * @returns {DataObject} - displayData Formatted members data
+ * @returns {string} - membersJSON JSON string representation of the formatted data
+ */
+const getCurrentMembersPageData = (
+  page: number,
+  listUri: string,
+  listsStore: ListsStore
+) => {
+  const startIndex = (page - 1) * listsStore.members.itemsPerPage;
+  const endIndex = startIndex + listsStore.members.itemsPerPage;
+  const pageMembers = listsStore.members.allMembers.slice(startIndex, endIndex);
+
+  const membersData = {
+    type: 'list-members',
+    data: pageMembers,
+    listInfo: {
+      name: listsStore.activeList.name,
+      description: listsStore.activeList.description,
+      uri: listUri,
+    },
+    pagination: {
+      currentPage: page,
+      hasMorePages:
+        listsStore.members.hasMorePages ||
+        endIndex < listsStore.members.allMembers.length,
+      totalPages:
+        Math.ceil(
+          listsStore.members.allMembers.length / listsStore.members.itemsPerPage
+        ) + (listsStore.members.hasMorePages ? 1 : 0),
+      totalPrefetched: listsStore.members.allMembers.length,
+    },
+  };
+
+  const jsonData = JSON.stringify(membersData);
+
+  return {
+    displayData: membersData as DataObject,
+    membersJSON: jsonData,
+  };
 };

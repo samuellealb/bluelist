@@ -44,7 +44,10 @@
       <button
         class="pagination__button"
         :disabled="
-          isLastPage || isLoading || suggestionsStore.isProcessingSuggestions
+          isLoading ||
+          suggestionsStore.isProcessingSuggestions ||
+          currentPage === lastPage ||
+          totalPages < 2
         "
         title="Skip to last loaded page"
         @click="handlePageChange(lastPage)"
@@ -87,12 +90,23 @@ const emit = defineEmits<{
 const lastPage = computed(() => {
   if (props.currentPage === undefined) return 1;
 
-  if (followsStore.follows.currentPage === props.currentPage) {
+  if (props.dataType === 'list-members') {
+    // For list-members view
+    if (!listsStore.members.allMembers.length) return 1;
+    return Math.max(
+      Math.ceil(
+        listsStore.members.allMembers.length / listsStore.members.itemsPerPage
+      ),
+      props.totalPages
+    );
+  } else if (followsStore.follows.currentPage === props.currentPage) {
+    // For follows view
     if (!followsStore.follows.allFollows.length) return 1;
     return Math.ceil(
       followsStore.follows.allFollows.length / followsStore.follows.itemsPerPage
     );
   } else if (listsStore.lists.currentPage === props.currentPage) {
+    // For lists view
     if (!listsStore.lists.allLists.length) return 1;
     return Math.ceil(
       listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
@@ -102,12 +116,10 @@ const lastPage = computed(() => {
   return props.totalPages || 1;
 });
 
-const isLastPage = computed(() => {
-  return props.currentPage >= lastPage.value || !props.hasMorePages;
-});
-
 const typeLabel = computed(() => {
-  return props.dataType === 'follows' ? 'profiles' : 'lists';
+  if (props.dataType === 'follows') return 'profiles';
+  if (props.dataType === 'list-members') return 'members';
+  return 'lists';
 });
 
 const handlePageChange = (newPage: number) => {

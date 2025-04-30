@@ -50,16 +50,8 @@
 
       <Pagination
         v-if="hasData"
-        :current-page="
-          dataObject.type === 'follows'
-            ? followsStore.follows.currentPage
-            : listsStore.lists.currentPage
-        "
-        :total-pages="
-          dataObject.type === 'follows'
-            ? followsStore.follows.prefetchedPages
-            : listsStore.lists.prefetchedPages
-        "
+        :current-page="getPaginationCurrentPage(dataObject.type)"
+        :total-pages="getPaginationTotalPages(dataObject.type)"
         :data-type="dataObject.type"
         :is-loading="isLoading"
         :has-more-pages="!!dataObject.pagination?.hasMorePages"
@@ -142,6 +134,36 @@
       </div>
 
       <div
+        v-if="
+          dataObject.type === 'list-members' && dataObject.data.length !== 0
+        "
+        class="data-display__action-buttons"
+      >
+        <button
+          class="data-display__toggle-all-button"
+          title="Toggle all members between enabled and disabled states"
+          :disabled="isLoading || isBatchRemoving"
+          @click="handleToggleSelectedMembers"
+        >
+          <span class="data-display__toggle-all-icon">[↕]</span>
+          <span class="data-display__toggle-all-text"> Toggle All </span>
+        </button>
+        <button
+          class="data-display__remove-all-button"
+          title="Remove all members with enabled checkboxes from this list"
+          :disabled="
+            isLoading || isBatchRemoving || selectedMemberUris.length < 2
+          "
+          @click="handleBatchRemoveMembers"
+        >
+          <span class="data-display__remove-all-icon">[-]</span>
+          <span class="data-display__remove-all-text">
+            {{ isBatchRemoving ? 'Processing...' : 'Remove All' }}
+          </span>
+        </button>
+      </div>
+
+      <div
         v-if="acceptAllResult || detailedResults.length > 0"
         class="data-display__feedback-container"
       >
@@ -187,8 +209,21 @@
         </div>
       </div>
       <template v-if="dataObject.data && dataObject.data.length > 0">
+        <template v-if="dataObject.type === 'list-members'">
+          <MemberCard
+            v-for="(item, index) in typedListMembers"
+            ref="memberCardRefs"
+            :key="index"
+            :item="item"
+            @remove-success="handleMemberRemoved"
+            @remove-error="handleMemberRemoveError"
+            @toggle-selected="handleMemberToggleSelected"
+          />
+        </template>
+
         <DataCard
           v-for="(_, index) in dataObject.data"
+          v-else
           ref="dataCardRefs"
           :key="index"
           :item="dataObject"
@@ -200,16 +235,8 @@
 
         <Pagination
           v-if="hasData"
-          :current-page="
-            dataObject.type === 'follows'
-              ? followsStore.follows.currentPage
-              : listsStore.lists.currentPage
-          "
-          :total-pages="
-            dataObject.type === 'follows'
-              ? followsStore.follows.prefetchedPages
-              : listsStore.lists.prefetchedPages
-          "
+          :current-page="getPaginationCurrentPage(dataObject.type)"
+          :total-pages="getPaginationTotalPages(dataObject.type)"
           :data-type="dataObject.type"
           :is-loading="isLoading"
           :has-more-pages="!!dataObject.pagination?.hasMorePages"
@@ -314,6 +341,7 @@ import { useListsStore } from '~/src/stores/lists';
 import { useSuggestionsStore } from '~/src/stores/suggestions';
 import '~/src/assets/styles/data-display.css';
 import DataCard from '~/src/components/DataCard.vue';
+import MemberCard from '~/src/components/MemberCard.vue';
 import Pagination from '~/src/components/Pagination.vue';
 import ListForm from '~/src/components/ListForm.vue';
 import type {
@@ -322,6 +350,7 @@ import type {
   FollowItem,
   SuggestionItem,
   DetailedResult,
+  ListMemberItem,
 } from '~/src/types/index';
 import { addUserToList } from '~/src/lib/bskyService';
 import { curateUserLists } from '~/src/lib/openai';
@@ -354,7 +383,8 @@ const hasData = computed(() => {
   return (
     dataObject.value &&
     (dataObject.value.type === 'follows' ||
-      dataObject.value.type === 'lists') &&
+      dataObject.value.type === 'lists' ||
+      dataObject.value.type === 'list-members') &&
     dataObject.value.data &&
     dataObject.value.data.length > 0
   );
@@ -397,10 +427,15 @@ const suggestionsButtonLabel = computed(() => {
 const dataCardRefs = ref<
   ComponentPublicInstance<InstanceType<typeof DataCard>>[]
 >([]);
+const memberCardRefs = ref<
+  ComponentPublicInstance<InstanceType<typeof MemberCard>>[]
+>([]);
 const isAcceptingAll = ref(false);
 const acceptAllResult = ref('');
 const acceptAllError = ref(false);
 const detailedResults = ref<DetailedResult[]>([]);
+const selectedMemberUris = ref<string[]>([]);
+const isBatchRemoving = ref(false);
 
 /**
  * Toggle all list options across all follow profile cards
@@ -536,13 +571,21 @@ const getDataTitle = (type: string): string => {
         return `List: ${dataObject.value.listInfo.name}`;
       }
       return 'List Posts';
+    case 'list-members':
+      if (dataObject.value?.listInfo?.name) {
+        return `Members: ${dataObject.value.listInfo.name}`;
+      }
+      return 'List Members';
     default:
       return 'Data';
   }
 };
 
 const showBackButton = computed(() => {
-  return dataObject.value?.type === 'list-posts';
+  return (
+    dataObject.value?.type === 'list-posts' ||
+    dataObject.value?.type === 'list-members'
+  );
 });
 
 const navigateBackToLists = () => {
@@ -567,7 +610,8 @@ const dismissAllMessages = () => {
 const handlePageChange = (newPage: number) => {
   if (
     dataObject.value?.type === 'follows' ||
-    dataObject.value?.type === 'lists'
+    dataObject.value?.type === 'lists' ||
+    dataObject.value?.type === 'list-members'
   ) {
     emit('refresh', dataObject.value.type, newPage);
   }
@@ -859,5 +903,189 @@ const handleCreateList = () => {
   };
   const uiStore = useUiStore();
   uiStore.setDisplayData(tempData as DataObject);
+};
+
+/**
+ * Toggle selection for a member item
+ */
+const handleMemberToggleSelected = (selected: boolean, itemUri: string) => {
+  if (selected) {
+    // Add to selected members if not already there
+    if (!selectedMemberUris.value.includes(itemUri)) {
+      selectedMemberUris.value.push(itemUri);
+    }
+  } else {
+    // Remove from selected members
+    selectedMemberUris.value = selectedMemberUris.value.filter(
+      (uri) => uri !== itemUri
+    );
+  }
+};
+
+/**
+ * Toggle all members selection state
+ */
+const handleToggleSelectedMembers = () => {
+  if (!memberCardRefs.value.length) return;
+
+  // Instead of checking if all are selected and setting all to the same state,
+  // toggle each member's selection individually
+  for (const cardRef of memberCardRefs.value) {
+    if (!cardRef) continue;
+
+    // Toggle the current selection state
+    const newState = !cardRef.isSelected;
+    cardRef.isSelected = newState;
+    handleMemberToggleSelected(newState, cardRef.$props.item.uri);
+  }
+};
+
+/**
+ * Reset member selection state
+ */
+const resetMemberSelection = () => {
+  selectedMemberUris.value = [];
+  // Reset selection state in member cards if they exist
+  if (memberCardRefs.value && memberCardRefs.value.length > 0) {
+    for (const cardRef of memberCardRefs.value) {
+      if (cardRef) {
+        cardRef.isSelected = false;
+      }
+    }
+  }
+};
+
+// Watch for changes in data object to reset member selection
+watch(
+  () => props.data,
+  () => {
+    if (props.data?.type === 'list-members') {
+      resetMemberSelection();
+    }
+  },
+  { deep: true }
+);
+
+/**
+ * Remove member from list
+ */
+const handleMemberRemoved = () => {
+  // Refresh the list members view to show the updated list
+  if (dataObject.value?.type === 'list-members') {
+    handleRefresh();
+  }
+};
+
+/**
+ * Handle error when removing member from list
+ */
+const handleMemberRemoveError = (error: string) => {
+  acceptAllResult.value = `Error removing member from list: ${error}`;
+  acceptAllError.value = true;
+};
+
+/**
+ * Remove all selected members from the list
+ */
+const handleBatchRemoveMembers = async () => {
+  if (isBatchRemoving.value || selectedMemberUris.value.length === 0) return;
+
+  isBatchRemoving.value = true;
+  acceptAllResult.value = '';
+  acceptAllError.value = false;
+  detailedResults.value = [];
+
+  try {
+    const { removeUsersFromList } = await import('~/src/lib/bskyService');
+    const results = await removeUsersFromList(selectedMemberUris.value);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const result of results) {
+      if (result.success) {
+        successCount++;
+      } else {
+        errorCount++;
+      }
+    }
+
+    if (successCount > 0 && errorCount === 0) {
+      acceptAllResult.value = `Successfully removed ${successCount} members from the list`;
+      acceptAllError.value = false;
+      // Refresh the view to show the updated list
+      handleRefresh();
+    } else if (successCount > 0 && errorCount > 0) {
+      acceptAllResult.value = `Removed ${successCount} members with ${errorCount} errors`;
+      acceptAllError.value = true;
+      handleRefresh();
+    } else if (successCount === 0 && errorCount > 0) {
+      acceptAllResult.value = `Failed to remove any members. ${errorCount} errors occurred.`;
+      acceptAllError.value = true;
+    } else {
+      acceptAllResult.value = 'No members were removed';
+      acceptAllError.value = false;
+    }
+
+    // Clear the selection
+    selectedMemberUris.value = [];
+  } catch (error) {
+    console.error('Error removing members in batch:', error);
+    acceptAllResult.value = `Error removing members: ${
+      (error as Error).message
+    }`;
+    acceptAllError.value = true;
+  } finally {
+    isBatchRemoving.value = false;
+  }
+};
+
+/**
+ * Properly typed list members for use with MemberCard component
+ */
+const typedListMembers = computed(() => {
+  if (dataObject.value?.type === 'list-members' && dataObject.value.data) {
+    // Type assertion needed because TypeScript doesn't know that
+    // when type === 'list-members', the data has the ListMemberItem structure
+    return (dataObject.value.data as ListMemberItem[]).map((item) => ({
+      did: item.did,
+      handle: item.handle,
+      name: item.name,
+      description: item.description,
+      uri: item.uri,
+      avatar: item.avatar,
+    }));
+  }
+  return [];
+});
+
+/**
+ * Helper function to get the current page for pagination
+ * @param dataType The type of data being displayed
+ */
+const getPaginationCurrentPage = (dataType: string): number => {
+  if (dataType === 'follows') {
+    return followsStore.follows.currentPage;
+  } else if (dataType === 'lists') {
+    return listsStore.lists.currentPage;
+  } else if (dataType === 'list-members') {
+    return listsStore.members.currentPage;
+  }
+  return 1;
+};
+
+/**
+ * Helper function to get the total pages for pagination
+ * @param dataType The type of data being displayed
+ */
+const getPaginationTotalPages = (dataType: string): number => {
+  if (dataType === 'follows') {
+    return followsStore.follows.prefetchedPages;
+  } else if (dataType === 'lists') {
+    return listsStore.lists.prefetchedPages;
+  } else if (dataType === 'list-members') {
+    return listsStore.getMembersTotalPages();
+  }
+  return 1;
 };
 </script>
