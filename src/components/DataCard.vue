@@ -343,7 +343,6 @@ const navigateToListMembers = () => {
 const fetchMemberCount = async () => {
   if (!listItem.value || !listItem.value.uri) return;
 
-  // Check if we already have a cached count for this list
   const cachedCount = listsStore.getMemberCount(listItem.value.uri);
   if (cachedCount > 0) {
     memberCount.value = cachedCount;
@@ -361,7 +360,6 @@ const fetchMemberCount = async () => {
 
     const count = data.items.length;
     memberCount.value = count;
-    // Store the count in the cache for future use
     listsStore.setMemberCount(listItem.value.uri, count);
   } catch (error) {
     console.error('Error fetching list member count:', error);
@@ -371,7 +369,6 @@ const fetchMemberCount = async () => {
   }
 };
 
-// Watch for changes to the listItem and fetch member count if needed
 watch(
   () => listItem.value?.uri,
   (newUri) => {
@@ -391,6 +388,6 @@ defineExpose({
   followEnabledLists,
   toggleFollowAllLists,
   listItem,
-  fetchMemberCount, // expose this method so it can be called from outside
+  fetchMemberCount,
 });
 </script>

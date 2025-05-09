@@ -82,14 +82,11 @@ const displayFeed = async (forceRefresh = false) => {
  */
 const displayLists = async (forceRefresh = false, page?: number) => {
   try {
-    // Check if members cache is dirty (profiles added/removed from lists)
-    // and force a refresh if needed
     const shouldForceRefresh = forceRefresh || listsStore.membersCacheDirty;
 
     if (shouldForceRefresh) {
       listsStore.setListsJSON('');
       listsStore.resetPagination();
-      // Reset the dirty flag after forcing refresh
       if (listsStore.membersCacheDirty) {
         listsStore.setMembersCacheDirty(false);
       }
@@ -98,7 +95,6 @@ const displayLists = async (forceRefresh = false, page?: number) => {
     const needsRefresh = shouldForceRefresh || !listsStore.listsJSON;
 
     if (!needsRefresh && !page && listsStore.listsJSON) {
-      // When using cached data, just set it directly
       uiStore.setDisplayData(JSON.parse(listsStore.listsJSON));
       return;
     }

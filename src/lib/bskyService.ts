@@ -52,7 +52,6 @@ export const getTimeline = async (): Promise<{
 
     const jsonData = JSON.stringify(timelineData);
 
-    // Instead of separate state updates, perform them in one operation
     uiStore.$patch({
       timelineJSON: jsonData,
       displayData: timelineData as DataObject,
@@ -190,7 +189,6 @@ export const getFollows = async (
 
       const pageData = getCurrentFollowsPageData(validPage, followsStore);
 
-      // Consolidate state updates
       uiStore.setDisplayData(pageData.displayData);
       followsStore.setUsersJSON(pageData.usersJSON);
 
@@ -400,7 +398,6 @@ export const getLists = async (
 
       const pageData = getCurrentListsPageData(validPage, listsStore);
 
-      // Consolidate state updates
       uiStore.setDisplayData(pageData.displayData);
       listsStore.setListsJSON(pageData.listsJSON);
 
@@ -535,7 +532,6 @@ export const getListPosts = async (
       indexedAt: item.post.indexedAt,
     }));
 
-    // Get list details for title
     const listDetails = await agent.app.bsky.graph.getList({
       list: listUri,
       limit: 1,
@@ -610,7 +606,6 @@ export const addUserToList = async (
       },
     });
 
-    // Set dirty flag after successful operation
     listsStore.setMembersCacheDirty(true);
 
     return 'User successfully added to list';
@@ -704,7 +699,6 @@ export const addUsersToLists = async (
           message: 'User successfully added to list',
         });
 
-        // Mark the members cache as dirty when a user is successfully added
         listsStore.setMembersCacheDirty(true);
       } catch (error) {
         if ((error as Error).message === 'Token has expired') {
@@ -891,7 +885,6 @@ export const removeUserFromList = async (
       rkey,
     });
 
-    // Set dirty flag after successful removal
     listsStore.setMembersCacheDirty(true);
 
     return {
@@ -954,7 +947,6 @@ export const removeUsersFromList = async (
         message: 'User successfully removed from list',
       });
 
-      // Mark the members cache as dirty if at least one removal succeeded
       listsStore.setMembersCacheDirty(true);
     } catch (error) {
       if ((error as Error).message === 'Token has expired') {
@@ -1001,7 +993,6 @@ export const getListMembers = async (
   }
 
   try {
-    // If the list URI is different from the active list, reset members data and set the new active list
     listsStore.setActiveListUri(listUri);
 
     if (refresh) {
@@ -1017,12 +1008,10 @@ export const getListMembers = async (
       )
     );
 
-    // Check if we need to fetch more data
     const needsMoreData =
       (requestedPage > maxAvailablePage && !!listsStore.members.cursor) ||
       (refresh && listsStore.members.allMembers.length === 0);
 
-    // Return cached data if available and not forcing refresh
     if (
       !needsMoreData &&
       !refresh &&
@@ -1062,9 +1051,7 @@ export const getListMembers = async (
         listsStore.setMembersPrefetchedPages(1);
         listsStore.setMembersCursor(firstBatch.cursor);
         listsStore.setMembersHasMorePages(!!firstBatch.cursor);
-      }
-      // Otherwise, if we need more data (for a later page)
-      else if (needsMoreData) {
+      } else if (needsMoreData) {
         const newBatch = await fetchMembersBatch(
           listsStore.members.cursor,
           listUri,
@@ -1085,7 +1072,6 @@ export const getListMembers = async (
               listsStore.members.itemsPerPage
           );
 
-          // If we still need more pages, recursively call getListMembers
           if (
             requestedPage > newMaxAvailablePage &&
             listsStore.members.cursor
@@ -1161,31 +1147,25 @@ const fetchMembersBatch = async (
   }
 
   try {
-    // First, fetch the list items
     const { data } = await agent.app.bsky.graph.getList(apiParams);
 
-    // Create an array to store the members with proper types
     const members: ListMemberItem[] = [];
 
-    // Process each list item
     for (const item of data.items) {
       if (!item.subject?.did) {
-        continue; // Skip items without a valid subject DID
+        continue;
       }
 
-      // We need to fetch the full profile for each member since the list items only contain DIDs
       try {
         const profileResponse = await agent.getProfile({
           actor: item.subject.did,
         });
         const profile = profileResponse.data;
 
-        // Ensure we have a valid URI - required by ListMemberItem
         const memberUri =
           item.uri ||
           `at://${profile.did}/app.bsky.graph.listitem/${Date.now()}`;
 
-        // Create a properly typed member object
         members.push({
           did: profile.did,
           handle: profile.handle,
@@ -1195,14 +1175,13 @@ const fetchMembersBatch = async (
           uri: memberUri,
         });
       } catch (error) {
-        // If profile fetch fails, create a minimal valid member with required fields
         const fallbackUri =
           item.uri ||
           `at://${item.subject.did}/app.bsky.graph.listitem/${Date.now()}`;
 
         members.push({
           did: item.subject.did,
-          handle: item.subject.did, // Use DID as fallback handle when profile fetch fails
+          handle: item.subject.did,
           uri: fallbackUri,
         });
 

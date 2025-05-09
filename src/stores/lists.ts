@@ -23,8 +23,8 @@ export const useListsStore = defineStore('lists', {
       isFetching: false,
       activeListUri: null as string | null,
     },
-    membersCacheDirty: false, // Flag to track when members have been added/removed
-    memberCountsCache: {} as Record<string, number>, // Cache for storing member counts by list URI
+    membersCacheDirty: false,
+    memberCountsCache: {} as Record<string, number>,
   }),
 
   getters: {
@@ -156,14 +156,12 @@ export const useListsStore = defineStore('lists', {
 
     setMembersCacheDirty(isDirty: boolean) {
       this.membersCacheDirty = isDirty;
-      // When setting dirty flag to true, we should clear the member counts cache
-      // because the counts might have changed if members were added/removed
+
       if (isDirty) {
         this.memberCountsCache = {};
       }
     },
 
-    // Add new actions for member counts cache
     setMemberCount(listUri: string, count: number) {
       this.memberCountsCache[listUri] = count;
     },
