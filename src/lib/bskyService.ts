@@ -578,6 +578,7 @@ export const addUserToList = async (
   listUri: string
 ): Promise<string> => {
   const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
 
   if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
@@ -608,6 +609,9 @@ export const addUserToList = async (
         createdAt: new Date().toISOString(),
       },
     });
+
+    // Set dirty flag after successful operation
+    listsStore.setMembersCacheDirty(true);
 
     return 'User successfully added to list';
   } catch (error) {
@@ -641,6 +645,7 @@ export const addUsersToLists = async (
   }>
 > => {
   const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
 
   if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
@@ -698,6 +703,9 @@ export const addUsersToLists = async (
           success: true,
           message: 'User successfully added to list',
         });
+
+        // Mark the members cache as dirty when a user is successfully added
+        listsStore.setMembersCacheDirty(true);
       } catch (error) {
         if ((error as Error).message === 'Token has expired') {
           authStore.handleSessionExpired();
@@ -866,6 +874,7 @@ export const removeUserFromList = async (
   itemUri: string
 ): Promise<{ success: boolean; message: string }> => {
   const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
 
   if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
@@ -881,6 +890,9 @@ export const removeUserFromList = async (
       collection: 'app.bsky.graph.listitem',
       rkey,
     });
+
+    // Set dirty flag after successful removal
+    listsStore.setMembersCacheDirty(true);
 
     return {
       success: true,
@@ -912,6 +924,7 @@ export const removeUsersFromList = async (
   }>
 > => {
   const authStore = useAuthStore();
+  const listsStore = useListsStore() as ListsStore;
 
   if (!authStore.isLoggedIn) {
     throw new Error('Please login first');
@@ -940,6 +953,9 @@ export const removeUsersFromList = async (
         success: true,
         message: 'User successfully removed from list',
       });
+
+      // Mark the members cache as dirty if at least one removal succeeded
+      listsStore.setMembersCacheDirty(true);
     } catch (error) {
       if ((error as Error).message === 'Token has expired') {
         authStore.handleSessionExpired();

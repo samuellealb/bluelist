@@ -173,6 +173,7 @@
 
 <script setup lang="ts">
 import { useSuggestionsStore } from '~/src/stores/suggestions';
+import { useListsStore } from '~/src/stores/lists';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
 import ListForm from '~/src/components/ListForm.vue';
@@ -185,7 +186,7 @@ import type {
   FollowItem,
 } from '~/src/types/index';
 import { useRouter } from 'vue-router';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 
 defineOptions({
   name: 'DataCard',
@@ -193,6 +194,7 @@ defineOptions({
 
 const router = useRouter();
 const suggestionsStore = useSuggestionsStore();
+const listsStore = useListsStore();
 
 const props = defineProps<{
   item: DataObject;
@@ -341,6 +343,14 @@ const navigateToListMembers = () => {
 const fetchMemberCount = async () => {
   if (!listItem.value || !listItem.value.uri) return;
 
+  // Check if we already have a cached count for this list
+  const cachedCount = listsStore.getMemberCount(listItem.value.uri);
+  if (cachedCount > 0) {
+    memberCount.value = cachedCount;
+    memberCountLoading.value = false;
+    return;
+  }
+
   memberCountLoading.value = true;
   try {
     const agent = AtpService.getAgent();
@@ -349,7 +359,10 @@ const fetchMemberCount = async () => {
       limit: 100,
     });
 
-    memberCount.value = data.items.length;
+    const count = data.items.length;
+    memberCount.value = count;
+    // Store the count in the cache for future use
+    listsStore.setMemberCount(listItem.value.uri, count);
   } catch (error) {
     console.error('Error fetching list member count:', error);
     memberCount.value = 0;
@@ -357,6 +370,16 @@ const fetchMemberCount = async () => {
     memberCountLoading.value = false;
   }
 };
+
+// Watch for changes to the listItem and fetch member count if needed
+watch(
+  () => listItem.value?.uri,
+  (newUri) => {
+    if (newUri) {
+      fetchMemberCount();
+    }
+  }
+);
 
 onMounted(() => {
   if (listItem.value) {
@@ -368,5 +391,6 @@ defineExpose({
   followEnabledLists,
   toggleFollowAllLists,
   listItem,
+  fetchMemberCount, // expose this method so it can be called from outside
 });
 </script>

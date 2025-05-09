@@ -82,12 +82,23 @@ const displayFeed = async (forceRefresh = false) => {
  */
 const displayLists = async (forceRefresh = false, page?: number) => {
   try {
-    if (forceRefresh) {
+    // Check if members cache is dirty (profiles added/removed from lists)
+    // and force a refresh if needed
+    const shouldForceRefresh = forceRefresh || listsStore.membersCacheDirty;
+
+    if (shouldForceRefresh) {
       listsStore.setListsJSON('');
       listsStore.resetPagination();
+      // Reset the dirty flag after forcing refresh
+      if (listsStore.membersCacheDirty) {
+        listsStore.setMembersCacheDirty(false);
+      }
     }
 
-    if (!forceRefresh && !page && listsStore.listsJSON) {
+    const needsRefresh = shouldForceRefresh || !listsStore.listsJSON;
+
+    if (!needsRefresh && !page && listsStore.listsJSON) {
+      // When using cached data, just set it directly
       uiStore.setDisplayData(JSON.parse(listsStore.listsJSON));
       return;
     }
@@ -95,7 +106,7 @@ const displayLists = async (forceRefresh = false, page?: number) => {
     setLoading();
     const result = await getLists(
       page || listsStore.lists.currentPage,
-      forceRefresh
+      shouldForceRefresh
     );
     uiStore.setDisplayData(result.displayData);
     listsStore.setListsJSON(result.listsJSON);
