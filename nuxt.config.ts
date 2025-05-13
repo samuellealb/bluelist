@@ -17,20 +17,31 @@ export default defineNuxtConfig({
   },
   devServer: {
     https: {
-      key: fs.existsSync(
-        resolve(__dirname, './certs/bluelist-local.blue-key.pem')
-      )
-        ? fs.readFileSync(
-            resolve(__dirname, './certs/bluelist-local.blue-key.pem'),
-            'utf-8'
-          )
-        : undefined,
-      cert: fs.existsSync(resolve(__dirname, './certs/bluelist-local.blue.pem'))
-        ? fs.readFileSync(
-            resolve(__dirname, './certs/bluelist-local.blue.pem'),
-            'utf-8'
-          )
-        : undefined,
+      key: (() => {
+        const keyPath = resolve(
+          __dirname,
+          './certs/bluelist-local.blue-key.pem'
+        );
+        try {
+          return fs.existsSync(keyPath)
+            ? fs.readFileSync(keyPath, 'utf-8')
+            : undefined;
+        } catch (error) {
+          console.warn(`Failed to read SSL key: ${error}`);
+          return undefined;
+        }
+      })(),
+      cert: (() => {
+        const certPath = resolve(__dirname, './certs/bluelist-local.blue.pem');
+        try {
+          return fs.existsSync(certPath)
+            ? fs.readFileSync(certPath, 'utf-8')
+            : undefined;
+        } catch (error) {
+          console.warn(`Failed to read SSL certificate: ${error}`);
+          return undefined;
+        }
+      })(),
     },
     host: 'bluelist-local.blue',
     port: 443,
