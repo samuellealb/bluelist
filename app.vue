@@ -17,8 +17,10 @@ defineOptions({
   name: 'BlueList',
 });
 
-onMounted(async () => {
+onMounted(() => {
   const authStore = useAuthStore();
-  await authStore.checkLoginSession();
+  authStore.checkLoginSession().catch((error) => {
+    console.error('Session check failed:', error);
+  });
 });
 </script>
