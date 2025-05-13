@@ -42,13 +42,17 @@ export const useListsStore = defineStore('lists', {
         const foundList = state.lists.allLists.find(
           (list) => list.uri === state.members.activeListUri
         );
-        return (
-          foundList || {
-            name: 'Unknown List',
+
+        if (foundList) {
+          return foundList;
+        } else {
+          // Using placeholder while loading
+          return {
+            name: 'Loading...',
             description: '',
             uri: state.members.activeListUri,
-          }
-        );
+          };
+        }
       }
       return { name: 'Unknown List', description: '', uri: '' };
     },

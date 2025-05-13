@@ -185,8 +185,9 @@ import type {
   ListItem,
   FollowItem,
 } from '~/src/types/index';
-import { useRouter } from 'vue-router';
+import { useRouter } from '#app';
 import { ref, computed, onMounted, watch } from 'vue';
+import * as slugUtils from '~/src/utils/slug-utils';
 
 defineOptions({
   name: 'DataCard',
@@ -315,11 +316,15 @@ const handleListDeleted = (success: boolean) => {
 const navigateToListPosts = () => {
   if (!listItem.value || !listItem.value.uri) return;
 
+  // Store the URI for backward compatibility
   localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
 
+  // Generate or get a slug for this list
+  const slug = slugUtils.addMapping(listItem.value.uri, listItem.value.name);
+
+  // Navigate to the new URL structure
   router.push({
-    path: '/list-posts',
-    query: { uri: listItem.value.uri },
+    path: `/list/${slug}/posts`,
   });
 };
 
@@ -329,11 +334,15 @@ const navigateToListPosts = () => {
 const navigateToListMembers = () => {
   if (!listItem.value || !listItem.value.uri) return;
 
+  // Store the URI for backward compatibility
   localStorage.setItem('bluelist_current_list_uri', listItem.value.uri);
 
+  // Generate or get a slug for this list
+  const slug = slugUtils.addMapping(listItem.value.uri, listItem.value.name);
+
+  // Navigate to the new URL structure
   router.push({
-    path: '/list-members',
-    query: { uri: listItem.value.uri },
+    path: `/list/${slug}/members`,
   });
 };
 

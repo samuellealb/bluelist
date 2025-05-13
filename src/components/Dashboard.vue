@@ -24,6 +24,8 @@ import { useUiStore } from '~/src/stores/ui';
 import LoginForm from '~/src/components/LoginForm.vue';
 import ButtonsPanel from '~/src/components/ButtonsPanel.vue';
 import DataDisplay from '~/src/components/DataDisplay.vue';
+import { useRouter, useRoute } from '#app';
+import * as slugUtils from '~/src/utils/slug-utils';
 import '~/src/assets/styles/dashboard.css';
 
 defineOptions({
@@ -67,21 +69,73 @@ const loadView = async (viewType: string, forceRefresh = false) => {
       break;
     case 'list-posts':
     case 'list-members': {
-      let listUri = route.query.uri as string;
+      try {
+        // First import the fetchListDetails function
+        const { fetchListDetails } = await import('~/src/lib/bskyService');
 
-      if (!listUri) {
-        listUri = localStorage.getItem('bluelist_current_list_uri') || '';
-      }
+        // Check if we're using the new routing structure
+        if (route.params.slug && typeof route.params.slug === 'string') {
+          const listUri = slugUtils.getUriBySlug(route.params.slug);
+          if (listUri) {
+            // We have a valid URI from the slug, use it
+            localStorage.setItem('bluelist_current_list_uri', listUri);
 
-      if (listUri) {
-        await (viewType === 'list-posts'
-          ? buttonsPanelRef.value.displayListPosts(listUri)
-          : buttonsPanelRef.value.displayListMembers(listUri));
-      } else {
-        console.warn(
-          `No list URI provided for ${viewType} view, redirecting to lists`
-        );
-        router.push('/lists');
+            // Fetch list details first to ensure the title is ready
+            try {
+              await fetchListDetails(listUri);
+            } catch (err) {
+              console.warn('Error pre-fetching list details:', err);
+              // Continue even if fetch fails
+            }
+
+            if (viewType === 'list-posts') {
+              await buttonsPanelRef.value.displayListPosts(listUri);
+            } else {
+              await buttonsPanelRef.value.displayListMembers(
+                listUri,
+                forceRefresh
+              );
+            }
+            return;
+          }
+        }
+
+        // Fall back to legacy approach (query parameters or localStorage)
+        let listUri = route.query.uri as string;
+
+        if (!listUri) {
+          listUri = localStorage.getItem('bluelist_current_list_uri') || '';
+        }
+
+        if (listUri) {
+          // Fetch list details first to ensure the title is ready
+          try {
+            await fetchListDetails(listUri);
+          } catch (err) {
+            console.warn('Error pre-fetching list details:', err);
+            // Continue even if fetch fails
+          }
+
+          if (viewType === 'list-posts') {
+            await buttonsPanelRef.value.displayListPosts(listUri);
+          } else {
+            await buttonsPanelRef.value.displayListMembers(
+              listUri,
+              forceRefresh
+            );
+          }
+        } else {
+          console.warn(
+            `No list URI provided for ${viewType} view, redirecting to lists`
+          );
+          router.push('/lists');
+        }
+      } catch (error) {
+        console.error(`Error loading ${viewType} view:`, error);
+        // If there's an error, we'll try again once after a short delay
+        setTimeout(() => {
+          loadView(viewType, forceRefresh);
+        }, 1000);
       }
       break;
     }
@@ -130,7 +184,21 @@ const handleRefresh = async (type: string, page?: number) => {
       break;
     case 'list-posts':
     case 'list-members': {
-      const listUri = route.query.uri as string;
+      // Check if we're using the new routing structure
+      let listUri: string | undefined;
+
+      if (route.params.slug && typeof route.params.slug === 'string') {
+        listUri = slugUtils.getUriBySlug(route.params.slug);
+      }
+
+      // Fall back to query parameter or localStorage if needed
+      if (!listUri) {
+        listUri =
+          (route.query.uri as string) ||
+          localStorage.getItem('bluelist_current_list_uri') ||
+          undefined;
+      }
+
       if (listUri) {
         if (type === 'list-posts') {
           await buttonsPanelRef.value.displayListPosts(listUri, true);

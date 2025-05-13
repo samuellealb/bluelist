@@ -82,7 +82,11 @@ const displayFeed = async (forceRefresh = false) => {
  */
 const displayLists = async (forceRefresh = false, page?: number) => {
   try {
-    const shouldForceRefresh = forceRefresh || listsStore.membersCacheDirty;
+    // Check if we have too few lists (only one or none) - this could indicate we just came from a single list detail page
+    const hasTooFewLists = listsStore.lists.allLists.length <= 1;
+
+    const shouldForceRefresh =
+      forceRefresh || listsStore.membersCacheDirty || hasTooFewLists;
 
     if (shouldForceRefresh) {
       listsStore.setListsJSON('');
@@ -145,12 +149,17 @@ const displayFollows = async (forceRefresh = false, page?: number) => {
 /**
  * Display posts from a specific list
  * @param {string} listUri - The URI of the list to display posts from
- * @param {boolean} [forceRefresh=false] - Whether to force a refresh of the data
+ * @param {boolean} [_forceRefresh=false] - Whether to force a refresh of the data (unused)
  */
 const displayListPosts = async (listUri: string, _forceRefresh = false) => {
   try {
     if (!listUri) {
       throw new Error('List URI is required');
+    }
+
+    // Store the URI for legacy components and potential slug mapping
+    if (import.meta.client) {
+      localStorage.setItem('bluelist_current_list_uri', listUri);
     }
 
     setLoading();
@@ -179,14 +188,58 @@ const displayListMembers = async (
       throw new Error('List URI is required');
     }
 
+    // Store the URI for legacy components and potential slug mapping
     if (import.meta.client) {
       localStorage.setItem('bluelist_current_list_uri', listUri);
     }
 
     setLoading();
-    const { getListMembers } = await import('~/src/lib/bskyService');
-    const result = await getListMembers(listUri, page, forceRefresh);
-    uiStore.setDisplayData(result.displayData);
+
+    // First fetch the list details to ensure the list name is available
+    const { fetchListDetails, getListMembers } = await import(
+      '~/src/lib/bskyService'
+    );
+
+    try {
+      // Pre-fetch the list details to ensure we have the list name
+      await fetchListDetails(listUri);
+    } catch (err) {
+      console.warn('Error pre-fetching list details:', err);
+      // Continue even if list details fetch fails
+    }
+
+    // Try fetching list members with retry logic
+    let result;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        result = await getListMembers(listUri, page, forceRefresh);
+        break;
+      } catch (err) {
+        retryCount++;
+        if (
+          retryCount >= maxRetries ||
+          !(err instanceof Error) ||
+          err.message !== 'Already fetching list members data'
+        ) {
+          // If we've reached max retries or got an error different from the race condition, rethrow
+          throw err;
+        }
+        console.warn(
+          `Retry ${retryCount}/${maxRetries} for list members, waiting a bit...`
+        );
+        // Wait with exponential backoff before retrying
+        await new Promise((resolve) =>
+          setTimeout(resolve, 300 * Math.pow(2, retryCount))
+        );
+      }
+    }
+
+    if (result) {
+      uiStore.setDisplayData(result.displayData);
+    }
   } catch (error) {
     setError(error as Error);
     console.error('Error displaying list members:', error);

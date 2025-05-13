@@ -993,7 +993,38 @@ export const getListMembers = async (
   }
 
   try {
+    // Check if we're switching to a different list
+    const currentActiveListUri = listsStore.members.activeListUri;
+    const isListChanged =
+      currentActiveListUri !== listUri && currentActiveListUri !== null;
+
+    // Force refresh if we're switching lists
+    if (isListChanged) {
+      refresh = true;
+    }
+
     listsStore.setActiveListUri(listUri);
+
+    // Check if we need to fetch list details (if active list shows "Loading...")
+    const currentActiveList = listsStore.activeList;
+    if (currentActiveList.name === 'Loading...') {
+      try {
+        const listDetails = await fetchListDetails(listUri);
+        if (listDetails) {
+          // Add the list to the store if it's not already there
+          const existingList = listsStore.lists.allLists.find(
+            (list) => list.uri === listUri
+          );
+          if (!existingList) {
+            // Using addLists instead of addList
+            listsStore.addLists([listDetails]);
+          }
+        }
+      } catch (error) {
+        console.warn('Error fetching list details:', error);
+        // Continue with the members fetch even if details fetch fails
+      }
+    }
 
     if (refresh) {
       listsStore.resetAllMembersData();
@@ -1036,8 +1067,22 @@ export const getListMembers = async (
     }
 
     if (listsStore.members.isFetching && !refresh) {
-      console.info('Already fetching list members data, will wait');
-      throw new Error('Already fetching list members data');
+      console.info('Already fetching list members data, will wait and retry');
+      // Instead of throwing an error, wait for the current fetch to complete
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (!listsStore.members.isFetching) {
+            clearInterval(checkInterval);
+            // Once fetching is complete, return the current page data
+            const pageData = getCurrentMembersPageData(
+              requestedPage,
+              listUri,
+              listsStore
+            );
+            resolve(pageData);
+          }
+        }, 200); // Check every 200ms
+      });
     }
 
     listsStore.setMembersIsFetching(true);
@@ -1247,4 +1292,42 @@ const getCurrentMembersPageData = (
     displayData: membersData as DataObject,
     membersJSON: jsonData,
   };
+};
+
+// The getListDetails function has been replaced by fetchListDetails below
+
+/**
+ * Fetches a single list's details by URI
+ * @param {string} listUri - The URI of the list to fetch details for
+ * @returns {Promise<ListItem|null>} - The list details or null if not found
+ * @throws {Error} - When there's an error fetching the list details
+ */
+export const fetchListDetails = async (
+  listUri: string
+): Promise<import('~/src/types/lists-types').ListItem | null> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    const agent = AtpService.getBskyAgent();
+    const response = await agent.app.bsky.graph.getList({
+      list: listUri,
+      limit: 1,
+    });
+
+    if (response.data?.list) {
+      return {
+        name: response.data.list.name,
+        description: response.data.list.description || '',
+        uri: listUri,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching list details:', error);
+    throw new Error('Error fetching list details');
+  }
 };
