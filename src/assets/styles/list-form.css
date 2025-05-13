@@ -1,0 +1,129 @@
+.list-form {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--card-bg);
+}
+
+.list-form__title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: var(--text-color);
+  text-align: center;
+}
+
+.list-form__form-group {
+  margin-bottom: 20px;
+}
+
+.list-form__label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.list-form__input,
+.list-form__textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.list-form__input:focus,
+.list-form__textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.list-form__textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.list-form__input--error,
+.list-form__textarea--error {
+  border-color: var(--error-color, #ff5252);
+}
+
+.list-form__error {
+  display: block;
+  color: var(--error-color, #ff5252);
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+.list-form__actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.list-form__actions-right {
+  display: flex;
+  gap: 15px;
+}
+
+.list-form__button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: var(--button-text-color, white);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.list-form__button--delete {
+  background-color: var(--error-color, #ff5252);
+}
+
+.list-form__button--cancel {
+  background-color: var(--secondary-color, #757575);
+}
+
+.list-form__button--cancel:hover:not(:disabled) {
+  background-color: var(--secondary-hover-color, #616161);
+}
+
+.list-form__button--delete:hover:not(:disabled) {
+  background-color: var(--error-hover-color, #d32f2f);
+}
+
+.list-form__button:hover:not(:disabled) {
+  background-color: var(--primary-hover-color);
+}
+
+.list-form__button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.list-form__button-icon {
+  font-size: 1.2rem;
+}
+
+.list-form__feedback {
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--success-bg, #e6f7e6);
+  color: var(--success-color, #2e7d32);
+  text-align: center;
+}
+
+.list-form__feedback--error {
+  background-color: var(--error-bg, #ffebee);
+  color: var(--error-color, #c62828);
+}

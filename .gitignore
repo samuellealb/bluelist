@@ -14,6 +14,7 @@ logs
 *.log
 
 # Misc
+.github
 .DS_Store
 .fleet
 .idea
@@ -25,3 +26,4 @@ prototype.js
 .env
 .env.*
 !.env.example
+certs

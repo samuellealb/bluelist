@@ -44,7 +44,10 @@
       <button
         class="pagination__button"
         :disabled="
-          isLastPage || isLoading || suggestionsStore.isProcessingSuggestions
+          isLoading ||
+          suggestionsStore.isProcessingSuggestions ||
+          currentPage === lastPage ||
+          totalPages < 2
         "
         title="Skip to last loaded page"
         @click="handlePageChange(lastPage)"
@@ -87,27 +90,48 @@ const emit = defineEmits<{
 const lastPage = computed(() => {
   if (props.currentPage === undefined) return 1;
 
-  if (followsStore.follows.currentPage === props.currentPage) {
-    if (!followsStore.follows.allFollows.length) return 1;
-    return Math.ceil(
-      followsStore.follows.allFollows.length / followsStore.follows.itemsPerPage
-    );
-  } else if (listsStore.lists.currentPage === props.currentPage) {
-    if (!listsStore.lists.allLists.length) return 1;
-    return Math.ceil(
-      listsStore.lists.allLists.length / listsStore.lists.itemsPerPage
-    );
+  const getLastPageByType = (
+    items: unknown[],
+    itemsPerPage: number
+  ): number => {
+    if (!items.length) return 1;
+    return Math.ceil(items.length / itemsPerPage);
+  };
+
+  switch (props.dataType) {
+    case 'list-members':
+      return Math.max(
+        getLastPageByType(
+          listsStore.members.allMembers,
+          listsStore.members.itemsPerPage
+        ),
+        props.totalPages
+      );
+    case 'follows':
+      if (followsStore.follows.currentPage === props.currentPage) {
+        return getLastPageByType(
+          followsStore.follows.allFollows,
+          followsStore.follows.itemsPerPage
+        );
+      }
+      break;
+    case 'lists':
+      if (listsStore.lists.currentPage === props.currentPage) {
+        return getLastPageByType(
+          listsStore.lists.allLists,
+          listsStore.lists.itemsPerPage
+        );
+      }
+      break;
   }
 
   return props.totalPages || 1;
 });
 
-const isLastPage = computed(() => {
-  return props.currentPage >= lastPage.value || !props.hasMorePages;
-});
-
 const typeLabel = computed(() => {
-  return props.dataType === 'follows' ? 'profiles' : 'lists';
+  if (props.dataType === 'follows') return 'profiles';
+  if (props.dataType === 'list-members') return 'members';
+  return 'lists';
 });
 
 const handlePageChange = (newPage: number) => {

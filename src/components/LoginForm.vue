@@ -49,7 +49,6 @@
 <script setup lang="ts">
 import '~/src/assets/styles/login-form.css';
 import { useAuthStore } from '~/src/stores/auth';
-import { loginUser } from '~/src/lib/bsky';
 
 defineOptions({
   name: 'LoginForm',
@@ -70,7 +69,7 @@ const validateAndLogin = async () => {
   }
 
   emailError.value = '';
-  await loginUser(identifier.value, password.value);
+  await authStore.loginUser(identifier.value, password.value);
 };
 
 const clearError = () => {

@@ -1,5 +1,4 @@
 import { useAuthStore } from '~/src/stores/auth';
-import { checkLoginSession } from '~/src/lib/bsky';
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) return;
@@ -8,7 +7,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!authStore.initialized) {
     try {
-      await checkLoginSession();
+      await authStore.checkLoginSession();
       authStore.setInitialized(true);
     } catch (error) {
       console.error('Error initializing auth session:', error);

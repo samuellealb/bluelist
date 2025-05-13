@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { checkLoginSession } from '~/src/lib/bsky';
+import { useAuthStore } from '~/src/stores/auth';
 import AppHeader from '~/src/components/AppHeader.vue';
 import '~/src/assets/styles/app.css';
 
@@ -18,6 +18,9 @@ defineOptions({
 });
 
 onMounted(() => {
-  checkLoginSession();
+  const authStore = useAuthStore();
+  authStore.checkLoginSession().catch((error) => {
+    console.error('Session check failed:', error);
+  });
 });
 </script>
