@@ -1,4 +1,4 @@
-# Bluelist 0.0.1 Release - Early Prototype
+# Bluelist 0.0.2 Release - Enhanced List Navigation
 
 Hey there! We're launching the very first prototype version of Bluelist. This is just the beginning - a minimal viable product focused on the core functionality of AI-powered list suggestions for your Bluesky follows.
 
@@ -8,6 +8,8 @@ Hey there! We're launching the very first prototype version of Bluelist. This is
 - **Browse Your Follows**: Simple interface to view who you're following
 - **Add to Lists**: Easily add users to your existing lists with a few clicks
 - **✨ AI Suggestions**: Get AI-powered recommendations for organizing your follows into lists
+- **View List Members**: Browse members of your lists with improved navigation
+- **View List Posts**: See posts from list members with user-friendly URLs
 
 ## Important Note
 
@@ -68,7 +70,6 @@ yarn preview
 We're just getting started! Here's what we're working on:
 
 - Creating new lists directly in the app
-- Viewing list members and their posts
 - Removing users from lists (individually or in batches)
 - Integrating your main Bluesky timeline
 
@@ -83,6 +84,12 @@ Built with Nuxt 3, ATP Protocol integration, and a focus on making list manageme
 - Limited to 5 requests per user per day (to manage API costs)
 - Certain users can be exempted from this limit through the exempt users API
 - Remaining request count is tracked and displayed to users
+
+### List Management
+
+- View list members and their posts in separate views
+- User-friendly URLs with readable slugs for better navigation
+- Cached list data for improved performance
 
 ## Questions or Suggestions?
 
