@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', {
     did: '',
     isLoggedIn: false,
     initialized: false,
+    handle: '', // Added to store the user's handle
   }),
 
   actions: {
@@ -29,11 +30,11 @@ export const useAuthStore = defineStore('auth', {
       const suggestionsStore = useSuggestionsStore();
       suggestionsStore.loadRequestCounts();
     },
-
     logout() {
       this.formInfo = '';
       this.loginError = '';
       this.did = '';
+      this.handle = '';
       this.isLoggedIn = false;
       AtpService.resetAgent();
       localStorage.removeItem('loginData');
@@ -93,6 +94,30 @@ export const useAuthStore = defineStore('auth', {
         }
         console.error('Login error:', error);
       }
+    },
+
+    /**
+     * Logs in a user to Bluesky using OAuth
+     * @param {string} accessToken - The OAuth access token
+     * @param {string} did - The user's DID
+     * @param {string} handle - The user's handle
+     * @returns {void} - No return value
+     */
+    loginWithOAuth(accessToken: string, did: string, handle: string): void {
+      this.setFormInfo(`Logged in as ${handle} with DID ${did}`);
+      this.setDid(did);
+      this.setHandle(handle);
+      this.login();
+      AtpService.setAuthToken(accessToken);
+    },
+
+    /**
+     * Sets the user's handle
+     * @param {string} handle - The user's handle
+     * @returns {void} - No return value
+     */
+    setHandle(handle: string): void {
+      this.handle = handle;
     },
 
     /**

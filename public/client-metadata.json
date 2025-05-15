@@ -1,0 +1,13 @@
+{
+  "client_id": "https://listy.blue/client-metadata.json",
+  "application_type": "web",
+  "client_name": "Bluelist",
+  "client_uri": "https://listy.blue",
+  "logo_uri": "https://listy.blue/favicon.ico",
+  "dpop_bound_access_tokens": true,
+  "grant_types": ["authorization_code", "refresh_token"],
+  "redirect_uris": ["https://listy.blue/oauth-callback"],
+  "response_types": ["code"],
+  "scope": "atproto",
+  "token_endpoint_auth_method": "none"
+}
