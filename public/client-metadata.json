@@ -1,10 +1,10 @@
 {
-  "client_id": "https://bluelist-git-18-oauth-authentication-samuel-leals-projects.vercel.app/client-metadata.json",
+  "client_id": "https://bluelist-git-18-oauth-login-samuel-leals-projects.vercel.app/client-metadata.json",
   "application_type": "web",
   "client_name": "Listy Blue",
-  "client_uri": "https://bluelist-git-18-oauth-authentication-samuel-leals-projects.vercel.app/",
+  "client_uri": "https://bluelist-git-18-oauth-login-samuel-leals-projects.vercel.app/",
   "redirect_uris": [
-    "https://bluelist-git-18-oauth-authentication-samuel-leals-projects.vercel.app/oauth-callback"
+    "https://bluelist-git-18-oauth-login-samuel-leals-projects.vercel.app/oauth-callback"
   ],
   "scope": "atproto",
   "grant_types": ["authorization_code", "refresh_token"],
