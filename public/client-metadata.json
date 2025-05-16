@@ -1,13 +1,14 @@
 {
-  "client_id": "https://listy.blue/client-metadata.json",
+  "client_id": "https://bluelist-git-18-oauth-authentication-samuel-leals-projects.vercel.app/client-metadata.json",
   "application_type": "web",
-  "client_name": "Bluelist",
-  "client_uri": "https://listy.blue",
-  "logo_uri": "https://listy.blue/favicon.ico",
-  "dpop_bound_access_tokens": true,
-  "grant_types": ["authorization_code", "refresh_token"],
-  "redirect_uris": ["https://listy.blue/oauth-callback"],
-  "response_types": ["code"],
+  "client_name": "Listy Blue",
+  "client_uri": "https://bluelist-git-18-oauth-authentication-samuel-leals-projects.vercel.app/",
+  "redirect_uris": [
+    "https://bluelist-git-18-oauth-authentication-samuel-leals-projects.vercel.app/oauth-callback"
+  ],
   "scope": "atproto",
-  "token_endpoint_auth_method": "none"
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none",
+  "dpop_bound_access_tokens": true
 }
