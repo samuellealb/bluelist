@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
-import { AtpService } from '~/src/lib/AtpService';
+import { OAuthService } from '~/src/lib/OAuthService';
 import { useSuggestionsStore } from './suggestions';
+import type { OAuthSession } from '@atproto/oauth-client-browser';
+import type { Agent } from '@atproto/api';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -9,6 +11,8 @@ export const useAuthStore = defineStore('auth', {
     did: '',
     isLoggedIn: false,
     initialized: false,
+    currentSession: null as OAuthSession | null,
+    currentAgent: null as Agent | null,
   }),
 
   actions: {
@@ -24,8 +28,12 @@ export const useAuthStore = defineStore('auth', {
       this.did = did;
     },
 
-    login() {
+    login(session: OAuthSession) {
       this.isLoggedIn = true;
+      this.currentSession = session;
+      this.currentAgent = OAuthService.createAgent(session);
+      this.did = session.sub;
+
       const suggestionsStore = useSuggestionsStore();
       suggestionsStore.loadRequestCounts();
     },
@@ -35,8 +43,9 @@ export const useAuthStore = defineStore('auth', {
       this.loginError = '';
       this.did = '';
       this.isLoggedIn = false;
-      AtpService.resetAgent();
-      localStorage.removeItem('loginData');
+      this.currentSession = null;
+      this.currentAgent = null;
+      OAuthService.reset();
     },
 
     setInitialized(value: boolean) {
@@ -44,146 +53,116 @@ export const useAuthStore = defineStore('auth', {
     },
 
     getAgent() {
-      return AtpService.getAgent();
+      return this.currentAgent;
     },
 
     /**
-     * Logs in a user to Bluesky using their credentials
-     * @param identifier - Email address of the user
-     * @param password - User's password
-     * @returns {Promise<void>} - A Promise that resolves when login completes
-     * @throws {Error} - Throws when rate limit is exceeded or other login errors occur
+     * Initialize OAuth and check for existing sessions
      */
-    async loginUser(identifier: string, password: string): Promise<void> {
-      this.setLoginError('');
-      const agent = AtpService.getAgent();
-
+    async initializeOAuth(): Promise<void> {
       try {
-        if (!identifier.includes('@')) {
-          this.setLoginError(
-            'Please use your email address to login, not your handle'
-          );
-          return;
-        }
+        const config = useRuntimeConfig();
 
-        const { data: loginData, success } = await agent.login({
-          identifier,
-          password,
+        await OAuthService.initialize({
+          clientId: config.public.oauthClientId as string,
+          redirectUri: config.public.oauthRedirectUri as string,
+          appOrigin: config.public.appOrigin as string,
         });
 
-        if (success) {
-          const { did: userDid, handle, accessJwt } = loginData;
-          this.setFormInfo(`Logged in as ${handle} with DID ${userDid}`);
-          this.setDid(userDid);
-          this.login();
+        const result = await OAuthService.initSession();
 
-          AtpService.setAuthToken(accessJwt);
-
-          localStorage.setItem('loginData', JSON.stringify({ loginData }));
-        } else {
-          this.setFormInfo('Login Failed');
+        if (result) {
+          const { session, state } = result;
+          if (state) {
+            this.setFormInfo(`Successfully authenticated as ${session.sub}`);
+          } else {
+            this.setFormInfo(`Session restored for ${session.sub}`);
+          }
+          this.login(session);
         }
+
+        OAuthService.onSessionDeleted(({ sub, cause }) => {
+          console.error(`Session for ${sub} deleted:`, cause);
+          if (this.did === sub) {
+            this.handleSessionExpired();
+          }
+        });
       } catch (error) {
-        if ((error as Error).message.includes('Rate Limit Exceeded')) {
-          this.setLoginError(
-            'Login failed: Rate limit exceeded. Please use your email address to login.'
-          );
-        } else {
-          this.setLoginError(`Login failed: ${(error as Error).message}`);
-        }
-        console.error('Login error:', error);
+        console.error('Failed to initialize OAuth:', error);
+        this.setLoginError('Failed to initialize authentication system');
       }
     },
 
     /**
-     * Checks for an existing login session and restores it
-     * @returns {Promise<void>} - No return value
-     * @throws {Error} - If session data cannot be parsed or is invalid
+     * Sign in with handle using OAuth
      */
-    async checkLoginSession(): Promise<void> {
-      const storedData = localStorage.getItem('loginData');
-      if (!storedData) {
+    async signInWithHandle(handle: string): Promise<void> {
+      this.setLoginError('');
+
+      if (!handle || handle.trim() === '') {
+        this.setLoginError('Handle is required');
         return;
       }
 
       try {
-        const parsedData = JSON.parse(storedData);
+        await OAuthService.signIn(handle, {
+          state: crypto.randomUUID(),
+        });
+      } catch (error) {
+        console.error('Sign in error:', error);
+        this.setLoginError(`Sign in failed: ${(error as Error).message}`);
+      }
+    },
 
-        if (!parsedData || typeof parsedData !== 'object') {
-          throw new Error('Invalid session data format');
-        }
-
-        if (!parsedData.loginData) {
-          throw new Error('Missing login data in stored session');
-        }
-
-        const { loginData } = parsedData;
-
-        if (!loginData.did || !loginData.handle || !loginData.accessJwt) {
-          throw new Error('Incomplete login data in stored session');
-        }
-
-        this.setFormInfo(
-          `Logged in as ${loginData.handle} with DID ${loginData.did}`
-        );
-        this.setDid(loginData.did);
-        this.login();
-
-        AtpService.setAuthToken(loginData.accessJwt);
-
-        const jwtExpiry = this.getJwtExpiry(loginData.accessJwt);
-        if (jwtExpiry && this.isTokenExpiringSoon(jwtExpiry)) {
-          console.warn(
-            'Auth token expiring soon - user may need to re-authenticate'
-          );
-        }
+    /**
+     * Restore a session by DID
+     */
+    async restoreSession(did: string): Promise<void> {
+      try {
+        const session = await OAuthService.restoreSession(did);
+        this.login(session);
       } catch (error) {
         console.error('Failed to restore session:', error);
+        throw error;
+      }
+    },
 
-        localStorage.removeItem('loginData');
-
-        this.logout();
+    /**
+     * Check for an existing login session
+     */
+    async checkLoginSession(): Promise<void> {
+      try {
+        if (!this.initialized) {
+          await this.initializeOAuth();
+        }
+      } catch (error) {
+        console.error('Failed to check login session:', error);
         this.setFormInfo('Session could not be restored. Please login again.');
       }
     },
 
     /**
-     * Helper function to handle expired sessions
-     * @returns {void} - No return value
+     * Handle expired sessions
      */
     handleSessionExpired(): void {
       this.setFormInfo('Session expired. Please login again.');
-      localStorage.removeItem('loginData');
+      this.logout();
       window.location.reload();
     },
 
     /**
-     * Helper function to decode JWT and extract expiry time
-     * @param {string} jwt - The JWT token
-     * @returns {number|null} - Timestamp of token expiry or null if invalid
+     * Legacy methods kept for backward compatibility (will be removed)
      */
-    getJwtExpiry(jwt: string): number | null {
-      try {
-        const base64Url = jwt.split('.')[1];
-        if (!base64Url) return null;
-
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-
-        const jsonPayload = this.decodeBase64(base64);
-
-        const payload = JSON.parse(jsonPayload);
-        return payload.exp ? payload.exp * 1000 : null;
-      } catch (error) {
-        console.error('Error decoding JWT:', error);
-        return null;
-      }
+    async loginUser(_identifier: string, _password: string): Promise<void> {
+      this.setLoginError(
+        'Traditional login is no longer supported. Please use OAuth login with your handle.'
+      );
     },
 
-    /**
-     * Helper function to decode base64 safely
-     * @param {string} str - The base64 string to decode
-     * @returns {string} - The decoded string
-     */
+    getJwtExpiry(_jwt: string): number | null {
+      return null;
+    },
+
     decodeBase64(str: string): string {
       try {
         if (typeof window !== 'undefined' && window.atob) {
@@ -211,14 +190,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    /**
-     * Check if token is expiring within the next 5 minutes
-     * @param {number} expiryTime - Token expiry timestamp
-     * @returns {boolean} - True if token expires soon
-     */
-    isTokenExpiringSoon(expiryTime: number): boolean {
-      const fiveMinutesInMs = 5 * 60 * 1000;
-      return Date.now() + fiveMinutesInMs > expiryTime;
+    isTokenExpiringSoon(_expiryTime: number): boolean {
+      return false;
     },
   },
 });

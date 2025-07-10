@@ -1,6 +1,3 @@
-import { resolve } from 'path';
-import fs from 'fs';
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-03-21',
   devtools: { enabled: true },
@@ -13,37 +10,31 @@ export default defineNuxtConfig({
     exemptDids: process.env.NUXT_EXEMPT_DIDS,
     public: {
       atpService: process.env.NUXT_ATP_SERVICE,
+      oauthClientId: process.env.NUXT_OAUTH_CLIENT_ID,
+      oauthRedirectUri: process.env.NUXT_OAUTH_REDIRECT_URI,
+      appOrigin: process.env.NUXT_APP_ORIGIN,
     },
   },
   devServer: {
-    https: {
-      key: (() => {
-        const keyPath = resolve(
-          __dirname,
-          './certs/bluelist-local.blue-key.pem'
-        );
-        try {
-          return fs.existsSync(keyPath)
-            ? fs.readFileSync(keyPath, 'utf-8')
-            : undefined;
-        } catch (error) {
-          console.warn(`Failed to read SSL key: ${error}`);
-          return undefined;
-        }
-      })(),
-      cert: (() => {
-        const certPath = resolve(__dirname, './certs/bluelist-local.blue.pem');
-        try {
-          return fs.existsSync(certPath)
-            ? fs.readFileSync(certPath, 'utf-8')
-            : undefined;
-        } catch (error) {
-          console.warn(`Failed to read SSL certificate: ${error}`);
-          return undefined;
-        }
-      })(),
+    // Use standard localhost for OAuth development
+    host: '127.0.0.1',
+    port: 3000,
+    https: false,
+  },
+  nitro: {
+    publicAssets: [
+      {
+        dir: 'public',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      },
+    ],
+    routeRules: {
+      '/client-metadata.json': {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      },
     },
-    host: 'bluelist-local.blue',
-    port: 443,
   },
 });
