@@ -30,14 +30,23 @@ export const OAuthService = {
       const isLocalhost =
         currentOrigin.includes('localhost') ||
         currentOrigin.includes('127.0.0.1') ||
-        currentOrigin.includes('[::1]') ||
-        currentOrigin.includes('bluelist-local.blue');
+        currentOrigin.includes('[::1]');
 
       if (isLocalhost) {
-        // Use localhost configuration - this automatically handles the loopback client
         oauthClient = new BrowserOAuthClient({
           handleResolver: 'https://bsky.social',
-          clientMetadata: undefined, // This enables loopback client mode
+          clientMetadata: {
+            client_id: 'http://localhost:3000/client-metadata.json',
+            client_name: 'Bluelist Local Development',
+            client_uri: 'http://localhost:3000',
+            redirect_uris: ['http://localhost:3000/oauth-callback'],
+            scope: 'atproto transition:generic',
+            grant_types: ['authorization_code', 'refresh_token'],
+            response_types: ['code'],
+            application_type: 'web',
+            token_endpoint_auth_method: 'none',
+            dpop_bound_access_tokens: true,
+          },
         });
       } else {
         // Use deployed environment configuration by loading metadata from URL
@@ -128,7 +137,11 @@ export const OAuthService = {
    * Create an Agent from an OAuth session
    */
   createAgent(session: OAuthSession): Agent {
-    return new Agent(session);
+    // Use the standard OAuth agent creation
+    // The session contains the necessary authentication tokens
+    const agent = new Agent(session);
+
+    return agent;
   },
 
   /**

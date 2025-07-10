@@ -16,10 +16,8 @@ export default defineNuxtConfig({
     },
   },
   devServer: {
-    // Use standard localhost for OAuth development
-    host: '127.0.0.1',
+    host: 'localhost',
     port: 3000,
-    https: false,
   },
   nitro: {
     publicAssets: [

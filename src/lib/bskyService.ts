@@ -2,7 +2,6 @@ import { useAuthStore } from '~/src/stores/auth';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
 import { useUiStore } from '~/src/stores/ui';
-import { AtpService } from '~/src/lib/AtpService';
 import type {
   DataObject,
   FollowsStore,
@@ -28,7 +27,11 @@ export const getTimeline = async (): Promise<{
   }
 
   try {
-    const agent = AtpService.getAgent();
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
     const { data } = await agent.getTimeline({
       limit: 30,
     });
@@ -120,10 +123,17 @@ export const getFollows = async (
     followsStore.setIsFetching(true);
 
     try {
-      const agent = AtpService.getBskyAgent();
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
 
       if (followsStore.follows.allFollows.length === 0 || refresh) {
-        const firstBatch = await fetchFollowsBatch(null, authStore.did, agent);
+        const firstBatch = await fetchFollowsBatch(
+          null,
+          authStore.did,
+          agent as unknown as BskyAgent
+        );
         followsStore.setFollows(firstBatch.follows);
         followsStore.setPrefetchedPages(1);
         followsStore.setCursor(firstBatch.cursor);
@@ -132,7 +142,7 @@ export const getFollows = async (
         const newBatch = await fetchFollowsBatch(
           followsStore.follows.cursor,
           authStore.did,
-          agent
+          agent as unknown as BskyAgent
         );
 
         if (newBatch.follows.length > 0) {
@@ -336,10 +346,17 @@ export const getLists = async (
     listsStore.setIsFetching(true);
 
     try {
-      const agent = AtpService.getBskyAgent();
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
 
       if (listsStore.lists.allLists.length === 0 || refresh) {
-        const firstBatch = await fetchListsBatch(null, authStore.did, agent);
+        const firstBatch = await fetchListsBatch(
+          null,
+          authStore.did,
+          agent as unknown as BskyAgent
+        );
         listsStore.setLists(firstBatch.lists);
         listsStore.setPrefetchedPages(1);
         listsStore.setCursor(firstBatch.cursor);
@@ -348,7 +365,7 @@ export const getLists = async (
         const newBatch = await fetchListsBatch(
           listsStore.lists.cursor,
           authStore.did,
-          agent
+          agent as unknown as BskyAgent
         );
 
         if (newBatch.lists.length > 0) {
@@ -514,8 +531,14 @@ export const getListPosts = async (
   }
 
   try {
-    const agent = AtpService.getAgent();
-    const { data } = await agent.app.bsky.feed.getListFeed({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const { data } = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.feed.getListFeed({
       list: listUri,
       limit,
     });
@@ -532,7 +555,9 @@ export const getListPosts = async (
       indexedAt: item.post.indexedAt,
     }));
 
-    const listDetails = await agent.app.bsky.graph.getList({
+    const listDetails = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
       list: listUri,
       limit: 1,
     });
@@ -541,8 +566,8 @@ export const getListPosts = async (
       type: 'list-posts',
       data: posts,
       listInfo: {
-        name: listDetails.data.list.name,
-        description: listDetails.data.list.description,
+        name: listDetails.data.list?.name || 'Unknown List',
+        description: listDetails.data.list?.description || '',
         uri: listUri,
       },
     };
@@ -581,8 +606,14 @@ export const addUserToList = async (
   }
 
   try {
-    const agent = AtpService.getAgent();
-    const { data } = await agent.app.bsky.graph.getList({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const { data } = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
       list: listUri,
       limit: 100,
     });
@@ -659,8 +690,14 @@ export const addUsersToLists = async (
 
     for (const list of lists) {
       try {
-        const agent = AtpService.getAgent();
-        const { data } = await agent.app.bsky.graph.getList({
+        const agent = authStore.getAgent();
+        if (!agent) {
+          throw new Error('Authentication session not available');
+        }
+
+        const { data } = await (
+          agent as unknown as BskyAgent
+        ).app.bsky.graph.getList({
           list: list.uri,
           limit: 100,
         });
@@ -739,17 +776,23 @@ export const createList = async (
   }
 
   try {
-    const agent = AtpService.getAgent();
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const recordData = {
+      $type: 'app.bsky.graph.list',
+      purpose: 'app.bsky.graph.defs#curatelist',
+      name,
+      description,
+      createdAt: new Date().toISOString(),
+    };
+
     const result = await agent.com.atproto.repo.createRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.list',
-      record: {
-        $type: 'app.bsky.graph.list',
-        purpose: 'app.bsky.graph.defs#curatelist',
-        name,
-        description,
-        createdAt: new Date().toISOString(),
-      },
+      record: recordData,
     });
 
     return {
@@ -790,8 +833,12 @@ export const updateList = async (
     const parts = uri.split('/');
     const rkey = parts[parts.length - 1];
 
-    const agent = AtpService.getAgent();
-    await agent.com.atproto.repo.putRecord({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    await (agent as unknown as BskyAgent).com.atproto.repo.putRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.list',
       rkey,
@@ -837,8 +884,12 @@ export const deleteList = async (
     const parts = uri.split('/');
     const rkey = parts[parts.length - 1];
 
-    const agent = AtpService.getAgent();
-    await agent.com.atproto.repo.deleteRecord({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    await (agent as unknown as BskyAgent).com.atproto.repo.deleteRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.list',
       rkey,
@@ -878,8 +929,12 @@ export const removeUserFromList = async (
     const parts = itemUri.split('/');
     const rkey = parts[parts.length - 1];
 
-    const agent = AtpService.getAgent();
-    await agent.com.atproto.repo.deleteRecord({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    await (agent as unknown as BskyAgent).com.atproto.repo.deleteRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.listitem',
       rkey,
@@ -934,8 +989,12 @@ export const removeUsersFromList = async (
       const parts = itemUri.split('/');
       const rkey = parts[parts.length - 1];
 
-      const agent = AtpService.getAgent();
-      await agent.com.atproto.repo.deleteRecord({
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
+
+      await (agent as unknown as BskyAgent).com.atproto.repo.deleteRecord({
         repo: authStore.did,
         collection: 'app.bsky.graph.listitem',
         rkey,
@@ -1088,10 +1147,18 @@ export const getListMembers = async (
     listsStore.setMembersIsFetching(true);
 
     try {
-      const agent = AtpService.getBskyAgent();
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
 
       if (listsStore.members.allMembers.length === 0 || refresh) {
-        const firstBatch = await fetchMembersBatch(null, listUri, agent, limit);
+        const firstBatch = await fetchMembersBatch(
+          null,
+          listUri,
+          agent as unknown as BskyAgent,
+          limit
+        );
         listsStore.setMembers(firstBatch.members);
         listsStore.setMembersPrefetchedPages(1);
         listsStore.setMembersCursor(firstBatch.cursor);
@@ -1100,7 +1167,7 @@ export const getListMembers = async (
         const newBatch = await fetchMembersBatch(
           listsStore.members.cursor,
           listUri,
-          agent,
+          agent as unknown as BskyAgent,
           limit
         );
 
@@ -1312,8 +1379,14 @@ export const fetchListDetails = async (
   }
 
   try {
-    const agent = AtpService.getBskyAgent();
-    const response = await agent.app.bsky.graph.getList({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const response = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
       list: listUri,
       limit: 1,
     });
