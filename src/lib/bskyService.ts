@@ -831,7 +831,7 @@ export const updateList = async (
 
   try {
     const parts = uri.split('/');
-    const rkey = parts[parts.length - 1];
+    const rkey = parts[parts.length - 1]!;
 
     const agent = authStore.getAgent();
     if (!agent) {
@@ -882,7 +882,7 @@ export const deleteList = async (
 
   try {
     const parts = uri.split('/');
-    const rkey = parts[parts.length - 1];
+    const rkey = parts[parts.length - 1]!;
 
     const agent = authStore.getAgent();
     if (!agent) {
@@ -927,7 +927,7 @@ export const removeUserFromList = async (
 
   try {
     const parts = itemUri.split('/');
-    const rkey = parts[parts.length - 1];
+    const rkey = parts[parts.length - 1]!;
 
     const agent = authStore.getAgent();
     if (!agent) {
@@ -987,7 +987,7 @@ export const removeUsersFromList = async (
   for (const itemUri of itemUris) {
     try {
       const parts = itemUri.split('/');
-      const rkey = parts[parts.length - 1];
+      const rkey = parts[parts.length - 1]!;
 
       const agent = authStore.getAgent();
       if (!agent) {
