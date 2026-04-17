@@ -81,7 +81,7 @@ export const useSuggestionsStore = defineStore('suggestions', {
       const overridden = await isLimitOverridden();
       if (overridden) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0]!;
 
       if (!this.requestCounts[today]) {
         this.requestCounts[today] = 0;
@@ -98,7 +98,7 @@ export const useSuggestionsStore = defineStore('suggestions', {
       const authStore = useAuthStore();
       if (!authStore.did) return false;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0]!;
       return (this.requestCounts[today] || 0) >= MAX_DAILY_SUGGESTIONS;
     },
 
@@ -109,7 +109,7 @@ export const useSuggestionsStore = defineStore('suggestions', {
       const authStore = useAuthStore();
       if (!authStore.did) return MAX_DAILY_SUGGESTIONS;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0]!;
       const used = this.requestCounts[today] || 0;
       return Math.max(0, MAX_DAILY_SUGGESTIONS - used);
     },

@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
       ],
     });
 
-    return response.choices[0].message.content;
+    return response.choices[0]?.message.content ?? null;
   } catch (error: unknown) {
     if (
       error instanceof Error &&

@@ -788,7 +788,7 @@ export const updateList = async (
 
   try {
     const parts = uri.split('/');
-    const rkey = parts[parts.length - 1];
+    const rkey = parts[parts.length - 1]!;
 
     const agent = AtpService.getAgent();
     await agent.com.atproto.repo.putRecord({
@@ -835,7 +835,7 @@ export const deleteList = async (
 
   try {
     const parts = uri.split('/');
-    const rkey = parts[parts.length - 1];
+    const rkey = parts[parts.length - 1]!;
 
     const agent = AtpService.getAgent();
     await agent.com.atproto.repo.deleteRecord({
@@ -876,7 +876,7 @@ export const removeUserFromList = async (
 
   try {
     const parts = itemUri.split('/');
-    const rkey = parts[parts.length - 1];
+    const rkey = parts[parts.length - 1]!;
 
     const agent = AtpService.getAgent();
     await agent.com.atproto.repo.deleteRecord({
@@ -932,7 +932,7 @@ export const removeUsersFromList = async (
   for (const itemUri of itemUris) {
     try {
       const parts = itemUri.split('/');
-      const rkey = parts[parts.length - 1];
+      const rkey = parts[parts.length - 1]!;
 
       const agent = AtpService.getAgent();
       await agent.com.atproto.repo.deleteRecord({
