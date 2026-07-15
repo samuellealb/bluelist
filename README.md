@@ -21,8 +21,8 @@ Hey there! We're launching the very first prototype version of Bluelist. This is
 
 If you want to run this locally, you'll need:
 
-- An OpenAI developer account
-- Your own OpenAI API key (set in the environment variables)
+- An OpenAI or Anthropic developer account
+- Your API key (set in the environment variables — Anthropic takes priority when both are set)
 - Optional: Set exempt DIDs in the environment variables to bypass daily limits
 
 This is only for local development and testing. The deployed version handles API access for you.
@@ -44,8 +44,9 @@ NUXT_ATP_SERVICE=https://bsky.social
 Optional:
 
 ```
-NUXT_OPENAI_API_KEY=your_openai_key_here
-NUXT_EXEMPT_DIDS=did1,did2,did3  # Optional: Comma-separated list of DIDs exempt from daily limits
+NUXT_ANTHROPIC_API_KEY=your_anthropic_key_here  # Takes priority over OpenAI when set
+NUXT_OPENAI_API_KEY=your_openai_key_here        # Used when no Anthropic key is set
+NUXT_EXEMPT_DIDS=did1,did2,did3                 # DIDs exempt from daily AI limits
 ```
 
 ### Environment Profiles
