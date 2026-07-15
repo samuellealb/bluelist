@@ -13,6 +13,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "@atproto/api": "^0.14.10",
     "@nuxt/eslint": "1.2.0",
     "@nuxt/scripts": "0.11.2",

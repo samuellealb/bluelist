@@ -1,26 +1,22 @@
 import { defineEventHandler, readBody, createError } from 'h3';
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { useRuntimeConfig } from '#imports';
 
 export default defineEventHandler(async (event) => {
   try {
     const config = useRuntimeConfig();
-    const apiKey = config.openaiApiKey;
+    const anthropicApiKey = config.anthropicApiKey as string | undefined;
+    const openaiApiKey = config.openaiApiKey as string | undefined;
 
-    if (!apiKey) {
-      console.error(
-        'OpenAI API key is missing from both runtime config and environment variables'
-      );
+    if (!anthropicApiKey && !openaiApiKey) {
+      console.error('No AI API key found in runtime config');
       throw createError({
         statusCode: 500,
         message:
-          'The OpenAI API key environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option.',
+          'No AI API key configured. Set NUXT_ANTHROPIC_API_KEY or NUXT_OPENAI_API_KEY in your environment.',
       });
     }
-
-    const openAI = new OpenAI({
-      apiKey: apiKey,
-    });
 
     const { users, lists } = await readBody(event);
 
@@ -52,6 +48,22 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    if (anthropicApiKey) {
+      const anthropic = new Anthropic({
+        apiKey: anthropicApiKey,
+        baseURL: 'https://api.anthropic.com',
+      });
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+      const block = response.content[0];
+      return block?.type === 'text' ? block.text : null;
+    }
+
+    const openAI = new OpenAI({ apiKey: openaiApiKey });
     const response = await openAI.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -65,9 +77,10 @@ export default defineEventHandler(async (event) => {
     if (
       error instanceof Error &&
       (error.name === 'OpenAIError' ||
+        error.name === 'APIError' ||
         (error as { status?: number }).status === 400)
     ) {
-      console.error('OpenAI API error:', error);
+      console.error('AI API error:', error);
 
       throw createError({
         statusCode: 400,

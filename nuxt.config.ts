@@ -10,6 +10,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     openaiApiKey: process.env.NUXT_OPENAI_API_KEY,
+    anthropicApiKey: process.env.NUXT_ANTHROPIC_API_KEY,
     exemptDids: process.env.NUXT_EXEMPT_DIDS,
     public: {
       atpService: process.env.NUXT_ATP_SERVICE,
