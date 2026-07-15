@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build --dotenv .env.local",
-    "dev": "nuxt dev --dotenv .env.local",
+    "build": "node scripts/run.mjs build",
+    "dev": "node scripts/run.mjs dev",
     "generate": "nuxt generate --dotenv .env.local",
-    "preview": "nuxt preview --dotenv .env.local",
+    "preview": "node scripts/run.mjs preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "format": "prettier --write .",

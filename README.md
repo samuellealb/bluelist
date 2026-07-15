@@ -29,11 +29,54 @@ This is only for local development and testing. The deployed version handles API
 
 ### Environment Variables
 
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required:
+
+```
+NUXT_ATP_SERVICE=https://bsky.social
+```
+
+Optional:
+
 ```
 NUXT_OPENAI_API_KEY=your_openai_key_here
-NUXT_ATP_SERVICE=your_atp_service_url
 NUXT_EXEMPT_DIDS=did1,did2,did3  # Optional: Comma-separated list of DIDs exempt from daily limits
 ```
+
+### Environment Profiles
+
+The dev server defaults to `http://localhost:3000` with no extra configuration needed. Platform-specific setups are opt-in via `.env.local` only — no code changes required.
+
+**WSL / any clean machine** — default, nothing to add.
+
+**macOS with HTTPS and a custom local domain:**
+
+```
+NUXT_DEV_HTTPS=true
+NUXT_DEV_HOST=bluelist-local.blue
+NUXT_DEV_PORT=4430
+NUXT_DEV_SSL_KEY=./certs/bluelist-local.blue-key.pem
+NUXT_DEV_SSL_CERT=./certs/bluelist-local.blue.pem
+```
+
+> Prerequisites: add `127.0.0.1 bluelist-local.blue` to `/etc/hosts`, install
+> [mkcert](https://github.com/FiloSottile/mkcert), run `mkcert -install` and
+> `mkcert bluelist-local.blue` inside `./certs/`.
+
+**Corporate proxy with a custom CA:**
+
+```
+NODE_EXTRA_CA_CERTS=./certs/bayer-proxy-ca.pem
+```
+
+> Place your corporate CA certificate at the path above. The launcher
+> (`scripts/run.mjs`) automatically detects and injects it before the Node TLS
+> stack initialises. If the file is absent the variable is silently ignored.
 
 ### Setup
 
@@ -45,11 +88,13 @@ yarn install
 
 ### Development Server
 
-Start the development server on `http://localhost:3000`:
+Start the development server:
 
 ```bash
 yarn dev
 ```
+
+Serves `http://localhost:3000` by default, or HTTPS on the configured host/port when `NUXT_DEV_HTTPS=true`.
 
 ### Production
 
