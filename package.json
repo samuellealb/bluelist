@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node scripts/run.mjs build",
     "dev": "node scripts/run.mjs dev",
-    "generate": "nuxt generate --dotenv .env.local",
+    "generate": "node scripts/run.mjs generate",
     "preview": "node scripts/run.mjs preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",

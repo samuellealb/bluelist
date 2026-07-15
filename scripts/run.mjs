@@ -24,12 +24,12 @@ const envFile = resolve(root, '.env.local');
 const cmd = process.argv[2];
 
 if (!cmd) {
-  console.error('Usage: node scripts/run.mjs <dev|build|preview>');
+  console.error('Usage: node scripts/run.mjs <dev|build|preview|generate>');
   process.exit(1);
 }
 
 // Parse .env.local to extract variable values without using a runtime import.
-// Only picks up lines of the form KEY=VALUE (ignores comments and blank lines).
+// Handles quoted values, inline comments, and blank lines correctly.
 function parseEnvFile(filePath) {
   const vars = {};
   if (!existsSync(filePath)) return vars;
@@ -40,7 +40,19 @@ function parseEnvFile(filePath) {
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx === -1) continue;
     const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, '');
+    let value = trimmed.slice(eqIdx + 1).trim();
+    const maybeQuote = value[0];
+    if (maybeQuote === '"' || maybeQuote === "'" || maybeQuote === '`') {
+      const endIdx = value.indexOf(maybeQuote, 1);
+      if (endIdx !== -1) {
+        value = value.slice(1, endIdx);
+      }
+    } else {
+      const hashIdx = value.indexOf('#');
+      if (hashIdx !== -1) {
+        value = value.slice(0, hashIdx).trim();
+      }
+    }
     vars[key] = value;
   }
   return vars;
@@ -78,5 +90,10 @@ const result = spawnSync(nuxtBin, args, {
   env: childEnv,
   stdio: 'inherit',
 });
+
+if (result.error) {
+  console.error('[run.mjs] Failed to start Nuxt:', result.error);
+  process.exit(1);
+}
 
 process.exit(result.status ?? 1);
