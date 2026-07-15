@@ -144,6 +144,9 @@ export const curateUserLists = async (): Promise<{
 
     let parsedResponse: ApiResponse;
     try {
+      if (!response) {
+        throw new Error('Empty response received from AI API');
+      }
       const sanitizedResponse = extractJSON(response);
       parsedResponse = JSON.parse(sanitizedResponse);
       if (parsedResponse.error) {
