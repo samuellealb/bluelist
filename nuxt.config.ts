@@ -39,7 +39,7 @@ export default defineNuxtConfig({
         cert: readCert('NUXT_DEV_SSL_CERT', './certs/bluelist-local.blue.pem'),
       },
       host: process.env.NUXT_DEV_HOST ?? 'bluelist-local.blue',
-      port: Number(process.env.NUXT_DEV_PORT ?? 4430),
+      port: parseInt(process.env.NUXT_DEV_PORT ?? '', 10) || 4430,
     },
   }),
 });

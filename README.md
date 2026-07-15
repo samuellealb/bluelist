@@ -76,7 +76,8 @@ NODE_EXTRA_CA_CERTS=./certs/bayer-proxy-ca.pem
 
 > Place your corporate CA certificate at the path above. The launcher
 > (`scripts/run.mjs`) automatically detects and injects it before the Node TLS
-> stack initialises. If the file is absent the variable is silently ignored.
+> stack initialises. If the variable is unset it is silently skipped; if it is
+> set but the file is missing, a warning is logged and the variable is ignored.
 
 ### Setup
 

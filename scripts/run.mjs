@@ -11,6 +11,7 @@
  *   node scripts/run.mjs dev
  *   node scripts/run.mjs build
  *   node scripts/run.mjs preview
+ *   node scripts/run.mjs generate
  */
 
 import { spawnSync } from 'node:child_process';
@@ -78,7 +79,8 @@ const args = [cmd, '--dotenv', '.env.local'];
 
 // Resolve the nuxt binary from the local node_modules to avoid relying on
 // the shell PATH and to prevent any PATH-based injection.
-const nuxtBin = resolve(root, 'node_modules', '.bin', 'nuxt');
+// On Windows, yarn/npm create nuxt.cmd rather than a bare nuxt symlink.
+const nuxtBin = resolve(root, 'node_modules', '.bin', process.platform === 'win32' ? 'nuxt.cmd' : 'nuxt');
 
 if (!existsSync(nuxtBin)) {
   console.error(`[run.mjs] nuxt binary not found at ${nuxtBin}. Run 'yarn install' first.`);
