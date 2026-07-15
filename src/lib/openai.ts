@@ -41,8 +41,10 @@ const callOpenAiAPI = async (users: string, lists: string) => {
 };
 
 /**
- * Extracts the first valid JSON object from a raw model response, tolerating
+ * Extracts the outermost JSON object from a raw model response, tolerating
  * markdown code fences and any leading/trailing prose the model may add.
+ * Slices from the first `{` to the last `}`, so the response must contain
+ * exactly one top-level JSON object.
  *
  * @param response - The raw response returned by the API
  * @returns The extracted JSON string ready for parsing

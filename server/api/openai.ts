@@ -59,8 +59,11 @@ export default defineEventHandler(async (event) => {
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       });
-      const block = response.content[0];
-      return block?.type === 'text' ? block.text : null;
+      const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text');
+      if (textBlocks.length === 0) {
+        throw createError({ statusCode: 500, message: 'No text content in Anthropic response' });
+      }
+      return textBlocks.map(b => b.text).join('');
     }
 
     const openAI = new OpenAI({ apiKey: openaiApiKey });
