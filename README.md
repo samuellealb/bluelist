@@ -122,7 +122,10 @@ We're just getting started! Here's what we're working on:
 
 ## Technical Details
 
-Built with Nuxt 3, ATP Protocol integration, and a focus on making list management easier for Bluesky users.
+Built with Nuxt 4, AT Protocol integration, and a focus on making list management easier for Bluesky users.
+
+- **Architecture overview:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Contributing & local setup:** [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Feature Details
 
