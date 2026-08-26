@@ -2,24 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Quick Start
-
-**Stack:** Nuxt 4, Vue 3 (`<script setup>`), Pinia (options API), TypeScript (strict), @atproto/api, Anthropic/OpenAI (server-side), Yarn 1.
-
-**Common commands:**
-
-- `yarn install` — install dependencies
-- `yarn dev` — start dev server (loads `.env.local`)
-- `yarn lint` — run ESLint
-- `yarn format` — format with Prettier
-- `yarn build` — production build
-- `yarn preview` — preview production build locally
-
-**Setup:** Copy `.env.example` to `.env.local`, fill in `NUXT_ATP_SERVICE` (required) and at least one AI provider key (`NUXT_ANTHROPIC_API_KEY` or `NUXT_OPENAI_API_KEY`).
+Start with [AGENTS.md](AGENTS.md) — it has the always-on stack summary, build/verify
+commands, and the critical conventions (ATP agent access, `bskyService` guard/expiry
+pattern, `DataObject` contract, Pinia store access, slug registration, secrets).
+This file adds detail AGENTS.md omits for brevity: the full data-flow picture, service
+internals, store shapes, and conventions not covered there.
 
 ## Architecture: The Data Flow Pattern
-
-Bluelist follows a strict unidirectional pattern:
 
 ```
 Component (pages/store/*)
@@ -30,27 +19,9 @@ Component (pages/store/*)
   → Component renders store-backed data
 ```
 
-**This matters:** read functions MUST return `{ displayData: DataObject, ...JSON }` AND write the same data to the store. Keep these in sync. Callers can use either the return value or store reactivity.
-
-## Critical Conventions (Do Not Violate)
-
-1. **ATP Agent:** Always obtain via `AtpService.getAgent()` or `getBskyAgent()` (in `src/lib/AtpService.ts`). Never construct `AtpAgent` directly elsewhere.
-
-2. **Bluesky logic:** All AT Protocol read/writes live in `src/lib/bskyService.ts`. Every function:
-   - Guards: `if (!authStore.isLoggedIn) throw new Error('Please login first')`
-   - Gets agent: `AtpService.getAgent()`
-   - Handles expiry: `if ((error as Error).message === 'Token has expired') authStore.handleSessionExpired()`
-3. **DataObject contract:** The discriminated union in `src/types/misc-types.ts` defines all renderable types (`timeline`, `lists`, `follows`, `list-posts`, `list-members`, `error`, `loading`). New view types require:
-
-   - Extending the union + data field
-   - Adding a matching branch in `DataCard.vue`
-   - Returning from the service function
-
-4. **Stores:** Use Pinia options API. Access other stores by calling their composable inside actions (e.g., `useSuggestionsStore()` inside `auth.login()`). Do not directly import + call store actions.
-
-5. **Slugs:** List URIs must be registered with `addMapping(uri, name)` from `src/utils/slug-utils.ts` whenever lists are fetched, so `/list/my-cool-list/posts` routes resolve correctly.
-
-6. **Secrets:** `anthropicApiKey`, `openaiApiKey`, `exemptDids` stay in `runtimeConfig` server-side. Never expose to the client.
+Read functions in `bskyService.ts` return `{ displayData: DataObject, ...JSON }` AND
+write the same data to the store — callers may use either. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full mermaid diagram and rationale.
 
 ## Key Services & Patterns
 
@@ -118,13 +89,6 @@ src/
 
 Import with `~` alias (`~/src/...`) or Nuxt aliases (`#imports`, `#app`).
 
-## Component & Style Conventions
-
-- **Files:** PascalCase (`DataCard.vue`, `AuthForm.vue`)
-- **Script:** `<script setup>` with typed props (interfaces, not type aliases)
-- **CSS:** BEM class names (e.g., `.data-card`, `.data-card__item`, `.data-card__item--active`)
-- **Import CSS:** One file per component under `src/assets/styles/`, imported inside `<script setup>` (e.g., `import '~/src/assets/styles/data-card.css'`)
-
 ## Authentication & Session
 
 - **Method:** Credential-based (`agent.login({ identifier, password })`)
@@ -135,47 +99,17 @@ Import with `~` alias (`~/src/...`) or Nuxt aliases (`#imports`, `#app`).
 
 (OAuth flow is in progress via `pages/oauth-callback.vue` + `public/client-metadata.json` but not yet wired.)
 
-## TypeScript
-
-Strict mode with `typeCheck: true`. When adding new features:
-
-- Use interfaces for component props (not `type`)
-- Add new types to `src/types/` split by domain, re-export from `index.ts`
-- Extend `DataObject` union for new view types
-
-## Commits & PRs
-
-Use [Conventional Commits](https://www.conventionalcommits.org):
-
-```
-<type>(<scope>): <description>
-```
-
-Common types: `feat`, `fix`, `docs`, `refactor`, `style`, `test`, `chore`, `perf`, `build`, `ci`.
-
-Examples:
-
-```
-feat(lists): add batch removal of list members
-fix(auth): reload session on expired token
-docs(architecture): update DataObject contract
-```
-
-Commits are enforced by commitlint. Format with `yarn format` before pushing.
-
 ## AI Dev Tooling
 
-The repo provides guidance for AI tools across multiple files:
-
-- **`AGENTS.md`** — project-wide instructions (recognized by GitHub Copilot, Claude Code, OpenAI Codex)
-- **`docs/ARCHITECTURE.md`** — full system design, data flows, patterns
-- **`CONTRIBUTING.md`** — setup, code style, workflow
-
-When adding new layers (e.g., new store shape, new service pattern), update `AGENTS.md` for project-wide changes or `.github/instructions/` for file-type-specific guidance.
+Path-scoped, file-type-specific guidance also lives in `.github/instructions/` (bsky
+services, Pinia stores, server API, types, Vue components) — check the matching file
+when editing those layers. Project-wide conventions belong in `AGENTS.md`.
 
 ## Testing
 
-No automated test suite yet (`@nuxt/test-utils` installed but unused). Vitest-based contributions for `src/lib/` and `src/utils/` are welcome — start with pure functions like `src/utils/slug-utils.ts`.
+No automated test suite exists yet (`@nuxt/test-utils` is installed but unused, and no
+`*.test.ts`/`*.spec.ts` files are present). Vitest-based contributions for `src/lib/`
+and `src/utils/` are welcome — start with pure functions like `src/utils/slug-utils.ts`.
 
 ## Environment Profiles (Optional)
 
@@ -189,6 +123,7 @@ See `.env.example` for all variables.
 
 ## References
 
+- **Always-on conventions:** [AGENTS.md](AGENTS.md)
 - **Architecture + data flows:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Full setup & conventions:** [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Project overview & features:** [README.md](README.md)
