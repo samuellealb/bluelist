@@ -353,7 +353,7 @@ import type {
   ListMemberItem,
 } from '~/src/types/index';
 import { addUserToList } from '~/src/lib/bskyService';
-import { curateUserLists } from '~/src/lib/openai';
+import { curateUserLists } from '~/src/lib/aiSuggestions';
 import type { ComponentPublicInstance } from 'vue';
 
 defineOptions({

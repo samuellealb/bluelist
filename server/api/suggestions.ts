@@ -1,5 +1,4 @@
 import { defineEventHandler, readBody, createError } from 'h3';
-import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { useRuntimeConfig } from '#imports';
 
@@ -36,14 +35,13 @@ export default defineEventHandler(async (event) => {
   try {
     const config = useRuntimeConfig();
     const anthropicApiKey = config.anthropicApiKey as string | undefined;
-    const openaiApiKey = config.openaiApiKey as string | undefined;
 
-    if (!anthropicApiKey && !openaiApiKey) {
+    if (!anthropicApiKey) {
       console.error('No AI API key found in runtime config');
       throw createError({
         statusCode: 500,
         message:
-          'No AI API key configured. Set NUXT_ANTHROPIC_API_KEY or NUXT_OPENAI_API_KEY in your environment.',
+          'No AI API key configured. Set NUXT_ANTHROPIC_API_KEY in your environment.',
       });
     }
 
@@ -112,66 +110,44 @@ Assign each profile in <profiles> to the lists in <existing_lists> it fits, foll
       });
     }
 
-    if (anthropicApiKey) {
-      const anthropic = new Anthropic({
-        apiKey: anthropicApiKey,
-        baseURL: 'https://api.anthropic.com',
-      });
-      const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
-        system: [
-          {
-            type: 'text',
-            text: systemPrompt,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
-        messages: [{ role: 'user', content: userPrompt }],
-        output_config: { format: { type: 'json_schema', schema } },
-      });
-      if (response.stop_reason === 'max_tokens') {
-        throw createError({
-          statusCode: 500,
-          message:
-            'Response truncated. Please reduce the number of users or lists.',
-        });
-      }
-      const textBlocks = response.content.filter(
-        (b): b is Anthropic.TextBlock => b.type === 'text'
-      );
-      if (textBlocks.length === 0) {
-        throw createError({
-          statusCode: 500,
-          message: 'No text content in Anthropic response',
-        });
-      }
-      return textBlocks.map((b) => b.text).join('');
-    }
-
-    const openAI = new OpenAI({ apiKey: openaiApiKey });
-    const response = await openAI.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'list_curation_result',
-          schema,
-          strict: true,
-        },
-      },
+    const anthropic = new Anthropic({
+      apiKey: anthropicApiKey,
+      baseURL: 'https://api.anthropic.com',
     });
-
-    return response.choices[0]?.message.content ?? null;
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      messages: [{ role: 'user', content: userPrompt }],
+      output_config: { format: { type: 'json_schema', schema } },
+    });
+    if (response.stop_reason === 'max_tokens') {
+      throw createError({
+        statusCode: 500,
+        message:
+          'Response truncated. Please reduce the number of users or lists.',
+      });
+    }
+    const textBlocks = response.content.filter(
+      (b): b is Anthropic.TextBlock => b.type === 'text'
+    );
+    if (textBlocks.length === 0) {
+      throw createError({
+        statusCode: 500,
+        message: 'No text content in Anthropic response',
+      });
+    }
+    return textBlocks.map((b) => b.text).join('');
   } catch (error: unknown) {
     if (
       error instanceof Error &&
-      (error.name === 'OpenAIError' ||
-        error.name === 'APIError' ||
+      (error.name === 'APIError' ||
         (error as { status?: number }).status === 400)
     ) {
       console.error('AI API error:', error);

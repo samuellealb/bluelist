@@ -8,8 +8,7 @@ conventions, and the development workflow. For a system overview, read
 
 - Node.js (version compatible with Nuxt 4)
 - [Yarn 1.x](https://classic.yarnpkg.com/) (the pinned package manager)
-- An Anthropic **or** OpenAI API key (at least one is needed to exercise AI
-  suggestions locally)
+- An Anthropic API key (needed to exercise AI suggestions locally)
 
 ## Setup
 
@@ -21,9 +20,7 @@ Copy `.env.example` to `.env.local` and fill in the values you need:
 
 ```bash
 NUXT_ATP_SERVICE=https://bsky.social            # required
-# Pick at least one AI provider:
-# NUXT_ANTHROPIC_API_KEY=your_anthropic_key_here   (preferred)
-# NUXT_OPENAI_API_KEY=your_openai_key_here
+# NUXT_ANTHROPIC_API_KEY=your_anthropic_key_here   # required for AI suggestions
 # NUXT_EXEMPT_DIDS=did:plc:xxxx,did:plc:yyyy       # optional, bypass daily limit
 ```
 

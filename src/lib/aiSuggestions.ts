@@ -24,9 +24,9 @@ import type {
  * @returns The data returned from the API endpoint
  * @throws Error if the API call fails
  */
-const callOpenAiAPI = async (users: string, lists: string) => {
+const callSuggestionsAPI = async (users: string, lists: string) => {
   try {
-    const data = await $fetch('/api/openai', {
+    const data = await $fetch('/api/suggestions', {
       method: 'POST',
       body: { users, lists },
     });
@@ -41,7 +41,7 @@ const callOpenAiAPI = async (users: string, lists: string) => {
 };
 
 /**
- * Processes user follows and lists to suggest list curation options using OpenAI
+ * Processes user follows and lists to suggest list curation options using Anthropic
  * @returns {Promise<Object>} - Object containing the suggestions data
  * @throws {Error} - If the API call fails or if parsing the response fails
  */
@@ -119,7 +119,7 @@ export const curateUserLists = async (): Promise<{
       })
     );
 
-    const response = await callOpenAiAPI(
+    const response = await callSuggestionsAPI(
       JSON.stringify(simplifiedFollows),
       JSON.stringify(simplifiedLists)
     );

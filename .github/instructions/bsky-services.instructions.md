@@ -1,5 +1,5 @@
 ---
-description: 'Use when creating or editing Bluelist service logic in src/lib (bskyService, AtpService, openai). Covers the AtpService agent singleton, the DataObject return contract, auth guards, token-expiry handling, and store synchronization.'
+description: 'Use when creating or editing Bluelist service logic in src/lib (bskyService, AtpService, aiSuggestions). Covers the AtpService agent singleton, the DataObject return contract, auth guards, token-expiry handling, and store synchronization.'
 applyTo: 'src/lib/**/*.ts'
 ---
 
@@ -48,9 +48,9 @@ requested page exceeds cached pages and a `cursor` exists; append to the store's
 `all*` array and advance `prefetchedPages`. Respect the store's `isFetching`
 flag to avoid concurrent fetches.
 
-## AI (`openai.ts`)
+## AI (`aiSuggestions.ts`)
 
 `curateUserLists()` must check `suggestionsStore.hasReachedLimit()` before
-calling `/api/openai`, and must not embed the OpenAI key client-side — that stays
-in the server route. Register list slugs with `addMapping(uri, name)` when
-lists are fetched.
+calling `/api/suggestions`, and must not embed the Anthropic key client-side —
+that stays in the server route. Register list slugs with `addMapping(uri, name)`
+when lists are fetched.

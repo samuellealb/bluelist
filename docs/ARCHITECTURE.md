@@ -8,15 +8,15 @@ confidently.
 
 ## Tech Stack
 
-| Concern         | Choice                                                              |
-| --------------- | ------------------------------------------------------------------- |
-| Framework       | Nuxt 4 (Vue 3, `<script setup>`)                                    |
-| State           | Pinia (options-store style)                                         |
-| Bluesky API     | `@atproto/api` (`AtpAgent`)                                         |
-| AI              | Anthropic `claude-haiku-4-5` or OpenAI `gpt-4o-mini` (server route) |
-| Language        | TypeScript (strict, `typeCheck: true`)                              |
-| Package manager | Yarn 1.x                                                            |
-| Tooling         | ESLint (`@nuxt/eslint`), Prettier, Husky, lint-staged, commitlint   |
+| Concern         | Choice                                                            |
+| --------------- | ----------------------------------------------------------------- |
+| Framework       | Nuxt 4 (Vue 3, `<script setup>`)                                  |
+| State           | Pinia (options-store style)                                       |
+| Bluesky API     | `@atproto/api` (`AtpAgent`)                                       |
+| AI              | Anthropic `claude-haiku-4-5` (server route)                       |
+| Language        | TypeScript (strict, `typeCheck: true`)                            |
+| Package manager | Yarn 1.x                                                          |
+| Tooling         | ESLint (`@nuxt/eslint`), Prettier, Husky, lint-staged, commitlint |
 
 ## Directory Map
 
@@ -25,14 +25,14 @@ app.vue, error.vue          # Root app + error boundary
 middleware/router.ts        # Global auth route guard
 scripts/run.mjs             # Cross-platform Nuxt launcher (injects NODE_EXTRA_CA_CERTS early)
 pages/                      # File-based routes (index, feed, follows, lists, list/[slug]/*)
-server/api/                 # Nitro endpoints (openai, exemptUsers)
+server/api/                 # Nitro endpoints (suggestions, exemptUsers)
 public/                     # Static assets (client-metadata.json, robots.txt)
 src/
   components/               # Vue components (PascalCase)
   lib/                      # Framework-agnostic services
     AtpService.ts           #   Singleton AtpAgent manager
     bskyService.ts          #   All Bluesky read/write operations
-    openai.ts               #   AI suggestion orchestration (client side)
+    aiSuggestions.ts        #   AI suggestion orchestration (client side)
   stores/                   # Pinia stores (auth, follows, lists, suggestions, ui)
   types/                    # Domain-split TypeScript types
   utils/slug-utils.ts       # List name <-> URL slug mapping
@@ -42,7 +42,7 @@ src/
 ## Core Data Flow
 
 The central pattern: **components call service functions, services fetch from
-Bluesky/OpenAI and write results into Pinia stores, and components render the
+Bluesky/Anthropic and write results into Pinia stores, and components render the
 store-backed `DataObject`.**
 
 ```mermaid
@@ -116,11 +116,11 @@ list posts; writes: add/remove users, create/update/delete lists). Every functio
 3. On error, checks `if ((error as Error).message === 'Token has expired')` and
    calls `authStore.handleSessionExpired()` before rethrowing.
 
-### `openai.ts` (client)
+### `aiSuggestions.ts` (client)
 
 `curateUserLists()` orchestrates AI suggestions: it enforces the daily limit via
 `suggestionsStore.hasReachedLimit()`, gathers the current-page follows and all
-lists, POSTs them to `/api/openai`, and stores the parsed suggestions.
+lists, POSTs them to `/api/suggestions`, and stores the parsed suggestions.
 
 ## State Management (`src/stores/`)
 
@@ -162,33 +162,31 @@ Current auth is **credential-based** (`agent.login({ identifier, password })`):
 
 ```mermaid
 flowchart LR
-    U[User] --> CL[openai.ts curateUserLists]
+    U[User] --> CL[aiSuggestions.ts curateUserLists]
     CL -->|check limit| SG[suggestions store]
-    CL -->|POST users+lists| API[/server/api/openai/]
-    API -->|if NUXT_ANTHROPIC_API_KEY| ANT[(Anthropic claude-haiku-4-5)]
-    API -->|else if NUXT_OPENAI_API_KEY| OAI[(OpenAI gpt-4o-mini)]
+    CL -->|POST users+lists| API[/server/api/suggestions/]
+    API -->|NUXT_ANTHROPIC_API_KEY required| ANT[(Anthropic claude-haiku-4-5)]
     API -->|JSON string| CL
     CL -->|store suggestions| SG
 ```
 
-- **Multi-LLM:** the server route prefers Anthropic (`claude-haiku-4-5-20251001`)
-  when `NUXT_ANTHROPIC_API_KEY` is set; falls back to OpenAI `gpt-4o-mini` when
-  only `NUXT_OPENAI_API_KEY` is set. At least one key is required.
+- **Anthropic-only:** the server route calls Anthropic
+  (`claude-haiku-4-5-20251001`); `NUXT_ANTHROPIC_API_KEY` is required.
 - **Daily limit:** 5 requests/user/day, tracked per-DID in `localStorage`.
 - **Exemption:** `POST /api/exemptUsers` checks `NUXT_EXEMPT_DIDS` and can bypass
   the limit.
 - **Prompt:** the curator system prompt is defined inline in
-  [server/api/openai.ts](../server/api/openai.ts) and constrains the model to
-  existing lists only, returning a strict JSON shape.
+  [server/api/suggestions.ts](../server/api/suggestions.ts) and constrains the
+  model to existing lists only, returning a strict JSON shape.
 
 ## Server API (`server/api/`)
 
 | Route              | Method | Body                             | Returns                                                    |
 | ------------------ | ------ | -------------------------------- | ---------------------------------------------------------- |
-| `/api/openai`      | POST   | `{ users, lists }` (stringified) | JSON string `{ data: [{ name, did, lists: [{ name }] }] }` |
+| `/api/suggestions` | POST   | `{ users, lists }` (stringified) | JSON string `{ data: [{ name, did, lists: [{ name }] }] }` |
 | `/api/exemptUsers` | POST   | `{ did }`                        | `{ isExempt: boolean }`                                    |
 
-Secrets (`anthropicApiKey`, `openaiApiKey`, `exemptDids`) are read from
+Secrets (`anthropicApiKey`, `exemptDids`) are read from
 `runtimeConfig` server-side only; never expose them to the client.
 
 ## Slug System

@@ -14,7 +14,7 @@ internals, store shapes, and conventions not covered there.
 Component (pages/store/*)
   → calls bskyService function
   → gets agent via AtpService
-  → fetches from Bluesky/OpenAI API
+  → fetches from Bluesky/Anthropic API
   → writes to Pinia store + returns DataObject
   → Component renders store-backed data
 ```
@@ -44,18 +44,18 @@ All Bluesky operations (timeline, follows, lists, list members, posts, add/remov
 }
 ```
 
-### `openai.ts` (client-side)
+### `aiSuggestions.ts` (client-side)
 
 `curateUserLists()` orchestrates AI suggestions:
 
 - Checks daily limit via `suggestionsStore.hasReachedLimit()` (5/day per DID, stored in localStorage)
-- POSTs user+list data to `/api/openai`
-- Server prefers Anthropic (`claude-haiku-4-5-20251001`), falls back to OpenAI `gpt-4o-mini`
+- POSTs user+list data to `/api/suggestions`
+- Server calls Anthropic (`claude-haiku-4-5-20251001`)
 - Stores parsed suggestions in `suggestionsStore`
 
 ### Server Routes (`server/api/`)
 
-- **`/api/openai`** POST — `{ users, lists }` → JSON suggestions
+- **`/api/suggestions`** POST — `{ users, lists }` → JSON suggestions
 - **`/api/exemptUsers`** POST — `{ did }` → `{ isExempt }` (checks `NUXT_EXEMPT_DIDS`)
 
 ## State Stores (`src/stores/`)
@@ -74,13 +74,13 @@ Pagination uses cursor-based prefetch: when a requested page exceeds cache and a
 
 ```
 pages/                      # File-based routes; guard with middleware/router.ts
-server/api/                 # Nitro endpoints (openai, exemptUsers)
+server/api/                 # Nitro endpoints (suggestions, exemptUsers)
 src/
   components/               # PascalCase, <script setup>, BEM CSS classes
   lib/
     AtpService.ts           # Singleton AtpAgent manager
     bskyService.ts          # All AT Protocol operations
-    openai.ts               # AI suggestion orchestration
+    aiSuggestions.ts        # AI suggestion orchestration
   stores/                   # Pinia (options API): auth, follows, lists, suggestions, ui
   types/                    # Domain-split TypeScript; re-exported from index.ts
   utils/slug-utils.ts       # List name ↔ URL slug bidirectional mapping (localStorage)

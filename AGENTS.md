@@ -1,7 +1,7 @@
 # Bluelist — Project Instructions
 
 Bluelist is a Nuxt 4 + Vue 3 app for organizing Bluesky (AT Protocol) follows into
-lists, with optional OpenAI-powered suggestions. Read
+lists, with optional Anthropic-powered suggestions. Read
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system overview and
 [CONTRIBUTING.md](CONTRIBUTING.md) for setup and workflow. This file lists only
 the always-on essentials.
@@ -9,7 +9,7 @@ the always-on essentials.
 ## Stack
 
 Nuxt 4, Vue 3 (`<script setup>`), Pinia (options API), TypeScript (strict),
-`@atproto/api`, Anthropic / OpenAI (multi-LLM, server-side), Yarn 1. ESLint +
+`@atproto/api`, Anthropic (server-side), Yarn 1. ESLint +
 Prettier + Husky + commitlint.
 
 ## Build & Verify
@@ -38,7 +38,7 @@ Prettier + Husky + commitlint.
   [src/utils/slug-utils.ts](src/utils/slug-utils.ts) for URL routing.
 - **AI limit:** suggestions are capped at 5/day per DID (localStorage), with
   `NUXT_EXEMPT_DIDS` override via `/api/exemptUsers`.
-- **Secrets** (`anthropicApiKey`, `openaiApiKey`, `exemptDids`) stay in
+- **Secrets** (`anthropicApiKey`, `exemptDids`) stay in
   `runtimeConfig` server-side; never expose to the client.
 
 ## Style
