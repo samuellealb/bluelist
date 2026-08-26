@@ -41,24 +41,6 @@ const callOpenAiAPI = async (users: string, lists: string) => {
 };
 
 /**
- * Extracts the outermost JSON object from a raw model response, tolerating
- * markdown code fences and any leading/trailing prose the model may add.
- * Slices from the first `{` to the last `}`, so the response must contain
- * exactly one top-level JSON object.
- *
- * @param response - The raw response returned by the API
- * @returns The extracted JSON string ready for parsing
- */
-const extractJSON = (response: string): string => {
-  const start = response.indexOf('{');
-  const end = response.lastIndexOf('}');
-  if (start === -1 || end === -1 || end < start) {
-    throw new SyntaxError('No JSON object found in response');
-  }
-  return response.slice(start, end + 1);
-};
-
-/**
  * Processes user follows and lists to suggest list curation options using OpenAI
  * @returns {Promise<Object>} - Object containing the suggestions data
  * @throws {Error} - If the API call fails or if parsing the response fails
@@ -149,8 +131,7 @@ export const curateUserLists = async (): Promise<{
       if (!response) {
         throw new Error('Empty response received from AI API');
       }
-      const sanitizedResponse = extractJSON(response);
-      parsedResponse = JSON.parse(sanitizedResponse);
+      parsedResponse = JSON.parse(response);
       if (parsedResponse.error) {
         throw new Error(parsedResponse.error);
       }

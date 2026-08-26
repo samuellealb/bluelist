@@ -3,6 +3,35 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { useRuntimeConfig } from '#imports';
 
+const buildCurationSchema = (followNames: string[], listNames: string[]) => ({
+  type: 'object',
+  additionalProperties: false,
+  required: ['data'],
+  properties: {
+    data: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'description', 'lists'],
+        properties: {
+          name: { type: 'string', enum: followNames },
+          description: { type: 'string' },
+          lists: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name'],
+              properties: { name: { type: 'string', enum: listNames } },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
 export default defineEventHandler(async (event) => {
   try {
     const config = useRuntimeConfig();
@@ -27,18 +56,53 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const systemPrompt = `You are a Bluesky list curator. Organize the given profiles into the existing lists.
-      Follow these rules:
-      1) Any profile can belong to more than one list.
-      2) Do not add profiles to lists that they do not fit in.
-      3) Let the user know which profiles are not in any list.
-      4) Always double-check your response to make sure there is no non-existing list being suggested. Stick to the existing lists. Do not suggest new lists. This is very important.
-      5) Read through each profile name, description, and posts carefully to determine which list they should be in.
-      6) Format your response as JSON object. The only root level property should be named 'data'. Data is an Array of objects, each one having the properties 'name' (string), description (string) and lists(Array). Each lists object should have the property name.
-      7) A single profile can have multiple lists suggested, as long as they are existing lists and considered a fit for that profile.
-      8) Return a valid JSON object. Do not return any other text or HTML. The JSON object should be formatted as a string, and the string should be escaped properly so that it can be parsed as JSON. Do not add markdown or any other formatting to the JSON object.`;
+    let parsedUsers: { name: string }[];
+    let parsedLists: { name: string }[];
+    try {
+      parsedUsers = JSON.parse(users);
+      parsedLists = JSON.parse(lists);
+    } catch {
+      throw createError({
+        statusCode: 400,
+        message: 'Malformed users or lists JSON',
+      });
+    }
 
-    const userPrompt = `These are the users I follow: ${users}. These are my existing lists: ${lists}. Please organize the profiles into these lists only.`;
+    const followNames = [...new Set(parsedUsers.map((u) => u.name))];
+    const listNames = [...new Set(parsedLists.map((l) => l.name))];
+
+    if (!followNames.length || !listNames.length) {
+      throw createError({
+        statusCode: 400,
+        message: 'Need at least one follow and one existing list to curate',
+      });
+    }
+
+    const schema = buildCurationSchema(followNames, listNames);
+
+    const systemPrompt = `You are a Bluesky list curator.
+
+<task>
+Assign each profile in <profiles> to zero or more lists from <existing_lists>,
+based on how well its name and description match each list's theme.
+</task>
+
+<rules>
+- A profile may belong to more than one list if it genuinely fits multiple.
+- Only assign a profile to a list it is a genuine match for. Do not force-fit profiles into lists they don't belong in.
+- If a profile fits no existing list, leave its lists array empty.
+- Read each profile's description carefully before deciding.
+</rules>`;
+
+    const userPrompt = `<profiles>
+${users}
+</profiles>
+
+<existing_lists>
+${lists}
+</existing_lists>
+
+Assign each profile in <profiles> to the lists in <existing_lists> it fits, following the system instructions.`;
 
     if (userPrompt.length > 100000) {
       throw createError({
@@ -56,14 +120,33 @@ export default defineEventHandler(async (event) => {
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4096,
-        system: systemPrompt,
+        system: [
+          {
+            type: 'text',
+            text: systemPrompt,
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
         messages: [{ role: 'user', content: userPrompt }],
+        output_config: { format: { type: 'json_schema', schema } },
       });
-      const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text');
-      if (textBlocks.length === 0) {
-        throw createError({ statusCode: 500, message: 'No text content in Anthropic response' });
+      if (response.stop_reason === 'max_tokens') {
+        throw createError({
+          statusCode: 500,
+          message:
+            'Response truncated. Please reduce the number of users or lists.',
+        });
       }
-      return textBlocks.map(b => b.text).join('');
+      const textBlocks = response.content.filter(
+        (b): b is Anthropic.TextBlock => b.type === 'text'
+      );
+      if (textBlocks.length === 0) {
+        throw createError({
+          statusCode: 500,
+          message: 'No text content in Anthropic response',
+        });
+      }
+      return textBlocks.map((b) => b.text).join('');
     }
 
     const openAI = new OpenAI({ apiKey: openaiApiKey });
@@ -73,6 +156,14 @@ export default defineEventHandler(async (event) => {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'list_curation_result',
+          schema,
+          strict: true,
+        },
+      },
     });
 
     return response.choices[0]?.message.content ?? null;

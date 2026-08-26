@@ -25,9 +25,12 @@ Endpoints are Nitro handlers created with `defineEventHandler`.
   - `/api/exemptUsers` → `{ isExempt: boolean }`.
 - The AI curator endpoint (`/api/openai`) prefers **Anthropic**
   (`claude-haiku-4-5-20251001`) when `anthropicApiKey` is set and falls back to
-  **OpenAI** (`gpt-4o-mini`). The inline system prompt must keep the model
-  constrained to **existing lists only** and force valid JSON output. Guard
-  against oversized prompts (`userPrompt.length > 100000`) before calling either
-  API.
+  **OpenAI** (`gpt-4o-mini`). Existing-lists-only and valid-JSON-output are
+  enforced structurally via a per-request JSON Schema (`output_config.format`
+  for Anthropic, `response_format.json_schema` with `strict:true` for OpenAI)
+  built from the actual follow/list names in each request — the system prompt
+  only needs to state curation-judgment rules, not formatting or list-name
+  constraints. Guard against oversized prompts (`userPrompt.length > 100000`)
+  before calling either API.
 - Log server errors with enough context, but never leak secrets or raw API keys
   in responses.
