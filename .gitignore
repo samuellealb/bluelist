@@ -14,7 +14,6 @@ logs
 *.log
 
 # Misc
-.github
 .DS_Store
 .fleet
 .idea

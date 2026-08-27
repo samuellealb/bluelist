@@ -3,16 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build --dotenv .env.local",
-    "dev": "nuxt dev --dotenv .env.local",
-    "generate": "nuxt generate --dotenv .env.local",
-    "preview": "nuxt preview --dotenv .env.local",
+    "build": "node scripts/run.mjs build",
+    "dev": "node scripts/run.mjs dev",
+    "generate": "node scripts/run.mjs generate",
+    "preview": "node scripts/run.mjs preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "format": "prettier --write .",
     "prepare": "husky install"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "@atproto/api": "^0.14.10",
     "@atproto/oauth-client-browser": "^0.3.26",
     "@nuxt/eslint": "1.2.0",
@@ -20,15 +21,16 @@
     "@nuxt/test-utils": "3.17.2",
     "@pinia/nuxt": "^0.11.0",
     "@unhead/vue": "^2.0.0-rc.8",
-    "dompurify": "^3.2.4",
     "eslint": "^9.0.0",
     "nuxt": "^4.4.2",
-    "openai": "^4.89.0",
     "pinia": "^3.0.2",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "resolutions": {
+    "esbuild": ">=0.28.1"
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
     "@commitlint/config-conventional": "^19.8.0",

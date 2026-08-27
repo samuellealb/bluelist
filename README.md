@@ -32,7 +32,7 @@ This app uses AtProto OAuth for authentication. Simply enter your Bluesky handle
 
 ### Supported Environments
 
-- **Localhost**: `http://127.0.0.1:3000` (uses loopback client configuration)
+- **Localhost**: `http://localhost:3000` (uses loopback client configuration)
 - **Preview**: `https://bluelist-three.vercel.app` (Vercel preview deployments)
 - **Production**: `https://listy.blue` (production domain)
 
@@ -42,52 +42,61 @@ This app uses AtProto OAuth for authentication. Simply enter your Bluesky handle
 
 If you want to run this locally, you'll need:
 
-- An OpenAI developer account
-- Your own OpenAI API key (set in the environment variables)
+- An Anthropic developer account
+- Your API key (set in the environment variables)
 - Optional: Set exempt DIDs in the environment variables to bypass daily limits
 
 ### Environment Variables
 
-The app uses different environment files for different deployments:
-
-#### `.env.local` (Development)
+Copy `.env.example` to `.env.local` and fill in your values:
 
 ```bash
-NUXT_ATP_SERVICE=https://bsky.social
-NUXT_OPENAI_API_KEY=your_openai_key_here
-NUXT_EXEMPT_DIDS=
-
-# OAuth Configuration for localhost
-NUXT_OAUTH_CLIENT_ID=http://127.0.0.1:3000/client-metadata.json
-NUXT_OAUTH_REDIRECT_URI=http://127.0.0.1:3000/oauth-callback
-NUXT_APP_ORIGIN=http://127.0.0.1:3000
+cp .env.example .env.local
 ```
 
-#### `.env.preview` (Vercel Preview)
+Required:
 
-```bash
+```
 NUXT_ATP_SERVICE=https://bsky.social
-NUXT_OPENAI_API_KEY=your_openai_key_here
-NUXT_EXEMPT_DIDS=your_exempt_dids
-
-# OAuth Configuration for preview environment
-NUXT_OAUTH_CLIENT_ID=https://bluelist-three.vercel.app/client-metadata.json
-NUXT_OAUTH_REDIRECT_URI=https://bluelist-three.vercel.app/oauth-callback
-NUXT_APP_ORIGIN=https://bluelist-three.vercel.app
 ```
 
-#### `.env.production` (Production)
+Optional:
 
-```bash
-NUXT_ATP_SERVICE=https://bsky.social
-NUXT_OPENAI_API_KEY=your_openai_key_here
-NUXT_EXEMPT_DIDS=your_exempt_dids
-
-# OAuth Configuration for production environment
-NUXT_OAUTH_CLIENT_ID=https://listy.blue/client-metadata.json
-NUXT_OAUTH_REDIRECT_URI=https://listy.blue/oauth-callback
-NUXT_APP_ORIGIN=https://listy.blue
 ```
+NUXT_ANTHROPIC_API_KEY=your_anthropic_key_here  # Required for AI suggestions
+NUXT_EXEMPT_DIDS=did1,did2,did3                 # DIDs exempt from daily AI limits
+```
+
+### Environment Profiles
+
+The dev server defaults to `http://localhost:3000` with no extra configuration needed. Platform-specific setups are opt-in via `.env.local` only — no code changes required.
+
+**WSL / any clean machine** — default, nothing to add.
+
+**macOS with HTTPS and a custom local domain:**
+
+```
+NUXT_DEV_HTTPS=true
+NUXT_DEV_HOST=bluelist-local.blue
+NUXT_DEV_PORT=4430
+NUXT_DEV_SSL_KEY=./certs/bluelist-local.blue-key.pem
+NUXT_DEV_SSL_CERT=./certs/bluelist-local.blue.pem
+```
+
+> Prerequisites: add `127.0.0.1 bluelist-local.blue` to `/etc/hosts`, install
+> [mkcert](https://github.com/FiloSottile/mkcert), run `mkcert -install` and
+> `mkcert bluelist-local.blue` inside `./certs/`.
+
+**Corporate proxy with a custom CA:**
+
+```
+NODE_EXTRA_CA_CERTS=./certs/bayer-proxy-ca.pem
+```
+
+> Place your corporate CA certificate at the path above. The launcher
+> (`scripts/run.mjs`) automatically detects and injects it before the Node TLS
+> stack initialises. If the variable is unset it is silently skipped; if it is
+> set but the file is missing, a warning is logged and the variable is ignored.
 
 ### Setup
 
@@ -99,13 +108,15 @@ yarn install
 
 ### Development Server
 
-Start the development server on `http://127.0.0.1:3000`:
+Start the development server:
 
 ```bash
 yarn dev
 ```
 
-The app will automatically use the localhost OAuth configuration for development.
+Serves `http://localhost:3000` by default, or HTTPS on the configured host/port
+when `NUXT_DEV_HTTPS=true`. The app automatically uses the localhost OAuth
+configuration for development.
 
 ### OAuth Client Metadata
 
@@ -131,13 +142,10 @@ yarn preview
 
 ## Technical Details
 
-Built with:
+Built with Nuxt 4, AT Protocol integration, and a focus on making list management easier for Bluesky users.
 
-- **Nuxt 3** - Vue.js framework
-- **@atproto/oauth-client-browser** - AtProto OAuth client for browsers
-- **@atproto/api** - AtProto API integration
-- **Pinia** - State management
-- **TypeScript** - Type safety
+- **Architecture overview:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Contributing & local setup:** [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ### OAuth Implementation
 
@@ -170,24 +178,6 @@ We're just getting started! Here's what we're working on:
 - `username.bsky.social`
 - `mydomain.com` (if you have a custom domain)
 - `handle.another-provider.com` (for other AtProto providers)
-
-## Technical Details
-
-Built with:
-
-- **Nuxt 3** - Vue.js framework
-- **@atproto/oauth-client-browser** - AtProto OAuth client for browsers
-- **@atproto/api** - AtProto API integration
-- **Pinia** - State management
-- **TypeScript** - Type safety
-
-### OAuth Implementation
-
-- Follows AtProto OAuth specification for "Desktop App" clients
-- Uses PKCE, DPoP, and PAR for security
-- Handles token refresh automatically
-- Supports multiple environments with environment-specific configurations
-- Uses handle resolution for user-friendly login experience
 
 ## Feature Details
 
