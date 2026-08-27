@@ -13,11 +13,16 @@ Hey there! We've upgraded to OAuth authentication for better security and user e
 
 - **OAuth Login**: Sign in with your Bluesky handle (e.g., username.bsky.social)
 - **View Your Lists**: See all the lists you've already created on Bluesky
+- **Create & Edit Lists**: Create new lists and edit existing ones directly in the app
+- **Delete Lists**: Remove lists you no longer need
 - **Browse Your Follows**: Simple interface to view who you're following
 - **Add to Lists**: Easily add users to your existing lists with a few clicks
 - **✨ AI Suggestions**: Get AI-powered recommendations for organizing your follows into lists
-- **View List Members**: Browse members of your lists with improved navigation
+- **View List Members**: Browse members of your lists with improved navigation, including a live member count
+- **Remove Members**: Remove a member from a list, or select and remove several at once
 - **View List Posts**: See posts from list members with user-friendly URLs
+- **Light/Dark Theme**: Toggle and persist your preferred theme
+- **Pagination**: Browse large lists, follows, and member lists a page at a time
 
 ## Important Note
 
@@ -163,9 +168,9 @@ Built with Nuxt 4, AT Protocol integration, and a focus on making list managemen
 
 We're just getting started! Here's what we're working on:
 
-- Creating new lists directly in the app
-- Removing users from lists (individually or in batches)
-- Integrating your main Bluesky timeline
+- Surfacing the Bluesky timeline/feed view in the main navigation (the view
+  itself is built at `/feed`, just not linked yet)
+- Batch-adding a user to multiple lists at once (single-list add is supported today)
 - Enhanced OAuth session management
 - Mobile-responsive improvements
 
@@ -193,7 +198,9 @@ We're just getting started! Here's what we're working on:
 
 ### List Management
 
-- View list members and their posts in separate views
+- Create, edit, and delete lists
+- Add a user to a list, and remove members individually or in batches
+- View list members and their posts in separate views, with a cached member count
 - User-friendly URLs with readable slugs for better navigation
 - Cached list data for improved performance
 
