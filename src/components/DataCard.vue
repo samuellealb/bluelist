@@ -177,8 +177,7 @@ import { useListsStore } from '~/src/stores/lists';
 import '~/src/assets/styles/data-card.css';
 import ListChips from '~/src/components/ListChips.vue';
 import ListForm from '~/src/components/ListForm.vue';
-import { AtpService } from '~/src/lib/AtpService';
-import { deleteList } from '~/src/lib/bskyService';
+import { deleteList, getListMemberCount } from '~/src/lib/bskyService';
 import type {
   DataObject,
   TimelineItem,
@@ -361,13 +360,7 @@ const fetchMemberCount = async () => {
 
   memberCountLoading.value = true;
   try {
-    const agent = AtpService.getAgent();
-    const { data } = await agent.app.bsky.graph.getList({
-      list: listItem.value.uri,
-      limit: 100,
-    });
-
-    const count = data.items.length;
+    const count = await getListMemberCount(listItem.value.uri);
     memberCount.value = count;
     listsStore.setMemberCount(listItem.value.uri, count);
   } catch (error) {

@@ -1,5 +1,5 @@
 ---
-description: 'Use when creating or editing Bluelist service logic in src/lib (bskyService, AtpService, aiSuggestions). Covers the AtpService agent singleton, the DataObject return contract, auth guards, token-expiry handling, and store synchronization.'
+description: 'Use when creating or editing Bluelist service logic in src/lib (bskyService, OAuthService, aiSuggestions). Covers getting the OAuth-authenticated agent, the DataObject return contract, auth guards, and store synchronization.'
 applyTo: 'src/lib/**/*.ts'
 ---
 
@@ -9,12 +9,14 @@ All Bluesky and AI logic lives here, framework-agnostic where possible.
 
 ## Getting the ATP agent
 
-Always obtain the agent through `AtpService` — never construct `AtpAgent`
-directly:
+Always obtain the agent through `authStore.getAgent()` — never construct
+`AtpAgent`/`Agent` directly; a standalone agent has no OAuth session and every
+call will 401:
 
 ```ts
-import { AtpService } from '~/src/lib/AtpService';
-const agent = AtpService.getAgent(); // or getBskyAgent() for graph APIs
+import { useAuthStore } from '~/src/stores/auth';
+const authStore = useAuthStore();
+const agent = authStore.getAgent(); // null if not logged in
 ```
 
 ## Standard function shape (bskyService)
@@ -29,14 +31,10 @@ Every Bluesky operation must:
    ```
 
 2. Perform the request via the agent inside a `try` block.
-3. Handle expired sessions in `catch`:
-
-   ```ts
-   if ((error as Error).message === 'Token has expired') {
-     authStore.handleSessionExpired();
-   }
-   ```
-
+3. On error, log and rethrow a user-facing error. Session expiry is handled
+   centrally via the OAuth client's `'deleted'` event
+   (`OAuthService.onSessionDeleted` → `authStore.handleSessionExpired()`), not
+   per call site.
 4. **Read functions** return `{ displayData: DataObject, ...JSON }` **and** write
    the same data into the relevant store via `store.$patch({...})`. Keep the
    structured data and the JSON string field in sync.

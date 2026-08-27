@@ -32,7 +32,7 @@ This app uses AtProto OAuth for authentication. Simply enter your Bluesky handle
 
 ### Supported Environments
 
-- **Localhost**: `http://localhost:3000` (uses loopback client configuration)
+- **Localhost**: `http://127.0.0.1:3000` (uses loopback client configuration)
 - **Preview**: `https://bluelist-three.vercel.app` (Vercel preview deployments)
 - **Production**: `https://listy.blue` (production domain)
 
@@ -69,7 +69,7 @@ NUXT_EXEMPT_DIDS=did1,did2,did3                 # DIDs exempt from daily AI limi
 
 ### Environment Profiles
 
-The dev server defaults to `http://localhost:3000` with no extra configuration needed. Platform-specific setups are opt-in via `.env.local` only — no code changes required.
+The dev server defaults to `http://127.0.0.1:3000` with no extra configuration needed. Platform-specific setups are opt-in via `.env.local` only — no code changes required.
 
 **WSL / any clean machine** — default, nothing to add.
 
@@ -114,17 +114,21 @@ Start the development server:
 yarn dev
 ```
 
-Serves `http://localhost:3000` by default, or HTTPS on the configured host/port
-when `NUXT_DEV_HTTPS=true`. The app automatically uses the localhost OAuth
-configuration for development.
+Serves `http://127.0.0.1:3000` by default, or HTTPS on the configured host/port
+when `NUXT_DEV_HTTPS=true`. Open `http://127.0.0.1:3000` (not `localhost:3000`) so
+the OAuth loopback client's redirect URI matches the browser origin. The app
+automatically uses the built-in loopback OAuth configuration for development.
 
 ### OAuth Client Metadata
 
-The app includes client metadata files in the `public/` directory:
+Client metadata is generated dynamically at `/client-metadata.json`
+(`server/routes/client-metadata.json.ts`), derived from whatever origin the app is
+actually running at:
 
-- `public/client-metadata.json` - Contains OAuth client configuration
-- The metadata is automatically served with proper CORS headers
-- For localhost, the app uses the built-in loopback client configuration
+- Served with proper CORS headers
+- Works unmodified on localhost, any preview deployment, and production — no
+  per-environment configuration needed
+- For localhost, the app instead uses the built-in loopback client configuration
 
 ### Production
 

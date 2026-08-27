@@ -27,9 +27,6 @@ export default defineNuxtConfig({
     exemptDids: process.env.NUXT_EXEMPT_DIDS,
     public: {
       atpService: process.env.NUXT_ATP_SERVICE,
-      oauthClientId: process.env.NUXT_OAUTH_CLIENT_ID,
-      oauthRedirectUri: process.env.NUXT_OAUTH_REDIRECT_URI,
-      appOrigin: process.env.NUXT_APP_ORIGIN,
     },
   },
   devServer: useHttps
@@ -48,7 +45,7 @@ export default defineNuxtConfig({
         port: Number.parseInt(process.env.NUXT_DEV_PORT ?? '', 10) || 4430,
       }
     : {
-        host: 'localhost',
+        host: '127.0.0.1',
         port: 3000,
       },
   nitro: {
@@ -58,13 +55,5 @@ export default defineNuxtConfig({
         maxAge: 60 * 60 * 24 * 7, // 7 days
       },
     ],
-    routeRules: {
-      '/client-metadata.json': {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      },
-    },
   },
 });

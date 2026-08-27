@@ -28,15 +28,14 @@ definePageMeta({
 const authStore = useAuthStore();
 
 onMounted(async () => {
-  try {
-    // The OAuth service will handle the callback automatically when initialized
-    await authStore.checkLoginSession();
+  // The OAuth service will handle the callback automatically when initialized
+  await authStore.checkLoginSession();
+  // Prevent middleware/router.ts from re-running session init on the next navigation
+  authStore.setInitialized(true);
 
-    // Redirect to lists page after successful login
+  if (authStore.isLoggedIn) {
     await navigateTo('/lists', { replace: true });
-  } catch (error) {
-    console.error('OAuth callback error:', error);
-    // Redirect to login page with error
+  } else {
     await navigateTo('/?error=oauth_callback_failed', { replace: true });
   }
 });

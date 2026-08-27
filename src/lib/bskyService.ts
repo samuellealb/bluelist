@@ -65,9 +65,6 @@ export const getTimeline = async (): Promise<{
       timelineJSON: jsonData,
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching timeline:', error);
     throw new Error('Error fetching feed');
   }
@@ -208,9 +205,6 @@ export const getFollows = async (
     }
   } catch (error) {
     followsStore.setIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching follows:', error);
     throw new Error('Error fetching follows');
   }
@@ -424,9 +418,6 @@ export const getLists = async (
     }
   } catch (error) {
     listsStore.setIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching lists:', error);
     throw new Error('Error fetching lists');
   }
@@ -579,9 +570,6 @@ export const getListPosts = async (
       listPostsJSON: jsonData,
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching list posts:', error);
     throw new Error('Error fetching list posts');
   }
@@ -641,10 +629,6 @@ export const addUserToList = async (
 
     return 'User successfully added to list';
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error adding user to list:', error);
     throw new Error(`Failed to add to list: ${(error as Error).message}`);
   }
@@ -738,10 +722,6 @@ export const addUsersToLists = async (
 
         listsStore.setMembersCacheDirty(true);
       } catch (error) {
-        if ((error as Error).message === 'Token has expired') {
-          authStore.handleSessionExpired();
-        }
-
         results.push({
           profileDid,
           listUri: list.uri,
@@ -801,10 +781,6 @@ export const createList = async (
       message: 'List created successfully',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error creating list:', error);
     throw new Error(`Failed to create list: ${(error as Error).message}`);
   }
@@ -856,10 +832,6 @@ export const updateList = async (
       message: 'List updated successfully',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error updating list:', error);
     throw new Error(`Failed to update list: ${(error as Error).message}`);
   }
@@ -900,10 +872,6 @@ export const deleteList = async (
       message: 'List deleted successfully',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error deleting list:', error);
     throw new Error(`Failed to delete list: ${(error as Error).message}`);
   }
@@ -947,10 +915,6 @@ export const removeUserFromList = async (
       message: 'User successfully removed from list',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error removing user from list:', error);
     throw new Error(`Failed to remove from list: ${(error as Error).message}`);
   }
@@ -1008,10 +972,6 @@ export const removeUsersFromList = async (
 
       listsStore.setMembersCacheDirty(true);
     } catch (error) {
-      if ((error as Error).message === 'Token has expired') {
-        authStore.handleSessionExpired();
-      }
-
       results.push({
         itemUri,
         success: false,
@@ -1223,9 +1183,6 @@ export const getListMembers = async (
     }
   } catch (error) {
     listsStore.setMembersIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching list members:', error);
     throw new Error('Error fetching list members');
   }
@@ -1402,5 +1359,38 @@ export const fetchListDetails = async (
   } catch (error) {
     console.error('Error fetching list details:', error);
     throw new Error('Error fetching list details');
+  }
+};
+
+/**
+ * Fetches the number of members in a list
+ * @param {string} listUri - The URI of the list
+ * @returns {Promise<number>} - The number of members in the list
+ * @throws {Error} - When user is not logged in or there's an error fetching the list
+ */
+export const getListMemberCount = async (listUri: string): Promise<number> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const { data } = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
+      list: listUri,
+      limit: 100,
+    });
+
+    return data.items.length;
+  } catch (error) {
+    console.error('Error fetching list member count:', error);
+    throw new Error('Error fetching list member count');
   }
 };

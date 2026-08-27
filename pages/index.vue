@@ -46,7 +46,7 @@ watch(
 
 <style scoped>
 .error-banner {
-  background-color: var(--error-transparent-10);
+  background-color: var(--error-bg, #ffebee);
   border: 1px solid var(--error-color);
   border-radius: var(--border-radius);
   padding: 1rem;

@@ -30,7 +30,7 @@ public/                     # Static assets (client-metadata.json, robots.txt)
 src/
   components/               # Vue components (PascalCase)
   lib/                      # Framework-agnostic services
-    AtpService.ts           #   Singleton AtpAgent manager
+    OAuthService.ts         #   OAuth client init/session management
     bskyService.ts          #   All Bluesky read/write operations
     aiSuggestions.ts        #   AI suggestion orchestration (client side)
   stores/                   # Pinia stores (auth, follows, lists, suggestions, ui)
@@ -48,7 +48,7 @@ store-backed `DataObject`.**
 ```mermaid
 flowchart LR
     C[Component / Page] -->|calls| S[src/lib/bskyService.ts]
-    S -->|AtpService.getAgent| A[AtpAgent]
+    S -->|authStore.getAgent| A[Agent]
     A -->|AT Protocol| BSKY[(Bluesky PDS)]
     S -->|$patch displayData| ST[Pinia stores]
     ST -->|reactive DataObject| DD[DataDisplay.vue]
@@ -94,27 +94,19 @@ adding functions.
 
 ## Services (`src/lib/`)
 
-### `AtpService`
-
-A singleton wrapper around a single `AtpAgent` instance:
-
-- `getAgent()` / `getBskyAgent()` — lazily creates the agent using
-  `runtimeConfig.public.atpService`.
-- `setAuthToken(jwt)` — sets the `Authorization: Bearer` header.
-- `resetAgent()` — clears the instance on logout.
-
-Always obtain the agent through `AtpService`; never instantiate `AtpAgent`
-directly elsewhere.
-
 ### `bskyService`
 
 All Bluesky operations live here (reads: timeline, follows, lists, list members,
 list posts; writes: add/remove users, create/update/delete lists). Every function:
 
 1. Guards with `if (!authStore.isLoggedIn) throw new Error('Please login first')`.
-2. Gets the agent via `AtpService`.
-3. On error, checks `if ((error as Error).message === 'Token has expired')` and
-   calls `authStore.handleSessionExpired()` before rethrowing.
+2. Gets the agent via `authStore.getAgent()` — the OAuth-authenticated `Agent`.
+   Never instantiate `AtpAgent`/`Agent` directly elsewhere; it would have no
+   session and every call would 401.
+3. On error, logs and rethrows a user-facing error. Unrecoverable session
+   invalidation is handled centrally via the OAuth client's `'deleted'` event
+   (see `OAuthService.onSessionDeleted` → `authStore.handleSessionExpired()`),
+   not per call site.
 
 ### `aiSuggestions.ts` (client)
 
@@ -145,18 +137,21 @@ the next batch, appends it to `all*` arrays, and advances `prefetchedPages`. The
 
 ## Authentication
 
-Current auth is **credential-based** (`agent.login({ identifier, password })`):
+Auth is **OAuth-based** (AT Proto OAuth, via `@atproto/oauth-client-browser`),
+the sole login path — password/`createSession` login has been removed:
 
-- Login requires an **email** identifier (handles are rejected to avoid rate
-  limits). The returned `accessJwt` is set on the agent and `loginData` is
-  persisted to `localStorage`.
-- [middleware/router.ts](../middleware/router.ts) restores the session once
-  (`checkLoginSession`), redirects unauthenticated users to `/`, and redirects
-  authenticated users away from `/` to `/lists`.
-- On token expiry, `authStore.handleSessionExpired()` clears storage and reloads.
-
-> An OAuth login flow is in progress (see `pages/oauth-callback.vue` and
-> `public/client-metadata.json`); it is not yet wired into the services above.
+- The user enters a Bluesky handle; [`OAuthService`](../src/lib/OAuthService.ts)
+  builds a loopback client (localhost) or a discoverable client (deployed,
+  metadata served dynamically at [`/client-metadata.json`](../server/routes/client-metadata.json.ts))
+  and redirects to the provider for consent.
+- [`pages/oauth-callback.vue`](../pages/oauth-callback.vue) completes the
+  callback and checks `authStore.isLoggedIn` before routing to `/lists` or back
+  to `/` with an error.
+- [middleware/router.ts](../middleware/router.ts) restores the session once per
+  app load (`checkLoginSession`), redirects unauthenticated users to `/`, and
+  redirects authenticated users away from `/` to `/lists`.
+- Unrecoverable session invalidation (refresh failure) fires the OAuth client's
+  `'deleted'` event, which calls `authStore.handleSessionExpired()`.
 
 ## AI Suggestions Pipeline
 

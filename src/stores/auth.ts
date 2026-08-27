@@ -61,13 +61,7 @@ export const useAuthStore = defineStore('auth', {
      */
     async initializeOAuth(): Promise<void> {
       try {
-        const config = useRuntimeConfig();
-
-        await OAuthService.initialize({
-          clientId: config.public.oauthClientId as string,
-          redirectUri: config.public.oauthRedirectUri as string,
-          appOrigin: config.public.appOrigin as string,
-        });
+        await OAuthService.initialize();
 
         const result = await OAuthService.initSession();
 

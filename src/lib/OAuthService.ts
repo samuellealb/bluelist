@@ -1,57 +1,51 @@
-import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
+import {
+  BrowserOAuthClient,
+  buildLoopbackClientId,
+  atprotoLoopbackClientMetadata,
+} from '@atproto/oauth-client-browser';
 import { Agent } from '@atproto/api';
 import type { OAuthSession } from '@atproto/oauth-client-browser';
+import { OAUTH_SCOPE } from './oauthScope';
 
 let oauthClient: BrowserOAuthClient | null = null;
-
-export interface OAuthConfig {
-  clientId: string;
-  redirectUri: string;
-  appOrigin: string;
-}
 
 /**
  * OAuth Service for managing atproto OAuth authentication
  */
 export const OAuthService = {
   /**
-   * Initialize the OAuth client
+   * Initialize the OAuth client. Client configuration is derived entirely from
+   * the current browser origin so the same code works unmodified on localhost,
+   * any Vercel preview URL, and production, with no per-environment config.
    */
-  async initialize(config: OAuthConfig): Promise<BrowserOAuthClient> {
+  async initialize(): Promise<BrowserOAuthClient> {
     if (oauthClient) {
       return oauthClient;
     }
 
     try {
-      const currentOrigin =
-        typeof window !== 'undefined'
-          ? window.location.origin
-          : config.appOrigin;
+      const { hostname, origin } = window.location;
       const isLocalhost =
-        currentOrigin.includes('localhost') ||
-        currentOrigin.includes('127.0.0.1') ||
-        currentOrigin.includes('[::1]');
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '[::1]';
 
       if (isLocalhost) {
+        // Loopback client: the library defaults to scope "atproto" only, so
+        // the desired scope must be embedded in the client_id's query string
+        // per the atproto spec's loopback rules (parsed by the AS the same way).
+        const loopbackClientId = `${buildLoopbackClientId(
+          window.location
+        )}&scope=${encodeURIComponent(OAUTH_SCOPE)}`;
         oauthClient = new BrowserOAuthClient({
           handleResolver: 'https://bsky.social',
-          clientMetadata: {
-            client_id: 'http://localhost:3000/client-metadata.json',
-            client_name: 'Bluelist Local Development',
-            client_uri: 'http://localhost:3000',
-            redirect_uris: ['http://localhost:3000/oauth-callback'],
-            scope: 'atproto transition:generic',
-            grant_types: ['authorization_code', 'refresh_token'],
-            response_types: ['code'],
-            application_type: 'web',
-            token_endpoint_auth_method: 'none',
-            dpop_bound_access_tokens: true,
-          },
+          clientMetadata: atprotoLoopbackClientMetadata(loopbackClientId),
         });
       } else {
-        // Use deployed environment configuration by loading metadata from URL
+        // Deployed client: metadata is served dynamically at this same
+        // origin's /client-metadata.json (see server/routes/client-metadata.json.ts).
         oauthClient = await BrowserOAuthClient.load({
-          clientId: config.clientId,
+          clientId: `${origin}/client-metadata.json`,
           handleResolver: 'https://bsky.social',
         });
       }
@@ -91,7 +85,7 @@ export const OAuthService = {
       return undefined;
     } catch (error) {
       console.error('Failed to initialize session:', error);
-      return undefined;
+      throw error;
     }
   },
 

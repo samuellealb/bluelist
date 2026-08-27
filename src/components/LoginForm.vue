@@ -69,8 +69,9 @@ const validateAndLogin = async () => {
     return;
   }
 
-  // Allow various handle formats
-  const handlePattern = /^[a-zA-Z0-9._-]+(\.[a-zA-Z0-9._-]+)*$/;
+  // Require a dotted handle, e.g. username.bsky.social
+  const handlePattern =
+    /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/;
   if (!handlePattern.test(trimmedHandle)) {
     handleError.value =
       'Please enter a valid handle (e.g., username.bsky.social)';
