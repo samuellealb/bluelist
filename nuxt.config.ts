@@ -29,17 +29,31 @@ export default defineNuxtConfig({
       atpService: process.env.NUXT_ATP_SERVICE,
     },
   },
-  ...(useHttps && {
-    devServer: {
-      https: {
-        key: readCert(
-          'NUXT_DEV_SSL_KEY',
-          './certs/bluelist-local.blue-key.pem'
-        ),
-        cert: readCert('NUXT_DEV_SSL_CERT', './certs/bluelist-local.blue.pem'),
+  devServer: useHttps
+    ? {
+        https: {
+          key: readCert(
+            'NUXT_DEV_SSL_KEY',
+            './certs/bluelist-local.blue-key.pem'
+          ),
+          cert: readCert(
+            'NUXT_DEV_SSL_CERT',
+            './certs/bluelist-local.blue.pem'
+          ),
+        },
+        host: process.env.NUXT_DEV_HOST ?? 'bluelist-local.blue',
+        port: Number.parseInt(process.env.NUXT_DEV_PORT ?? '', 10) || 4430,
+      }
+    : {
+        host: '127.0.0.1',
+        port: 3000,
       },
-      host: process.env.NUXT_DEV_HOST ?? 'bluelist-local.blue',
-      port: parseInt(process.env.NUXT_DEV_PORT ?? '', 10) || 4430,
-    },
-  }),
+  nitro: {
+    publicAssets: [
+      {
+        dir: 'public',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      },
+    ],
+  },
 });

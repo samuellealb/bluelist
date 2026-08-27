@@ -13,7 +13,7 @@ internals, store shapes, and conventions not covered there.
 ```
 Component (pages/store/*)
   → calls bskyService function
-  → gets agent via AtpService
+  → gets agent via authStore.getAgent()
   → fetches from Bluesky/Anthropic API
   → writes to Pinia store + returns DataObject
   → Component renders store-backed data
@@ -25,13 +25,12 @@ write the same data to the store — callers may use either. See
 
 ## Key Services & Patterns
 
-### `AtpService` (`src/lib/AtpService.ts`)
+### Getting the ATP agent
 
-Singleton wrapper for `AtpAgent`:
-
-- `getAgent()` / `getBskyAgent()` — lazily creates using `runtimeConfig.public.atpService`
-- `setAuthToken(jwt)` — sets auth header
-- `resetAgent()` — clears on logout
+Always call `authStore.getAgent()` (from `~/src/stores/auth`) to get the
+OAuth-authenticated `Agent` — it returns `null` if not logged in. Never
+instantiate `AtpAgent`/`Agent` directly; an agent built any other way has no
+session and every call will 401.
 
 ### `bskyService` (`src/lib/bskyService.ts`)
 
@@ -78,7 +77,7 @@ server/api/                 # Nitro endpoints (suggestions, exemptUsers)
 src/
   components/               # PascalCase, <script setup>, BEM CSS classes
   lib/
-    AtpService.ts           # Singleton AtpAgent manager
+    OAuthService.ts         # OAuth client init/session management
     bskyService.ts          # All AT Protocol operations
     aiSuggestions.ts        # AI suggestion orchestration
   stores/                   # Pinia (options API): auth, follows, lists, suggestions, ui

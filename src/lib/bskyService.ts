@@ -2,7 +2,6 @@ import { useAuthStore } from '~/src/stores/auth';
 import { useFollowsStore } from '~/src/stores/follows';
 import { useListsStore } from '~/src/stores/lists';
 import { useUiStore } from '~/src/stores/ui';
-import { AtpService } from '~/src/lib/AtpService';
 import type {
   DataObject,
   FollowsStore,
@@ -28,7 +27,11 @@ export const getTimeline = async (): Promise<{
   }
 
   try {
-    const agent = AtpService.getAgent();
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
     const { data } = await agent.getTimeline({
       limit: 30,
     });
@@ -62,9 +65,6 @@ export const getTimeline = async (): Promise<{
       timelineJSON: jsonData,
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching timeline:', error);
     throw new Error('Error fetching feed');
   }
@@ -120,10 +120,17 @@ export const getFollows = async (
     followsStore.setIsFetching(true);
 
     try {
-      const agent = AtpService.getBskyAgent();
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
 
       if (followsStore.follows.allFollows.length === 0 || refresh) {
-        const firstBatch = await fetchFollowsBatch(null, authStore.did, agent);
+        const firstBatch = await fetchFollowsBatch(
+          null,
+          authStore.did,
+          agent as unknown as BskyAgent
+        );
         followsStore.setFollows(firstBatch.follows);
         followsStore.setPrefetchedPages(1);
         followsStore.setCursor(firstBatch.cursor);
@@ -132,7 +139,7 @@ export const getFollows = async (
         const newBatch = await fetchFollowsBatch(
           followsStore.follows.cursor,
           authStore.did,
-          agent
+          agent as unknown as BskyAgent
         );
 
         if (newBatch.follows.length > 0) {
@@ -198,9 +205,6 @@ export const getFollows = async (
     }
   } catch (error) {
     followsStore.setIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching follows:', error);
     throw new Error('Error fetching follows');
   }
@@ -336,10 +340,17 @@ export const getLists = async (
     listsStore.setIsFetching(true);
 
     try {
-      const agent = AtpService.getBskyAgent();
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
 
       if (listsStore.lists.allLists.length === 0 || refresh) {
-        const firstBatch = await fetchListsBatch(null, authStore.did, agent);
+        const firstBatch = await fetchListsBatch(
+          null,
+          authStore.did,
+          agent as unknown as BskyAgent
+        );
         listsStore.setLists(firstBatch.lists);
         listsStore.setPrefetchedPages(1);
         listsStore.setCursor(firstBatch.cursor);
@@ -348,7 +359,7 @@ export const getLists = async (
         const newBatch = await fetchListsBatch(
           listsStore.lists.cursor,
           authStore.did,
-          agent
+          agent as unknown as BskyAgent
         );
 
         if (newBatch.lists.length > 0) {
@@ -407,9 +418,6 @@ export const getLists = async (
     }
   } catch (error) {
     listsStore.setIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching lists:', error);
     throw new Error('Error fetching lists');
   }
@@ -514,8 +522,14 @@ export const getListPosts = async (
   }
 
   try {
-    const agent = AtpService.getAgent();
-    const { data } = await agent.app.bsky.feed.getListFeed({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const { data } = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.feed.getListFeed({
       list: listUri,
       limit,
     });
@@ -532,7 +546,9 @@ export const getListPosts = async (
       indexedAt: item.post.indexedAt,
     }));
 
-    const listDetails = await agent.app.bsky.graph.getList({
+    const listDetails = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
       list: listUri,
       limit: 1,
     });
@@ -541,8 +557,8 @@ export const getListPosts = async (
       type: 'list-posts',
       data: posts,
       listInfo: {
-        name: listDetails.data.list.name,
-        description: listDetails.data.list.description,
+        name: listDetails.data.list?.name || 'Unknown List',
+        description: listDetails.data.list?.description || '',
         uri: listUri,
       },
     };
@@ -554,9 +570,6 @@ export const getListPosts = async (
       listPostsJSON: jsonData,
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching list posts:', error);
     throw new Error('Error fetching list posts');
   }
@@ -581,8 +594,14 @@ export const addUserToList = async (
   }
 
   try {
-    const agent = AtpService.getAgent();
-    const { data } = await agent.app.bsky.graph.getList({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const { data } = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
       list: listUri,
       limit: 100,
     });
@@ -610,10 +629,6 @@ export const addUserToList = async (
 
     return 'User successfully added to list';
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error adding user to list:', error);
     throw new Error(`Failed to add to list: ${(error as Error).message}`);
   }
@@ -659,8 +674,14 @@ export const addUsersToLists = async (
 
     for (const list of lists) {
       try {
-        const agent = AtpService.getAgent();
-        const { data } = await agent.app.bsky.graph.getList({
+        const agent = authStore.getAgent();
+        if (!agent) {
+          throw new Error('Authentication session not available');
+        }
+
+        const { data } = await (
+          agent as unknown as BskyAgent
+        ).app.bsky.graph.getList({
           list: list.uri,
           limit: 100,
         });
@@ -701,10 +722,6 @@ export const addUsersToLists = async (
 
         listsStore.setMembersCacheDirty(true);
       } catch (error) {
-        if ((error as Error).message === 'Token has expired') {
-          authStore.handleSessionExpired();
-        }
-
         results.push({
           profileDid,
           listUri: list.uri,
@@ -739,17 +756,23 @@ export const createList = async (
   }
 
   try {
-    const agent = AtpService.getAgent();
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const recordData = {
+      $type: 'app.bsky.graph.list',
+      purpose: 'app.bsky.graph.defs#curatelist',
+      name,
+      description,
+      createdAt: new Date().toISOString(),
+    };
+
     const result = await agent.com.atproto.repo.createRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.list',
-      record: {
-        $type: 'app.bsky.graph.list',
-        purpose: 'app.bsky.graph.defs#curatelist',
-        name,
-        description,
-        createdAt: new Date().toISOString(),
-      },
+      record: recordData,
     });
 
     return {
@@ -758,10 +781,6 @@ export const createList = async (
       message: 'List created successfully',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error creating list:', error);
     throw new Error(`Failed to create list: ${(error as Error).message}`);
   }
@@ -790,8 +809,12 @@ export const updateList = async (
     const parts = uri.split('/');
     const rkey = parts[parts.length - 1]!;
 
-    const agent = AtpService.getAgent();
-    await agent.com.atproto.repo.putRecord({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    await (agent as unknown as BskyAgent).com.atproto.repo.putRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.list',
       rkey,
@@ -809,10 +832,6 @@ export const updateList = async (
       message: 'List updated successfully',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error updating list:', error);
     throw new Error(`Failed to update list: ${(error as Error).message}`);
   }
@@ -837,8 +856,12 @@ export const deleteList = async (
     const parts = uri.split('/');
     const rkey = parts[parts.length - 1]!;
 
-    const agent = AtpService.getAgent();
-    await agent.com.atproto.repo.deleteRecord({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    await (agent as unknown as BskyAgent).com.atproto.repo.deleteRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.list',
       rkey,
@@ -849,10 +872,6 @@ export const deleteList = async (
       message: 'List deleted successfully',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error deleting list:', error);
     throw new Error(`Failed to delete list: ${(error as Error).message}`);
   }
@@ -878,8 +897,12 @@ export const removeUserFromList = async (
     const parts = itemUri.split('/');
     const rkey = parts[parts.length - 1]!;
 
-    const agent = AtpService.getAgent();
-    await agent.com.atproto.repo.deleteRecord({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    await (agent as unknown as BskyAgent).com.atproto.repo.deleteRecord({
       repo: authStore.did,
       collection: 'app.bsky.graph.listitem',
       rkey,
@@ -892,10 +915,6 @@ export const removeUserFromList = async (
       message: 'User successfully removed from list',
     };
   } catch (error) {
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
-
     console.error('Error removing user from list:', error);
     throw new Error(`Failed to remove from list: ${(error as Error).message}`);
   }
@@ -934,8 +953,12 @@ export const removeUsersFromList = async (
       const parts = itemUri.split('/');
       const rkey = parts[parts.length - 1]!;
 
-      const agent = AtpService.getAgent();
-      await agent.com.atproto.repo.deleteRecord({
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
+
+      await (agent as unknown as BskyAgent).com.atproto.repo.deleteRecord({
         repo: authStore.did,
         collection: 'app.bsky.graph.listitem',
         rkey,
@@ -949,10 +972,6 @@ export const removeUsersFromList = async (
 
       listsStore.setMembersCacheDirty(true);
     } catch (error) {
-      if ((error as Error).message === 'Token has expired') {
-        authStore.handleSessionExpired();
-      }
-
       results.push({
         itemUri,
         success: false,
@@ -1088,10 +1107,18 @@ export const getListMembers = async (
     listsStore.setMembersIsFetching(true);
 
     try {
-      const agent = AtpService.getBskyAgent();
+      const agent = authStore.getAgent();
+      if (!agent) {
+        throw new Error('Authentication session not available');
+      }
 
       if (listsStore.members.allMembers.length === 0 || refresh) {
-        const firstBatch = await fetchMembersBatch(null, listUri, agent, limit);
+        const firstBatch = await fetchMembersBatch(
+          null,
+          listUri,
+          agent as unknown as BskyAgent,
+          limit
+        );
         listsStore.setMembers(firstBatch.members);
         listsStore.setMembersPrefetchedPages(1);
         listsStore.setMembersCursor(firstBatch.cursor);
@@ -1100,7 +1127,7 @@ export const getListMembers = async (
         const newBatch = await fetchMembersBatch(
           listsStore.members.cursor,
           listUri,
-          agent,
+          agent as unknown as BskyAgent,
           limit
         );
 
@@ -1156,9 +1183,6 @@ export const getListMembers = async (
     }
   } catch (error) {
     listsStore.setMembersIsFetching(false);
-    if ((error as Error).message === 'Token has expired') {
-      authStore.handleSessionExpired();
-    }
     console.error('Error fetching list members:', error);
     throw new Error('Error fetching list members');
   }
@@ -1312,8 +1336,14 @@ export const fetchListDetails = async (
   }
 
   try {
-    const agent = AtpService.getBskyAgent();
-    const response = await agent.app.bsky.graph.getList({
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const response = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
       list: listUri,
       limit: 1,
     });
@@ -1329,5 +1359,38 @@ export const fetchListDetails = async (
   } catch (error) {
     console.error('Error fetching list details:', error);
     throw new Error('Error fetching list details');
+  }
+};
+
+/**
+ * Fetches the number of members in a list
+ * @param {string} listUri - The URI of the list
+ * @returns {Promise<number>} - The number of members in the list
+ * @throws {Error} - When user is not logged in or there's an error fetching the list
+ */
+export const getListMemberCount = async (listUri: string): Promise<number> => {
+  const authStore = useAuthStore();
+
+  if (!authStore.isLoggedIn) {
+    throw new Error('Please login first');
+  }
+
+  try {
+    const agent = authStore.getAgent();
+    if (!agent) {
+      throw new Error('Authentication session not available');
+    }
+
+    const { data } = await (
+      agent as unknown as BskyAgent
+    ).app.bsky.graph.getList({
+      list: listUri,
+      limit: 100,
+    });
+
+    return data.items.length;
+  } catch (error) {
+    console.error('Error fetching list member count:', error);
+    throw new Error('Error fetching list member count');
   }
 };

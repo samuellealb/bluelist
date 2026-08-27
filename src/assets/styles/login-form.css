@@ -161,3 +161,27 @@
   margin-right: 5px;
   font-weight: bold;
 }
+
+.login-form__info {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: var(--card-bg-transparent-50);
+  border: 1px solid var(--primary-transparent-20);
+  border-radius: var(--border-radius);
+  border-left: 3px solid var(--primary-color);
+}
+
+.login-form__info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+}
+
+.login-form__info-prefix {
+  color: var(--primary-color);
+  margin-right: 5px;
+  font-weight: bold;
+}

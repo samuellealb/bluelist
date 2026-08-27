@@ -21,9 +21,10 @@ Prettier + Husky + commitlint.
 
 ## Critical Conventions (do not violate)
 
-- **ATP agent:** always obtain the agent via `AtpService.getAgent()` /
-  `getBskyAgent()` in [src/lib/AtpService.ts](src/lib/AtpService.ts). Never
-  construct an `AtpAgent` directly elsewhere.
+- **ATP agent:** always obtain the agent via `authStore.getAgent()` (the
+  OAuth-authenticated `Agent`, or `null` if not logged in). Never construct an
+  `AtpAgent`/`Agent` directly elsewhere — a standalone agent has no session and
+  every call will 401.
 - **Bluesky logic** belongs in [src/lib/bskyService.ts](src/lib/bskyService.ts).
   Every operation guards `authStore.isLoggedIn`, and on error checks
   `message === 'Token has expired'` → `authStore.handleSessionExpired()`.
