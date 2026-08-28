@@ -69,7 +69,7 @@ const caPath = envVars['NODE_EXTRA_CA_CERTS'];
 if (caPath) {
   if (process.env.NODE_EXTRA_CA_CERTS) {
     console.info(
-      `[run.mjs] NODE_EXTRA_CA_CERTS already set in the environment (${process.env.NODE_EXTRA_CA_CERTS}) — keeping it and ignoring the .env.local value.`
+      '[run.mjs] NODE_EXTRA_CA_CERTS already set in the environment — keeping it and ignoring the .env.local value.'
     );
   } else {
     const resolvedCaPath = resolve(root, caPath);
