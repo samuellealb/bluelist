@@ -1,11 +1,11 @@
 /**
  * Cross-platform dev launcher.
  *
- * Reads .env.local and — only when NODE_EXTRA_CA_CERTS is defined there and
- * the referenced file exists — injects it into the child process environment
- * before spawning nuxt. This is necessary because NODE_EXTRA_CA_CERTS must
- * be set before Node's TLS stack initialises; dotenv loaded inside nuxt is
- * too late.
+ * Reads .env.local and — only when NODE_EXTRA_CA_CERTS is defined there, the
+ * referenced file exists, and the shell has not already exported its own —
+ * injects it into the child process environment before spawning nuxt. This is
+ * necessary because NODE_EXTRA_CA_CERTS must be set before Node's TLS stack
+ * initialises; dotenv loaded inside nuxt is too late.
  *
  * Usage (via package.json scripts):
  *   node scripts/run.mjs dev
@@ -63,15 +63,23 @@ const envVars = parseEnvFile(envFile);
 const childEnv = { ...process.env };
 
 // Inject NODE_EXTRA_CA_CERTS only when the file actually exists on this machine.
+// Node accepts a single path here, so an ambient value already exported by the
+// shell always wins — overwriting it would drop the machine's real CA bundle.
 const caPath = envVars['NODE_EXTRA_CA_CERTS'];
 if (caPath) {
-  const resolvedCaPath = resolve(root, caPath);
-  if (existsSync(resolvedCaPath)) {
-    childEnv['NODE_EXTRA_CA_CERTS'] = resolvedCaPath;
-  } else {
-    console.warn(
-      `[run.mjs] NODE_EXTRA_CA_CERTS is set but file not found: ${resolvedCaPath} — skipping.`
+  if (process.env.NODE_EXTRA_CA_CERTS) {
+    console.info(
+      `[run.mjs] NODE_EXTRA_CA_CERTS already set in the environment (${process.env.NODE_EXTRA_CA_CERTS}) — keeping it and ignoring the .env.local value.`
     );
+  } else {
+    const resolvedCaPath = resolve(root, caPath);
+    if (existsSync(resolvedCaPath)) {
+      childEnv['NODE_EXTRA_CA_CERTS'] = resolvedCaPath;
+    } else {
+      console.warn(
+        `[run.mjs] NODE_EXTRA_CA_CERTS is set but file not found: ${resolvedCaPath} — skipping.`
+      );
+    }
   }
 }
 
