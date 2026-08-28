@@ -136,6 +136,20 @@ export const OAuthService = {
   },
 
   /**
+   * Revoke a session's tokens at the authorization server and delete it from
+   * the browser store. Without this the client restores it on the next load.
+   */
+  async signOut(did: string): Promise<void> {
+    if (!oauthClient) {
+      return;
+    }
+
+    // revoke() rather than session.signOut(): it deletes the stored tokens even
+    // when the issuer metadata can no longer be fetched.
+    await oauthClient.revoke(did);
+  },
+
+  /**
    * Restore a session by DID
    */
   async restoreSession(did: string): Promise<OAuthSession> {
