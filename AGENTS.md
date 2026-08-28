@@ -47,3 +47,14 @@ Prettier + Husky + commitlint.
 PascalCase component files, `<script setup>` with typed props, BEM CSS, one CSS
 file per component under `src/assets/styles/` imported in `<script setup>`. Use the
 `~` alias (`~/src/...`) and Nuxt aliases (`#imports`, `#app`). Conventional Commits.
+
+## Tickets, Commits & PRs
+
+- **Tickets:** open them in `samuellealb/bluelist` and always add them to
+  project 5: <https://github.com/users/samuellealb/projects/5>
+  (`gh project item-add 5 --owner samuellealb --url <issue-url>`).
+- **Conventional Commits:** always use Conventional Commit format — for commit
+  messages, ticket titles, and PR titles alike.
+- **PRs:** always mention the related ticket(s) in the PR description, and
+  mention the PR in the related ticket(s). If a PR is opened with no
+  associated ticket, create one first.
