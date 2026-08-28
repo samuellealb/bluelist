@@ -204,4 +204,17 @@ lists are fetched so the slug is available for navigation.
   `src/types/index.ts`.
 - **Commits:** Conventional Commits, enforced by commitlint.
 
+## Design System
+
+Theming is CSS-custom-property driven: `:root` (dark) and `.light-theme` blocks in
+[`src/assets/styles/_variables.css`](../src/assets/styles/_variables.css), toggled by
+`ThemeToggle.vue`.
+
+- [Design token audit & target schema](design/token-schema.md) — current token defects and the
+  schema theme work targets.
+- [City pop visual research](design/city-pop-aesthetics.md) — aesthetic research backing the
+  proposed redesign.
+- [Theme proposals](themes/README.md) — six specs (3 families × dark/light) awaiting a
+  selection. Not yet implemented. Live previews: `open docs/themes/index.html`.
+
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup and workflow details.
