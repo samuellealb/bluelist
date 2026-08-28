@@ -1,10 +1,8 @@
-import {
-  BrowserOAuthClient,
-  buildLoopbackClientId,
-  atprotoLoopbackClientMetadata,
-} from '@atproto/oauth-client-browser';
 import { Agent } from '@atproto/api';
-import type { OAuthSession } from '@atproto/oauth-client-browser';
+import type {
+  BrowserOAuthClient,
+  OAuthSession,
+} from '@atproto/oauth-client-browser';
 import { OAUTH_SCOPE } from './oauthScope';
 
 let oauthClient: BrowserOAuthClient | null = null;
@@ -26,7 +24,25 @@ export const OAuthService = {
       return oauthClient;
     }
 
+    // atproto OAuth needs WebCrypto, which browsers only expose in secure
+    // contexts: HTTPS, or http on localhost/127.0.0.1. A LAN IP over http is not one.
+    if (!window.isSecureContext) {
+      const port = window.location.port ? `:${window.location.port}` : '';
+      throw new Error(
+        `OAuth is unavailable at ${window.location.origin} because the browser blocks WebCrypto on insecure origins. ` +
+          `Open the app at http://127.0.0.1${port} or serve it over HTTPS.`
+      );
+    }
+
     try {
+      // Imported lazily: the library instantiates a WebCrypto-backed runtime at
+      // module evaluation, which throws before the guard above can report why.
+      const {
+        BrowserOAuthClient,
+        buildLoopbackClientId,
+        atprotoLoopbackClientMetadata,
+      } = await import('@atproto/oauth-client-browser');
+
       const { hostname, origin } = window.location;
       const isLocalhost =
         hostname === 'localhost' ||

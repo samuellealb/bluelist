@@ -83,7 +83,7 @@ export const useAuthStore = defineStore('auth', {
         });
       } catch (error) {
         console.error('Failed to initialize OAuth:', error);
-        this.setLoginError('Failed to initialize authentication system');
+        this.setLoginError((error as Error).message);
       }
     },
 
