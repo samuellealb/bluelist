@@ -1,10 +1,8 @@
-import {
-  BrowserOAuthClient,
-  buildLoopbackClientId,
-  atprotoLoopbackClientMetadata,
-} from '@atproto/oauth-client-browser';
 import { Agent } from '@atproto/api';
-import type { OAuthSession } from '@atproto/oauth-client-browser';
+import type {
+  BrowserOAuthClient,
+  OAuthSession,
+} from '@atproto/oauth-client-browser';
 import { OAUTH_SCOPE } from './oauthScope';
 
 let oauthClient: BrowserOAuthClient | null = null;
@@ -26,7 +24,25 @@ export const OAuthService = {
       return oauthClient;
     }
 
+    // atproto OAuth needs WebCrypto, which browsers only expose in secure
+    // contexts: HTTPS, or http on localhost/127.0.0.1. A LAN IP over http is not one.
+    if (!window.isSecureContext) {
+      const port = window.location.port ? `:${window.location.port}` : '';
+      throw new Error(
+        `OAuth is unavailable at ${window.location.origin} because the browser blocks WebCrypto on insecure origins. ` +
+          `Open the app at http://127.0.0.1${port} or serve it over HTTPS.`
+      );
+    }
+
     try {
+      // Imported lazily: the library instantiates a WebCrypto-backed runtime at
+      // module evaluation, which throws before the guard above can report why.
+      const {
+        BrowserOAuthClient,
+        buildLoopbackClientId,
+        atprotoLoopbackClientMetadata,
+      } = await import('@atproto/oauth-client-browser');
+
       const { hostname, origin } = window.location;
       const isLocalhost =
         hostname === 'localhost' ||
@@ -117,6 +133,20 @@ export const OAuthService = {
       console.error('Failed to sign in:', error);
       throw error;
     }
+  },
+
+  /**
+   * Revoke a session's tokens at the authorization server and delete it from
+   * the browser store. Without this the client restores it on the next load.
+   */
+  async signOut(did: string): Promise<void> {
+    if (!oauthClient) {
+      return;
+    }
+
+    // revoke() rather than session.signOut(): it deletes the stored tokens even
+    // when the issuer metadata can no longer be fetched.
+    await oauthClient.revoke(did);
   },
 
   /**
