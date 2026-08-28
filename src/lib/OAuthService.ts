@@ -8,6 +8,9 @@ import type { OAuthSession } from '@atproto/oauth-client-browser';
 import { OAUTH_SCOPE } from './oauthScope';
 
 let oauthClient: BrowserOAuthClient | null = null;
+let sessionDeletedCallback:
+  | ((event: { sub: string; cause: Error }) => void)
+  | null = null;
 
 /**
  * OAuth Service for managing atproto OAuth authentication
@@ -29,6 +32,9 @@ export const OAuthService = {
         hostname === 'localhost' ||
         hostname === '127.0.0.1' ||
         hostname === '[::1]';
+      // Deletion is reported via this constructor hook, not an emitted event.
+      const onDelete = (sub: string, cause: unknown) =>
+        sessionDeletedCallback?.({ sub, cause: cause as Error });
 
       if (isLocalhost) {
         // Loopback client: the library defaults to scope "atproto" only, so
@@ -40,6 +46,7 @@ export const OAuthService = {
         oauthClient = new BrowserOAuthClient({
           handleResolver: 'https://bsky.social',
           clientMetadata: atprotoLoopbackClientMetadata(loopbackClientId),
+          onDelete,
         });
       } else {
         // Deployed client: metadata is served dynamically at this same
@@ -47,6 +54,7 @@ export const OAuthService = {
         oauthClient = await BrowserOAuthClient.load({
           clientId: `${origin}/client-metadata.json`,
           handleResolver: 'https://bsky.social',
+          onDelete,
         });
       }
 
@@ -148,9 +156,7 @@ export const OAuthService = {
       throw new Error('OAuth client not initialized');
     }
 
-    oauthClient.addEventListener('deleted', (event: CustomEvent) => {
-      callback(event.detail);
-    });
+    sessionDeletedCallback = callback;
   },
 
   /**
@@ -158,5 +164,6 @@ export const OAuthService = {
    */
   reset(): void {
     oauthClient = null;
+    sessionDeletedCallback = null;
   },
 };
