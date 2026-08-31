@@ -480,6 +480,13 @@
   resolved "https://registry.yarnpkg.com/@bomb.sh/tab/-/tab-0.0.19.tgz#c22f3b75c8a391a38cd956b7391b45551587d76a"
   integrity sha512-dTRfo9Q9B+lbLG3JCu8a/AGQSfD2XXcFcnakQzVjSOX+VvR/s9zpsH8TlqV3iHqazniRn1Ypwd1hcRlXcu/4BA==
 
+"@capsizecss/unpack@^4.0.0":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@capsizecss/unpack/-/unpack-4.0.1.tgz#5fc5f3a371a93a69d764e81a09badf0143381739"
+  integrity sha512-CuNiSqg7+e1cO/GjffyMOm5Tt2jUF9CWHHnvQ/UkqvtkGfHdgwEC0wpmq7fkN3gxwpRnrAN0WzO3vREKmNolMQ==
+  dependencies:
+    fontkitten "^1.0.3"
+
 "@clack/core@0.4.2":
   version "0.4.2"
   resolved "https://registry.npmjs.org/@clack/core/-/core-0.4.2.tgz"
@@ -1153,7 +1160,7 @@
   resolved "https://registry.npmjs.org/@nuxt/devalue/-/devalue-2.0.2.tgz"
   integrity sha512-GBzP8zOc7CGWyFQS6dv1lQz8VVpz5C2yRszbXufwG/9zhStTIH50EtD87NmWbTMwXDvZLNg8GIpb1UFdH93JCA==
 
-"@nuxt/devtools-kit@3.4.2":
+"@nuxt/devtools-kit@3.4.2", "@nuxt/devtools-kit@^3.2.1":
   version "3.4.2"
   resolved "https://registry.yarnpkg.com/@nuxt/devtools-kit/-/devtools-kit-3.4.2.tgz#951e50070ded4e71b5f2fa1ce812c7d7528f1778"
   integrity sha512-TPPbmH9xrExagYxfCe6JgtbHmgchfgDdA656Yws18rn8I/oCvB+gcw3kTWBBp2sC9ipZPXsgbsW/yZnVnGNBiA==
@@ -1275,7 +1282,28 @@
     pathe "^2.0.3"
     unimport "^4.1.2"
 
-"@nuxt/kit@4.5.2", "@nuxt/kit@^4.2.0", "@nuxt/kit@^4.5.1", "@nuxt/kit@^4.5.2":
+"@nuxt/fonts@^0.14.0":
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/@nuxt/fonts/-/fonts-0.14.0.tgz#8f98c39b5073c6811be7e24638e6ce5665118a66"
+  integrity sha512-4uXQl9fa5F4ibdgU8zomoOcyMdnwgdem+Pi8JEqeDYI5yPR32Kam6HnuRr47dTb97CstaepAvXPWQUUHMtjsFQ==
+  dependencies:
+    "@nuxt/devtools-kit" "^3.2.1"
+    "@nuxt/kit" "^4.2.2"
+    consola "^3.4.2"
+    defu "^6.1.4"
+    fontless "^0.2.1"
+    h3 "^1.15.5"
+    magic-regexp "^0.10.0"
+    ofetch "^1.5.1"
+    pathe "^2.0.3"
+    sirv "^3.0.2"
+    tinyglobby "^0.2.15"
+    ufo "^1.6.3"
+    unifont "^0.7.4"
+    unplugin "^3.0.0"
+    unstorage "^1.17.4"
+
+"@nuxt/kit@4.5.2", "@nuxt/kit@^4.2.0", "@nuxt/kit@^4.2.2", "@nuxt/kit@^4.5.1", "@nuxt/kit@^4.5.2":
   version "4.5.2"
   resolved "https://registry.yarnpkg.com/@nuxt/kit/-/kit-4.5.2.tgz#fa338b169d14d9e66f973ded551d2376edb72398"
   integrity sha512-l66LU9DcJYjmNwqwAj2I5UGRrUbnG2DOKGChnN70zIGtn0eq/z87gi/FRgha6eMb9/FmB1PFHgtx6PWVml1C2Q==
@@ -3242,7 +3270,7 @@ css-select@^6.0.0:
     domutils "^3.2.2"
     nth-check "^2.1.1"
 
-css-tree@^3.0.1:
+css-tree@^3.0.1, css-tree@^3.1.0:
   version "3.2.1"
   resolved "https://registry.npmjs.org/css-tree/-/css-tree-3.2.1.tgz"
   integrity sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==
@@ -3726,7 +3754,7 @@ es-to-primitive@^1.3.0:
     is-date-object "^1.1.0"
     is-symbol "^1.1.1"
 
-esbuild@>=0.28.1, esbuild@^0.25.0, esbuild@^0.27.3, esbuild@^0.28.0:
+esbuild@>=0.28.1, esbuild@^0.25.0, esbuild@^0.27.0, esbuild@^0.27.3, esbuild@^0.28.0:
   version "0.28.2"
   resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.28.2.tgz#0f43bd1bad955b72d24e2261e3abe5957ccf0816"
   integrity sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==
@@ -4231,6 +4259,45 @@ fnv1a-64@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/fnv1a-64/-/fnv1a-64-0.1.2.tgz#1cca3d160c92c0d8e5b3df3a9d8e2f71cbb7b2e8"
   integrity sha512-mJbcILTPybAR1jdOwt/lVv8N2cffeJFFP+gVbSAwLEx1ujXH27RpPd8Rokec/KX9c76UYIB6Co+H4lQzxPnJfA==
+
+fontaine@0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/fontaine/-/fontaine-0.8.0.tgz#73bfda43e5169465c3af2eec51b6eaa2d0543ba2"
+  integrity sha512-eek1GbzOdWIj9FyQH/emqW1aEdfC3lYRCHepzwlFCm5T77fBSRSyNRKE6/antF1/B1M+SfJXVRQTY9GAr7lnDg==
+  dependencies:
+    "@capsizecss/unpack" "^4.0.0"
+    css-tree "^3.1.0"
+    magic-regexp "^0.10.0"
+    magic-string "^0.30.21"
+    pathe "^2.0.3"
+    ufo "^1.6.1"
+    unplugin "^2.3.10"
+
+fontkitten@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/fontkitten/-/fontkitten-1.0.3.tgz#bbafdeddbb1e054967f0846fdc757accab88bb68"
+  integrity sha512-Wp1zXWPVUPBmfoa3Cqc9ctaKuzKAV6uLstRqlR56kSjplf5uAce+qeyYym7F+PHbGTk+tCEdkCW6RD7DX/gBZw==
+  dependencies:
+    tiny-inflate "^1.0.3"
+
+fontless@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/fontless/-/fontless-0.2.1.tgz#c1cf376a902ce01e600d3fbcd87126feb24752e5"
+  integrity sha512-mUWZ8w91/mw2KEcZ6gHNoNNmsAq9Wiw2IypIux5lM03nhXm+WSloXGUNuRETNTLqZexMgpt7Aj/v63qqrsWraQ==
+  dependencies:
+    consola "^3.4.2"
+    css-tree "^3.1.0"
+    defu "^6.1.4"
+    esbuild "^0.27.0"
+    fontaine "0.8.0"
+    jiti "^2.6.1"
+    lightningcss "^1.30.2"
+    magic-string "^0.30.21"
+    ohash "^2.0.11"
+    pathe "^2.0.3"
+    ufo "^1.6.1"
+    unifont "^0.7.4"
+    unstorage "^1.17.1"
 
 for-each@^0.3.3, for-each@^0.3.5:
   version "0.3.5"
@@ -5230,7 +5297,7 @@ lightningcss-win32-x64-msvc@1.33.0:
   resolved "https://registry.yarnpkg.com/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.33.0.tgz#e343ae152eed3609dc6e11949d1a3bf39a1c946f"
   integrity sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA==
 
-lightningcss@^1.33.0:
+lightningcss@^1.30.2, lightningcss@^1.33.0:
   version "1.33.0"
   resolved "https://registry.yarnpkg.com/lightningcss/-/lightningcss-1.33.0.tgz#c08867d71a79385c6e190214fd72fef3e5f95f0b"
   integrity sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==
@@ -5420,6 +5487,19 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
+magic-regexp@^0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/magic-regexp/-/magic-regexp-0.10.0.tgz#78b4421a50d2b7a67129bf2c424a333927c3a0e5"
+  integrity sha512-Uly1Bu4lO1hwHUW0CQeSWuRtzCMNO00CmXtS8N6fyvB3B979GOEEeAkiTUDsmbYLAbvpUS/Kt5c4ibosAzVyVg==
+  dependencies:
+    estree-walker "^3.0.3"
+    magic-string "^0.30.12"
+    mlly "^1.7.2"
+    regexp-tree "^0.1.27"
+    type-level-regexp "~0.1.17"
+    ufo "^1.5.4"
+    unplugin "^2.0.0"
+
 magic-string-ast@^1.0.2:
   version "1.0.3"
   resolved "https://registry.npmjs.org/magic-string-ast/-/magic-string-ast-1.0.3.tgz"
@@ -5427,7 +5507,7 @@ magic-string-ast@^1.0.2:
   dependencies:
     magic-string "^0.30.19"
 
-magic-string@^0.30.17, magic-string@^0.30.19, magic-string@^0.30.21, magic-string@^0.30.3:
+magic-string@^0.30.12, magic-string@^0.30.17, magic-string@^0.30.19, magic-string@^0.30.21, magic-string@^0.30.3:
   version "0.30.21"
   resolved "https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz"
   integrity sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==
@@ -5565,7 +5645,7 @@ mitt@^3.0.1:
   resolved "https://registry.npmjs.org/mitt/-/mitt-3.0.1.tgz"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
-mlly@^1.7.4, mlly@^1.8.0, mlly@^1.8.2:
+mlly@^1.7.2, mlly@^1.7.4, mlly@^1.8.0, mlly@^1.8.2:
   version "1.8.2"
   resolved "https://registry.npmjs.org/mlly/-/mlly-1.8.2.tgz"
   integrity sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==
@@ -7425,6 +7505,11 @@ text-extensions@^2.0.0:
   resolved "https://registry.npmjs.org/through/-/through-2.3.8.tgz"
   integrity sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==
 
+tiny-inflate@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/tiny-inflate/-/tiny-inflate-1.0.3.tgz#122715494913a1805166aaf7c93467933eea26c4"
+  integrity sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==
+
 tiny-invariant@^1.3.3:
   version "1.3.3"
   resolved "https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz"
@@ -7513,6 +7598,11 @@ type-fest@^5.0.0:
   integrity sha512-YGYEVz3Fm5iy/AybuA0oyNFq7H4CgQNfRp/qfe8nurE1kuCeNm3/vfm9X4Mtl+qLyaKJUh5xrFZwogr41SMjYA==
   dependencies:
     tagged-tag "^1.0.0"
+
+type-level-regexp@~0.1.17:
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/type-level-regexp/-/type-level-regexp-0.1.17.tgz#ec1bf7dd65b85201f9863031d6f023bdefc2410f"
+  integrity sha512-wTk4DH3cxwk196uGLK/E9pE45aLfeKJacKmcEgEOA/q5dnPGNxXt0cfYdFxb57L+sEpf1oJH4Dnx/pnRcku9jg==
 
 typed-array-buffer@^1.0.3:
   version "1.0.3"
@@ -7616,7 +7706,7 @@ undici-types@~8.3.0:
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-8.3.0.tgz"
   integrity sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==
 
-undici@^8.10.0:
+undici@^8.0.0, undici@^8.10.0:
   version "8.10.0"
   resolved "https://registry.yarnpkg.com/undici/-/undici-8.10.0.tgz#67ed7c4087f0f40fba7bef3a46f2be80572f2473"
   integrity sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==
@@ -7662,6 +7752,15 @@ unicorn-magic@^0.4.0:
   version "0.4.0"
   resolved "https://registry.npmjs.org/unicorn-magic/-/unicorn-magic-0.4.0.tgz"
   integrity sha512-wH590V9VNgYH9g3lH9wWjTrUoKsjLF6sGLjhR4sH1LWpLmCOH0Zf7PukhDA8BiS7KHe4oPNkcTHqYkj7SOGUOw==
+
+unifont@^0.7.4:
+  version "0.7.5"
+  resolved "https://registry.yarnpkg.com/unifont/-/unifont-0.7.5.tgz#28fb7973693263da1fd6e0bc2a24585b69a6011c"
+  integrity sha512-ULe/Cs+ZIsq+dcFofNkhqielCrUJnb5mr+Yc4EBM2VlL+6OZR6+cjtI2mT1bJvRBrVncqHAbLURxmPLcCXzWMg==
+  dependencies:
+    css-tree "^3.1.0"
+    ohash "^2.0.11"
+    undici "^8.0.0"
 
 unimport@^4.1.2:
   version "4.2.0"
@@ -7719,7 +7818,7 @@ unplugin-utils@^0.3.0, unplugin-utils@^0.3.1, unplugin-utils@^0.3.2:
     pathe "^2.0.3"
     picomatch "^4.0.4"
 
-unplugin@^2.2.0, unplugin@^2.2.2, unplugin@^2.3.11:
+unplugin@^2.0.0, unplugin@^2.2.0, unplugin@^2.2.2, unplugin@^2.3.10, unplugin@^2.3.11:
   version "2.3.11"
   resolved "https://registry.npmjs.org/unplugin/-/unplugin-2.3.11.tgz"
   integrity sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==
@@ -7776,7 +7875,7 @@ unrs-resolver@^1.9.2:
     "@unrs/resolver-binding-win32-ia32-msvc" "1.12.2"
     "@unrs/resolver-binding-win32-x64-msvc" "1.12.2"
 
-unstorage@^1.15.0, unstorage@^1.17.5:
+unstorage@^1.15.0, unstorage@^1.17.1, unstorage@^1.17.4, unstorage@^1.17.5:
   version "1.17.5"
   resolved "https://registry.npmjs.org/unstorage/-/unstorage-1.17.5.tgz"
   integrity sha512-0i3iqvRfx29hkNntHyQvJTpf5W9dQ9ZadSoRU8+xVlhVtT7jAX57fazYO9EHvcRCfBCyi5YRya7XCDOsbTgkPg==

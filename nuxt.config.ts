@@ -18,7 +18,28 @@ function readCert(envVar: string, fallback: string): string | undefined {
 export default defineNuxtConfig({
   compatibilityDate: '2025-03-21',
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxt/scripts', '@nuxt/test-utils', '@pinia/nuxt'],
+  modules: [
+    '@nuxt/eslint',
+    '@nuxt/fonts',
+    '@nuxt/scripts',
+    '@nuxt/test-utils',
+    '@pinia/nuxt',
+  ],
+  fonts: {
+    // Only Google is used; disabling the rest keeps builds deterministic and offline-safe.
+    providers: {
+      adobe: false,
+      bunny: false,
+      fontshare: false,
+      fontsource: false,
+    },
+    defaults: { subsets: ['latin'] },
+    families: [
+      { name: 'Outfit', provider: 'google', weights: [500, 700] },
+      { name: 'Inter', provider: 'google', weights: [400, 500, 600] },
+      { name: 'IBM Plex Mono', provider: 'google', weights: [400] },
+    ],
+  },
   typescript: {
     typeCheck: true,
   },

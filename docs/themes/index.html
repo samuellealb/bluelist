@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bluelist — City Pop Theme Proposals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&family=IBM+Plex+Mono&family=Inter:wght@400;500;600&family=Outfit:wght@500;700&family=Shippori+Mincho+B1:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── page shell (neutral, so it doesn't bias the comparison) ──── */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: #101114;
+        color: #e8e9ec;
+        line-height: 1.6;
+      }
+      .page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 48px 32px 96px;
+      }
+      h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin-bottom: 8px;
+      }
+      .sub {
+        color: #9aa0ab;
+        max-width: 70ch;
+        margin-bottom: 8px;
+      }
+      h2 {
+        font-size: 1.4rem;
+        margin: 56px 0 4px;
+      }
+      .h2sub {
+        color: #9aa0ab;
+        margin-bottom: 20px;
+        max-width: 70ch;
+      }
+      a {
+        color: #7cc4ff;
+      }
+      code {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.85em;
+        color: #b9c0cc;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        gap: 24px;
+      }
+
+      /* ── each tile is a self-contained theme scope ─────────────────── */
+      .t {
+        border: 1px solid #262a31;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--background-color);
+        color: var(--text-color);
+        font-family: var(--font-body);
+      }
+      .t__label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: #1a1c21;
+        color: #e8e9ec;
+        font-size: 0.78rem;
+        font-family: 'IBM Plex Mono', monospace;
+        border-bottom: 1px solid #262a31;
+      }
+      .t__label b {
+        font-weight: 500;
+      }
+      .t__mode {
+        margin-left: auto;
+        color: #9aa0ab;
+      }
+      .t__inner {
+        padding: 18px;
+      }
+
+      .t__head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+      }
+      .t__logo {
+        font-family: var(--font-display);
+        font-weight: var(--display-weight);
+        font-size: 1.15rem;
+        color: var(--primary-color);
+        letter-spacing: var(--tracking-wide);
+        text-transform: var(--display-case);
+        margin-right: auto;
+      }
+      .t__who {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        background: var(--success-color);
+        border-radius: var(--dot-radius);
+      }
+
+      .t__card {
+        position: relative;
+        background: var(--card-color);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: var(--card-padding);
+        margin-bottom: 12px;
+      }
+      .t__card::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: var(--rule-h);
+        background: var(--primary-color);
+        background-image: var(--rule-img);
+      }
+      .t__title {
+        font-family: var(--font-display);
+        font-weight: var(--display-weight);
+        font-size: 1.15rem;
+        line-height: 1.2;
+        letter-spacing: var(--tracking-wide);
+        text-transform: var(--display-case);
+      }
+      .t__meta {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--text-light);
+        margin: 2px 0 12px;
+      }
+      .t__row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 0;
+      }
+      .t__av {
+        width: 26px;
+        height: 26px;
+        border-radius: var(--dot-radius);
+        background: var(--primary-t20);
+        border: 1px solid var(--primary-color);
+        flex: none;
+      }
+      .t__name {
+        font-size: 0.88rem;
+        font-weight: 500;
+      }
+      .t__handle {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-light);
+      }
+
+      .t__btns {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .t__btn {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: none;
+        border-radius: var(--radius);
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      .t__btn--p {
+        background: var(--primary-color);
+        background-image: var(--brand-img);
+        color: var(--button-text-color);
+      }
+      .t__btn--s {
+        background: var(--primary-t10);
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+      }
+      .t__chips {
+        display: flex;
+        gap: 6px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .t__chip {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        background: var(--primary-t10);
+        border: 1px solid var(--primary-color);
+        border-radius: var(--radius);
+        color: var(--primary-color);
+        padding: 3px 8px;
+      }
+      .t__chip--2 {
+        background: transparent;
+        border-color: var(--secondary-color);
+        color: var(--secondary-color);
+      }
+      .t__chip--3 {
+        background: transparent;
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+      }
+
+      .t__sw {
+        display: flex;
+        margin-top: 14px;
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .t__sw i {
+        flex: 1;
+        height: 26px;
+      }
+
+      /* ── THEME A · KISSATEN ────────────────────────────────────────── */
+      .t[data-t='a'] {
+        --font-display: 'Shippori Mincho B1', Georgia, serif;
+        --font-body: 'Inter', sans-serif;
+        --font-mono: 'IBM Plex Mono', monospace;
+        --display-weight: 400;
+        --display-case: none;
+        --tracking-wide: 0.02em;
+        --radius: 2px;
+        --rule-h: 2px;
+        --rule-img: none;
+        --brand-img: none;
+        --dot-radius: 50%;
+        --card-padding: 18px;
+      }
+      .t[data-t='a'][data-m='dark'] {
+        --background-color: #15120e;
+        --card-color: #1e1a15;
+        --border-color: #3a3025;
+        --text-color: #ede6d8;
+        --text-light: #a89b85;
+        --button-text-color: #15120e;
+        --primary-color: #e8a33d;
+        --secondary-color: #5fa398;
+        --accent-color: #d4674a;
+        --success-color: #6fa76b;
+        --primary-t10: rgba(232, 163, 61, 0.1);
+        --primary-t20: rgba(232, 163, 61, 0.2);
+        --shadow: none;
+      }
+      .t[data-t='a'][data-m='light'] {
+        --background-color: #f5efe3;
+        --card-color: #fffbf2;
+        --border-color: #ddd2be;
+        --text-color: #211c15;
+        --text-light: #6b6155;
+        --button-text-color: #fffbf2;
+        --primary-color: #8a5416;
+        --secondary-color: #2f6b62;
+        --accent-color: #9c3a22;
+        --success-color: #2f6b3a;
+        --primary-t10: rgba(138, 84, 22, 0.1);
+        --primary-t20: rgba(138, 84, 22, 0.2);
+        --shadow: 0 1px 2px rgba(60, 45, 25, 0.12);
+        --display-weight: 600;
+      }
+
+      /* ── THEME B · POOLSIDE ────────────────────────────────────────── */
+      .t[data-t='b'] {
+        --font-display: 'Outfit', sans-serif;
+        --font-body: 'Inter', sans-serif;
+        --font-mono: 'IBM Plex Mono', monospace;
+        --display-weight: 700;
+        --display-case: uppercase;
+        --tracking-wide: 0.06em;
+        --radius: 4px;
+        --rule-h: 2px;
+        --rule-img: none;
+        --brand-img: none;
+        --dot-radius: 50%;
+        --card-padding: 18px;
+      }
+      .t[data-t='b'][data-m='dark'] {
+        --background-color: #0e1b2a;
+        --card-color: #16283c;
+        --border-color: #2a4767;
+        --text-color: #e6f1f7;
+        --text-light: #93afc6;
+        --button-text-color: #0e1b2a;
+        --primary-color: #45d0e0;
+        --secondary-color: #ff8a6b;
+        --accent-color: #ffd166;
+        --success-color: #4fd1a0;
+        --primary-t10: rgba(69, 208, 224, 0.1);
+        --primary-t20: rgba(69, 208, 224, 0.2);
+        --shadow: 0 1px 2px rgba(0, 10, 20, 0.45);
+      }
+      .t[data-t='b'][data-m='light'] {
+        --background-color: #eaf6fa;
+        --card-color: #ffffff;
+        --border-color: #c3dee9;
+        --text-color: #0f2233;
+        --text-light: #4e6b7d;
+        --button-text-color: #ffffff;
+        --primary-color: #00707f;
+        --secondary-color: #c2410c;
+        --accent-color: #8a5406;
+        --success-color: #12694f;
+        --primary-t10: rgba(0, 112, 127, 0.1);
+        --primary-t20: rgba(0, 112, 127, 0.2);
+        --shadow: 0 1px 2px rgba(15, 34, 51, 0.1);
+      }
+
+      /* ── THEME C · BAYSIDE NEON ────────────────────────────────────── */
+      .t[data-t='c'] {
+        --font-display: 'Chakra Petch', sans-serif;
+        --font-body: 'Inter', sans-serif;
+        --font-mono: 'IBM Plex Mono', monospace;
+        --display-weight: 700;
+        --display-case: uppercase;
+        --tracking-wide: 0.12em;
+        --radius: 0;
+        --rule-h: 3px;
+        --dot-radius: 0;
+        --card-padding: 18px;
+      }
+      .t[data-t='c'][data-m='dark'] {
+        --background-color: #0a0614;
+        --card-color: #150e24;
+        --border-color: #3a2260;
+        --text-color: #f2e9ff;
+        --text-light: #a896c9;
+        --button-text-color: #0a0614;
+        --primary-color: #ff4da6;
+        --secondary-color: #35e8ff;
+        --accent-color: #b96bff;
+        --success-color: #3de8b0;
+        --primary-t10: rgba(255, 77, 166, 0.1);
+        --primary-t20: rgba(255, 77, 166, 0.2);
+        --shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+        --rule-img: linear-gradient(90deg, #ff4da6, #35e8ff);
+        --brand-img: linear-gradient(90deg, #ff4da6, #b96bff);
+      }
+      .t[data-t='c'][data-m='light'] {
+        --background-color: #f6f0fa;
+        --card-color: #ffffff;
+        --border-color: #e2d0f0;
+        --text-color: #1a0e2e;
+        --text-light: #6b5b85;
+        --button-text-color: #ffffff;
+        --primary-color: #c2005e;
+        --secondary-color: #006b85;
+        --accent-color: #6d28d9;
+        --success-color: #0f6b4f;
+        --primary-t10: rgba(194, 0, 94, 0.1);
+        --primary-t20: rgba(194, 0, 94, 0.2);
+        --shadow: 0 1px 0 rgba(26, 14, 46, 0.16);
+        --rule-img: linear-gradient(90deg, #c2005e, #006b85);
+        --brand-img: linear-gradient(90deg, #c2005e, #6d28d9);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        margin-top: 8px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid #262a31;
+        vertical-align: top;
+      }
+      th {
+        color: #9aa0ab;
+        font-weight: 500;
+      }
+      td:first-child {
+        color: #9aa0ab;
+        white-space: nowrap;
+      }
+      .rec {
+        display: inline-block;
+        font-size: 0.7rem;
+        background: #1d3a2a;
+        color: #6ee7a8;
+        border-radius: 3px;
+        padding: 1px 7px;
+        margin-left: 6px;
+        vertical-align: middle;
+      }
+      .links {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+        font-size: 0.9rem;
+      }
+      footer {
+        margin-top: 72px;
+        padding-top: 24px;
+        border-top: 1px solid #262a31;
+        color: #9aa0ab;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Bluelist — City Pop Theme Proposals</h1>
+      <p class="sub">
+        Three families, each in dark and light. All six are shown live below
+        with the real tokens. Pick one family — nothing has been applied to
+        <code>src/</code> yet.
+      </p>
+      <div class="links">
+        <a href="theme-a-kissaten.html">→ Theme A full preview</a>
+        <a href="theme-b-poolside.html">→ Theme B full preview</a>
+        <a href="theme-c-bayside-neon.html">→ Theme C full preview</a>
+        <a href="README.md">→ Written specs</a>
+        <a href="../design/city-pop-aesthetics.md">→ Research</a>
+      </div>
+
+      <h2>Dark mode</h2>
+      <p class="h2sub">The default. Bluelist ships dark-first.</p>
+      <div class="grid" id="dark"></div>
+
+      <h2>Light mode</h2>
+      <p class="h2sub">
+        Note how each family has to re-derive its brand colour for a light
+        ground — bright aqua and neon magenta are unreadable as text on white,
+        so B and C invert into deep, saturated ink versions.
+      </p>
+      <div class="grid" id="light"></div>
+
+      <h2>At a glance</h2>
+      <table>
+        <tr>
+          <th></th>
+          <th>A — Kissaten 喫茶店</th>
+          <th>B — Poolside プールサイド</th>
+          <th>C — Bayside Neon 湾岸ネオン</th>
+        </tr>
+        <tr>
+          <td>Intensity</td>
+          <td>Restrained / editorial</td>
+          <td>Balanced <span class="rec">recommended</span></td>
+          <td>Maximalist</td>
+        </tr>
+        <tr>
+          <td>Reference</td>
+          <td>Showa kissaten, vinyl liner notes</td>
+          <td>Hiroshi Nagai pools &amp; skies</td>
+          <td>Midnight Tokyo, vaporwave</td>
+        </tr>
+        <tr>
+          <td>Display font</td>
+          <td>Shippori Mincho B1 (serif)</td>
+          <td>Outfit (geometric sans)</td>
+          <td>Chakra Petch (wide techno)</td>
+        </tr>
+        <tr>
+          <td>Type scale</td>
+          <td>1.200 minor third</td>
+          <td>1.250 major third</td>
+          <td>1.333 perfect fourth</td>
+        </tr>
+        <tr>
+          <td>Radius</td>
+          <td>2px</td>
+          <td>4px</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>Spacing base</td>
+          <td>4px</td>
+          <td>4px</td>
+          <td>8px</td>
+        </tr>
+        <tr>
+          <td>Elevation</td>
+          <td>Hairlines, near-flat</td>
+          <td>Soft shadow, 2px lift</td>
+          <td>Glow (dark) / hard offset (light)</td>
+        </tr>
+        <tr>
+          <td>Decoration</td>
+          <td>Paper grain</td>
+          <td>Sky gradients, sheen</td>
+          <td>Scanlines, glow, grid horizon</td>
+        </tr>
+        <tr>
+          <td>CSS work</td>
+          <td>Token swap</td>
+          <td>Token swap</td>
+          <td>Token swap + new pseudo-elements</td>
+        </tr>
+        <tr>
+          <td>Risk</td>
+          <td>Lowest</td>
+          <td>Low</td>
+          <td>Highest</td>
+        </tr>
+      </table>
+
+      <h2>How to choose</h2>
+      <p class="h2sub">
+        <b>Document or interface?</b> A treats the app as a printed page. C
+        treats it as signage. B sits between.<br />
+        <b>How much is dense list content?</b> Bluelist is mostly repeating
+        rows. The louder the theme, the more that repetition costs.<br />
+        <b>Should the reference be legible to outsiders?</b> B reads as "bright
+        and tropical" to anyone. C reads as "vaporwave" specifically — the
+        point, or the problem.
+      </p>
+
+      <footer>
+        All six palettes pass WCAG AA: body and brand colours ≥ 4.5:1 against
+        both page and card, disabled text and control borders ≥ 3:1. Fonts load
+        from Google Fonts in this preview only; production is self-hosted WOFF2,
+        subset, <code>font-display: swap</code>.
+      </footer>
+    </div>
+
+    <script>
+      const FAMILIES = [
+        { k: 'a', name: 'Kissaten 喫茶店', tag: 'restrained' },
+        { k: 'b', name: 'Poolside プールサイド', tag: 'balanced' },
+        { k: 'c', name: 'Bayside Neon 湾岸ネオン', tag: 'maximalist' },
+      ];
+      const SWATCH = {
+        'a-dark': [
+          '#15120E',
+          '#1E1A15',
+          '#3A3025',
+          '#E8A33D',
+          '#5FA398',
+          '#D4674A',
+        ],
+        'a-light': [
+          '#F5EFE3',
+          '#FFFBF2',
+          '#DDD2BE',
+          '#8A5416',
+          '#2F6B62',
+          '#9C3A22',
+        ],
+        'b-dark': [
+          '#0E1B2A',
+          '#16283C',
+          '#2A4767',
+          '#45D0E0',
+          '#FF8A6B',
+          '#FFD166',
+        ],
+        'b-light': [
+          '#EAF6FA',
+          '#FFFFFF',
+          '#C3DEE9',
+          '#00707F',
+          '#C2410C',
+          '#8A5406',
+        ],
+        'c-dark': [
+          '#0A0614',
+          '#150E24',
+          '#3A2260',
+          '#FF4DA6',
+          '#35E8FF',
+          '#B96BFF',
+        ],
+        'c-light': [
+          '#F6F0FA',
+          '#FFFFFF',
+          '#E2D0F0',
+          '#C2005E',
+          '#006B85',
+          '#6D28D9',
+        ],
+      };
+
+      function tile(f, mode) {
+        const sw = SWATCH[f.k + '-' + mode]
+          .map((c) => `<i style="background:${c}"></i>`)
+          .join('');
+        return `
+        <div class="t" data-t="${f.k}" data-m="${mode}">
+          <div class="t__label"><b>${f.name}</b> · ${f.tag}<span class="t__mode">${mode}</span></div>
+          <div class="t__inner">
+            <div class="t__head">
+              <div class="t__logo">bluelist</div>
+              <div class="t__who"><span class="dot"></span>@samuel.bsky.social</div>
+            </div>
+            <div class="t__card">
+              <div class="t__title">Design Folks</div>
+              <div class="t__meta">42 members · updated 3d ago</div>
+              <div class="t__row">
+                <div class="t__av"></div>
+                <div><div class="t__name">Mariya Takeuchi</div>
+                <div class="t__handle">@mariya.bsky.social</div></div>
+              </div>
+              <div class="t__row">
+                <div class="t__av"></div>
+                <div><div class="t__name">Tatsuro Yamashita</div>
+                <div class="t__handle">@tatsuro.bsky.social</div></div>
+              </div>
+              <div class="t__chips">
+                <span class="t__chip">primary</span>
+                <span class="t__chip t__chip--2">secondary</span>
+                <span class="t__chip t__chip--3">tertiary</span>
+              </div>
+              <div class="t__btns">
+                <button class="t__btn t__btn--p">View list</button>
+                <button class="t__btn t__btn--s">Curate</button>
+              </div>
+            </div>
+            <div class="t__sw">${sw}</div>
+          </div>
+        </div>`;
+      }
+
+      document.getElementById('dark').innerHTML = FAMILIES.map((f) =>
+        tile(f, 'dark')
+      ).join('');
+      document.getElementById('light').innerHTML = FAMILIES.map((f) =>
+        tile(f, 'light')
+      ).join('');
+    </script>
+  </body>
+</html>

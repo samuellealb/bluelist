@@ -22,7 +22,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   position: relative;
 }
 
@@ -95,7 +95,8 @@
   margin-bottom: 1rem;
   color: var(--primary-color);
   font-weight: 600;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-wide);
   border-bottom: 1px solid var(--accent-color);
   padding-bottom: 0.5rem;
   position: relative;
@@ -144,7 +145,8 @@
   margin-bottom: 1rem;
   color: var(--primary-color);
   font-weight: 600;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-wide);
   border-bottom: 1px solid var(--accent-color);
   padding-bottom: 0.5rem;
   position: relative;
@@ -195,7 +197,8 @@
   margin-bottom: 1rem;
   color: var(--primary-color);
   font-weight: 600;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-wide);
   border-bottom: 1px solid var(--accent-color);
   padding-bottom: 0.5rem;
   position: relative;
