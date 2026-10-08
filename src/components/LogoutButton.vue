@@ -17,10 +17,10 @@ import '~/src/assets/styles/data-display.css';
 const authStore = useAuthStore();
 const uiStore = useUiStore();
 
-const logout = () => {
+const logout = async () => {
   localStorage.removeItem('loginData');
 
-  authStore.logout();
+  await authStore.logout();
   uiStore.setDisplayData(null);
 
   navigateTo('/');

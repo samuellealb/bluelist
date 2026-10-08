@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     formInfo: '',
     loginError: '',
+    oauthInitializationError: '',
     did: '',
     isLoggedIn: false,
     initialized: false,
@@ -24,6 +25,10 @@ export const useAuthStore = defineStore('auth', {
       this.loginError = error;
     },
 
+    setOAuthInitializationError(error: string) {
+      this.oauthInitializationError = error;
+    },
+
     setDid(did: string) {
       this.did = did;
     },
@@ -38,13 +43,26 @@ export const useAuthStore = defineStore('auth', {
       suggestionsStore.loadRequestCounts();
     },
 
-    logout() {
+    async logout() {
+      const did = this.did;
+
       this.formInfo = '';
       this.loginError = '';
       this.did = '';
       this.isLoggedIn = false;
       this.currentSession = null;
       this.currentAgent = null;
+
+      if (did) {
+        try {
+          await OAuthService.signOut(did);
+        } catch (error) {
+          // revoke() deletes the stored session even when revocation fails,
+          // so the user is still logged out locally.
+          console.error('Failed to revoke OAuth session:', error);
+        }
+      }
+
       OAuthService.reset();
     },
 
@@ -81,9 +99,11 @@ export const useAuthStore = defineStore('auth', {
             this.handleSessionExpired();
           }
         });
+
+        this.setOAuthInitializationError('');
       } catch (error) {
         console.error('Failed to initialize OAuth:', error);
-        this.setLoginError('Failed to initialize authentication system');
+        this.setOAuthInitializationError((error as Error).message);
       }
     },
 
@@ -91,6 +111,10 @@ export const useAuthStore = defineStore('auth', {
      * Sign in with handle using OAuth
      */
     async signInWithHandle(handle: string): Promise<void> {
+      if (this.oauthInitializationError) {
+        return;
+      }
+
       this.setLoginError('');
 
       if (!handle || handle.trim() === '') {
@@ -138,9 +162,9 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Handle expired sessions
      */
-    handleSessionExpired(): void {
+    async handleSessionExpired(): Promise<void> {
       this.setFormInfo('Session expired. Please login again.');
-      this.logout();
+      await this.logout();
       window.location.reload();
     },
 

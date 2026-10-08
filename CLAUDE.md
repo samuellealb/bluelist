@@ -114,8 +114,8 @@ and `src/utils/` are welcome — start with pure functions like `src/utils/slug-
 
 All are opt-in via `.env.local`; no code changes required.
 
-- **Default (WSL / clean machine):** HTTP on `localhost:3000`
-- **macOS + HTTPS:** Set `NUXT_DEV_HTTPS=true`, `NUXT_DEV_HOST=bluelist-local.blue`, `NUXT_DEV_PORT=4430`, cert paths. Requires `/etc/hosts` entry + mkcert.
+- **Default:** HTTP on `127.0.0.1:3000` — always develop against `http://127.0.0.1:3000` (not `localhost:3000`, not a LAN IP).
+- **OAuth secure-context rule:** sign-in needs WebCrypto, which browsers only expose over HTTPS or on `localhost`/`127.0.0.1`. `OAuthService.initialize()` guards on `window.isSecureContext` and imports `@atproto/oauth-client-browser` lazily, because that module throws at evaluation time on insecure origins.
 - **Corporate proxy:** Set `NODE_EXTRA_CA_CERTS=./certs/ca.pem`. The launcher (`scripts/run.mjs`) injects it before Node TLS initializes.
 
 See `.env.example` for all variables.

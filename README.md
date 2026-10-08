@@ -74,23 +74,15 @@ NUXT_EXEMPT_DIDS=did1,did2,did3                 # DIDs exempt from daily AI limi
 
 ### Environment Profiles
 
-The dev server defaults to `http://127.0.0.1:3000` with no extra configuration needed. Platform-specific setups are opt-in via `.env.local` only — no code changes required.
+The dev server binds to `127.0.0.1:3000`. Override with `NUXT_DEV_HOST` /
+`NUXT_DEV_PORT` in `.env.local` if the port is taken — no code changes required.
 
-**WSL / any clean machine** — default, nothing to add.
-
-**macOS with HTTPS and a custom local domain:**
-
-```
-NUXT_DEV_HTTPS=true
-NUXT_DEV_HOST=bluelist-local.blue
-NUXT_DEV_PORT=4430
-NUXT_DEV_SSL_KEY=./certs/bluelist-local.blue-key.pem
-NUXT_DEV_SSL_CERT=./certs/bluelist-local.blue.pem
-```
-
-> Prerequisites: add `127.0.0.1 bluelist-local.blue` to `/etc/hosts`, install
-> [mkcert](https://github.com/FiloSottile/mkcert), run `mkcert -install` and
-> `mkcert bluelist-local.blue` inside `./certs/`.
+> **Open `http://127.0.0.1:3000`, not `localhost:3000` or a LAN IP.** AtProto
+> OAuth needs WebCrypto, which browsers only expose in a _secure context_ —
+> HTTPS, or http on `localhost`/`127.0.0.1`. Serving the app from a LAN IP over
+> plain http breaks sign-in; the app detects this and shows an explicit error
+> instead of failing silently. To test authenticated flows from another device,
+> use an HTTPS tunnel or a deployed preview.
 
 **Corporate proxy with a custom CA:**
 
@@ -119,10 +111,9 @@ Start the development server:
 yarn dev
 ```
 
-Serves `http://127.0.0.1:3000` by default, or HTTPS on the configured host/port
-when `NUXT_DEV_HTTPS=true`. Open `http://127.0.0.1:3000` (not `localhost:3000`) so
-the OAuth loopback client's redirect URI matches the browser origin. The app
-automatically uses the built-in loopback OAuth configuration for development.
+Open `http://127.0.0.1:3000` — not `localhost:3000`, so the OAuth loopback
+client's redirect URI matches the browser origin. The app automatically uses the
+built-in loopback OAuth configuration for development.
 
 ### OAuth Client Metadata
 

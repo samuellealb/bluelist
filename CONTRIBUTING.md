@@ -25,14 +25,16 @@ NUXT_ATP_SERVICE=https://bsky.social            # required
 ```
 
 See `.env.example` for all available variables including opt-in dev-environment
-profiles (HTTPS, corporate proxy).
+profiles (dev host/port, corporate proxy).
 
-### Local HTTPS (opt-in)
+### Local dev URL
 
-HTTPS is **disabled by default**. To enable it, set `NUXT_DEV_HTTPS=true` in
-`.env.local` along with `NUXT_DEV_HOST`, `NUXT_DEV_PORT` (default `4430`), and
-the paths to your mkcert certificates (`NUXT_DEV_SSL_KEY`, `NUXT_DEV_SSL_CERT`).
-Add the host to `/etc/hosts`. See `.env.example` for the full profile.
+`yarn dev` serves the app at **`http://127.0.0.1:3000`**. Use that exact origin —
+not `localhost:3000` and not your machine's LAN IP. AtProto OAuth requires
+WebCrypto, which browsers only expose in a secure context (HTTPS or
+`localhost`/`127.0.0.1`), and the loopback client's redirect URI is registered
+against `127.0.0.1`. On any other origin `OAuthService.initialize()` throws with
+an explanatory message and sign-in is disabled.
 
 ## Scripts
 
