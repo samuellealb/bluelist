@@ -1,10 +1,11 @@
 # Bluelist Architecture
 
-Bluelist is a [Nuxt 4](https://nuxt.com) single-page application that helps Bluesky
-users organize the accounts they follow into [AT Protocol](https://atproto.com)
-lists, with optional AI-assisted suggestions. This document describes how the app
-is structured so that both humans and AI assistants can navigate and extend it
-confidently.
+Bluelist is a [Nuxt 4](https://nuxt.com) single-page application that helps
+Bluesky users organize the accounts they follow into
+[AT Protocol](https://atproto.com) lists. It uses Vue 3, Pinia, strict
+TypeScript, and Yarn 1; optional Anthropic-powered list suggestions execute only
+on the Nitro server. This document is the primary architecture guide for human
+contributors and AI assistants.
 
 ## Tech Stack
 
@@ -12,47 +13,59 @@ confidently.
 | --------------- | ----------------------------------------------------------------- |
 | Framework       | Nuxt 4 (Vue 3, `<script setup>`)                                  |
 | State           | Pinia (options-store style)                                       |
-| Bluesky API     | `@atproto/api` (`AtpAgent`)                                       |
+| Bluesky API     | `@atproto/api` OAuth-authenticated `Agent`                        |
 | AI              | Anthropic `claude-haiku-4-5` (server route)                       |
 | Language        | TypeScript (strict, `typeCheck: true`)                            |
 | Package manager | Yarn 1.x                                                          |
 | Tooling         | ESLint (`@nuxt/eslint`), Prettier, Husky, lint-staged, commitlint |
 
-## Directory Map
+## Runtime And Startup
 
-```text
-app.vue, error.vue          # Root app + error boundary
-middleware/router.ts        # Global auth route guard
-scripts/run.mjs             # Cross-platform Nuxt launcher (injects NODE_EXTRA_CA_CERTS early)
-pages/                      # File-based routes (index, feed, follows, lists, list/[slug]/*)
-server/api/                 # Nitro endpoints (suggestions, exemptUsers)
-public/                     # Static assets (client-metadata.json, robots.txt)
-src/
-  components/               # Vue components (PascalCase)
-  lib/                      # Framework-agnostic services
-    OAuthService.ts         #   OAuth client init/session management
-    bskyService.ts          #   All Bluesky read/write operations
-    aiSuggestions.ts        #   AI suggestion orchestration (client side)
-  stores/                   # Pinia stores (auth, follows, lists, suggestions, ui)
-  types/                    # Domain-split TypeScript types
-  utils/slug-utils.ts       # List name <-> URL slug mapping
-  assets/styles/            # Per-component CSS + shared _variables.css
-```
+- `package.json` defines the Yarn commands: `dev`, `build`, `preview`, and
+  `generate` delegate to `scripts/run.mjs`; `lint` runs ESLint and `format`
+  runs Prettier.
+- `scripts/run.mjs` launches the local Nuxt binary, loads `.env.local`, and
+  applies a valid `NODE_EXTRA_CA_CERTS` before Node initializes TLS.
+- `nuxt.config.ts` enables Pinia, ESLint, scripts, test utilities, TypeScript
+  checking, Nitro, runtime configuration, and the development server. HTTP
+  defaults to `127.0.0.1:3000`; optional local HTTPS can use machine-local
+  certificates configured through `.env.local`.
+- `app.vue` renders the application shell, header, and current Nuxt page.
+  `error.vue` supplies the application error page.
+- `tsconfig.json` extends Nuxt's generated configuration, `eslint.config.mjs`
+  imports Nuxt's ESLint configuration, and `commitlint.config.js` enables
+  Conventional Commits. Husky runs lint-staged before commits and validates
+  commit messages; see [.husky/README.md](.husky/README.md).
+
+## Project Map
+
+- [pages/](pages/README.md): file-based routes for sign-in, dashboard views,
+  the OAuth callback, and list-detail views.
+- [middleware/](middleware/README.md): browser route middleware that restores
+  auth and enforces redirects.
+- [src/](src/README.md): browser components, Bluesky services, Pinia stores,
+  types, utilities, and visual assets.
+- [server/](server/README.md): Nitro API endpoints and public OAuth metadata.
+- [public/](public/README.md): directly served static assets.
+- [scripts/](scripts/README.md): local Nuxt launcher and environment/TLS setup.
+- [Agent tooling](agent-tooling.md): canonical agent rules, path-scoped
+  instructions, reusable workflows, and tool configuration.
 
 ## Core Data Flow
 
-The central pattern: **components call service functions, services fetch from
-Bluesky/Anthropic and write results into Pinia stores, and components render the
-store-backed `DataObject`.**
+The central pattern is: **components call services, services obtain the
+OAuth-authenticated agent, fetch from Bluesky or Nitro, update Pinia stores, and
+components render the store-backed `DataObject`.**
 
 ```mermaid
 flowchart LR
-    C[Component / Page] -->|calls| S[src/lib/bskyService.ts]
-    S -->|authStore.getAgent| A[Agent]
-    A -->|AT Protocol| BSKY[(Bluesky PDS)]
-    S -->|$patch displayData| ST[Pinia stores]
-    ST -->|reactive DataObject| DD[DataDisplay.vue]
-    DD --> DC[DataCard.vue]
+  C[Page or component] -->|calls| S[src/lib services]
+  S -->|authStore.getAgent| A[OAuth Agent]
+  A -->|AT Protocol| BSKY[(Bluesky PDS)]
+  S -->|updates| ST[Pinia stores]
+  ST -->|reactive DataObject| DD[DataDisplay and DataCard]
+  S -->|AI request| N[Nitro API]
+  N -->|server-only API key| ANT[(Anthropic)]
 ```
 
 ### The `DataObject` contract
@@ -135,6 +148,19 @@ requested page exceeds what is cached and a `cursor` exists, the service fetches
 the next batch, appends it to `all*` arrays, and advances `prefetchedPages`. The
 `isFetching` flag prevents concurrent fetches for the same slice.
 
+## Client And Server Boundaries
+
+The browser bundle contains pages, components, Pinia state, browser OAuth,
+Bluesky orchestration, types, utilities, and visual assets under `src/`.
+`public/` contains directly served static files. Browser code can call the Nitro
+handlers under `server/`, but it cannot access their private runtime
+configuration.
+
+`nuxt.config.ts` maps `NUXT_ANTHROPIC_API_KEY` and `NUXT_EXEMPT_DIDS` to
+server-only runtime configuration. Only `NUXT_ATP_SERVICE` is configured under
+the public runtime configuration namespace. The Anthropic key and exemption
+list must remain outside client code.
+
 ## Authentication
 
 Auth is **OAuth-based** (AT Proto OAuth, via `@atproto/oauth-client-browser`),
@@ -203,5 +229,16 @@ lists are fetched so the slug is available for navigation.
 - **Types:** split by domain under `src/types/` and re-exported from
   `src/types/index.ts`.
 - **Commits:** Conventional Commits, enforced by commitlint.
+
+## Extension Guide
+
+Start with the local README for the layer you are changing. New Bluesky reads or
+mutations belong in [src/lib/README.md](src/lib/README.md) and should update the
+relevant [src/stores/README.md](src/stores/README.md) contract. New display views
+require a `DataObject` extension described in
+[src/types/README.md](src/types/README.md) and a corresponding renderer in
+[src/components/README.md](src/components/README.md). New browser routes belong
+under [pages/README.md](pages/README.md); new server HTTP contracts belong under
+[server/README.md](server/README.md), then their endpoint-specific README.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup and workflow details.
