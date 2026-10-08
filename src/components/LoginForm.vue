@@ -26,10 +26,19 @@
       </p>
     </div>
 
-    <button type="submit" class="login-form__submit" :disabled="isLoading">
+    <button
+      type="submit"
+      class="login-form__submit"
+      :disabled="isLoading || Boolean(authStore.oauthInitializationError)"
+    >
       <span v-if="isLoading">Signing In...</span>
       <span v-else>Sign In with OAuth</span>
     </button>
+
+    <p v-if="authStore.oauthInitializationError" class="login-form__error">
+      <span class="login-form__error-prefix">[!]</span>
+      {{ authStore.oauthInitializationError }}
+    </p>
 
     <p v-if="authStore.loginError" class="login-form__error">
       <span class="login-form__error-prefix">[!]</span>
@@ -61,6 +70,10 @@ const showHandleHint = ref(false);
 const isLoading = ref(false);
 
 const validateAndLogin = async () => {
+  if (authStore.oauthInitializationError) {
+    return;
+  }
+
   // Basic handle validation
   const trimmedHandle = handle.value.trim();
 

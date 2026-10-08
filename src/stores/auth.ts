@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     formInfo: '',
     loginError: '',
+    oauthInitializationError: '',
     did: '',
     isLoggedIn: false,
     initialized: false,
@@ -22,6 +23,10 @@ export const useAuthStore = defineStore('auth', {
 
     setLoginError(error: string) {
       this.loginError = error;
+    },
+
+    setOAuthInitializationError(error: string) {
+      this.oauthInitializationError = error;
     },
 
     setDid(did: string) {
@@ -94,9 +99,11 @@ export const useAuthStore = defineStore('auth', {
             this.handleSessionExpired();
           }
         });
+
+        this.setOAuthInitializationError('');
       } catch (error) {
         console.error('Failed to initialize OAuth:', error);
-        this.setLoginError((error as Error).message);
+        this.setOAuthInitializationError((error as Error).message);
       }
     },
 
@@ -104,6 +111,10 @@ export const useAuthStore = defineStore('auth', {
      * Sign in with handle using OAuth
      */
     async signInWithHandle(handle: string): Promise<void> {
+      if (this.oauthInitializationError) {
+        return;
+      }
+
       this.setLoginError('');
 
       if (!handle || handle.trim() === '') {
