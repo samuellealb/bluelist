@@ -1,0 +1,7 @@
+☐ Review ARCHITECTURE.md file. correct it if needed.
+☐ Commit new docs to repo.
+☐ Create a CI/CD pipeline that updates these documentation files with the latest changes a commit is merged to the main branch
+  -> Use the elephant-goldfish method
+  -> See the saved prompts to configure the pipeline.
+  -> The own pipeline will create a follow up commit directly to the main branch with the updated docs.
+☐ Test it with the merge of the OAuth PR
