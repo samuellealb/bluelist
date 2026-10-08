@@ -57,7 +57,7 @@ export const OAuthService = {
         // the desired scope must be embedded in the client_id's query string
         // per the atproto spec's loopback rules (parsed by the AS the same way).
         const loopbackClientId = `${buildLoopbackClientId(
-          window.location
+          new URL('/', window.location.origin)
         )}&scope=${encodeURIComponent(OAUTH_SCOPE)}`;
         oauthClient = new BrowserOAuthClient({
           handleResolver: 'https://bsky.social',

@@ -83,6 +83,9 @@ const validateAndLogin = async () => {
 
   try {
     await authStore.signInWithHandle(trimmedHandle);
+    if (authStore.loginError) {
+      isLoading.value = false;
+    }
   } catch (error) {
     console.error('Login error:', error);
     isLoading.value = false;
