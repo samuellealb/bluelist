@@ -30,10 +30,12 @@ When the slug cannot be resolved, the pages fall back to the stored URI:
 - If neither a valid slug nor a stored URI is available, the page redirects to
   `/lists`.
 
-`members.vue` uses `loadViewWithRetry()` to retry a failed
+`members.vue` uses `loadViewWithRetry()` to retry a rejected
 `Dashboard.loadView('list-members')` call up to three times, with an
-exponentially increasing delay starting at 500 ms. `posts.vue` makes one
-`Dashboard.loadView('list-posts')` call without retrying.
+exponentially increasing delay starting at 500 ms. `posts.vue` invokes
+`Dashboard.loadView('list-posts')` once at the page level. Both views also use
+the retry built into `Dashboard.loadView()`, which schedules another attempt
+after an error is caught there.
 
 ## Rendered UI
 

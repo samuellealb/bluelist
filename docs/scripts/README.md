@@ -14,15 +14,17 @@ stack. If the certificate path does not exist, the launcher prints a warning
 and starts Nuxt without setting the variable.
 
 Nuxt receives `--dotenv .env.local`, so it also loads the rest of the local
-environment configuration. The launcher accepts one required command:
+environment configuration. The launcher requires one Nuxt command and forwards
+it without restricting it to a predefined list:
 
 ```sh
-node scripts/run.mjs <dev|build|preview|generate>
+node scripts/run.mjs <nuxt-command>
 ```
 
 It exits with Nuxt's exit status. It reports an error when no command is given
 or the local Nuxt binary is unavailable; install dependencies with `yarn
-install` in the latter case.
+install` in the latter case. The repository's package scripts expose `dev`,
+`build`, `preview`, and `generate`.
 
 ## Package Scripts
 

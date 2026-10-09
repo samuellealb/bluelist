@@ -64,10 +64,12 @@ with `DataCard.vue` and `MemberCard.vue` rendering individual items.
 
 ### List Navigation
 
-List data is registered with `utils/slug-utils.ts` as it becomes available.
-This keeps a stable browser-persisted connection between a list's AT URI and
-the friendly slug used by list detail routes. Component navigation and list
-detail loading resolve the slug back to the corresponding URI.
+`DataCard.vue` registers a list URI and name with `utils/slug-utils.ts` when a
+user navigates to that list. This keeps a browser-persisted connection between a
+list's AT URI and the friendly slug used by list detail routes. If a route lacks
+a mapping, the list-detail pages can recreate one from the legacy current-URI
+value when the matching list is already cached; otherwise they redirect to the
+lists view.
 
 ## Extension Guidelines
 

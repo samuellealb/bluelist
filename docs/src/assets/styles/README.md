@@ -2,9 +2,9 @@
 
 This directory defines the application's dark-first, monospace, terminal-like
 theme. Files are scoped by BEM selector namespace. `app.css` is the shared
-entry stylesheet and is the only direct stylesheet import in this directory:
-it imports `_variables.css`. All other stylesheets consume the custom
-properties declared by `_variables.css` but do not import it themselves.
+global entry stylesheet and imports `_variables.css`. Components import their
+own matching stylesheets; those stylesheets consume the custom properties
+declared by `_variables.css` without importing it themselves.
 
 | File                 | Visual and theme role                                                                                                                                           | Import or use relationship                                                                                                                                       |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |

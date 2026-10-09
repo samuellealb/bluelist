@@ -69,8 +69,9 @@ When adding features, follow the existing patterns (details in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)):
 
 - Put Bluesky read/write logic in [src/lib/bskyService.ts](src/lib/bskyService.ts);
-  always get the agent via `AtpService`, guard on `authStore.isLoggedIn`, and
-  handle `'Token has expired'` with `authStore.handleSessionExpired()`.
+  guard on `authStore.isLoggedIn` and obtain the OAuth-authenticated agent only
+  through `authStore.getAgent()`. Session invalidation is handled centrally by
+  `OAuthService` and `authStore.handleSessionExpired()`.
 - Return `{ displayData: DataObject, ...JSON }` from read functions and write the
   same data into the relevant Pinia store.
 - Extend the `DataObject` union in [src/types/misc-types.ts](src/types/misc-types.ts)
@@ -111,7 +112,7 @@ different tools:
 
 | File / folder                            | Scope                    | Purpose                                                                                                                                            |
 | ---------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`AGENTS.md`](../AGENTS.md)              | All AI tools             | Always-on project instructions (stack, critical conventions, build commands). Recognized by GitHub Copilot, Claude Code, OpenAI Codex, and others. |
+| [`AGENTS.md`](AGENTS.md)                 | All AI tools             | Always-on project instructions (stack, critical conventions, build commands). Recognized by GitHub Copilot, Claude Code, OpenAI Codex, and others. |
 | `.github/instructions/*.instructions.md` | GitHub Copilot (VS Code) | Path-scoped instructions that load automatically for matching files (components, stores, services, server routes, types).                          |
 | `.github/skills/`                        | GitHub Copilot (VS Code) | On-demand workflow guides (`add-bsky-feature`, `atproto-auth-debug`). Trigger via `/` in chat.                                                     |
 | `.github/prompts/`                       | GitHub Copilot (VS Code) | Single-task prompt templates (scaffold component, add service function, review conventions). Trigger via `/` in chat.                              |

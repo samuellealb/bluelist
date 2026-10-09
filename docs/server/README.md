@@ -25,13 +25,15 @@ joins those handlers into the server runtime.
 ## Route Registration
 
 Nitro uses file-based route registration. Handler filenames determine their
-public paths; the `.ts` extension is not part of the URL.
+public paths; the `.ts` extension is not part of the URL. These handlers do not
+currently use method-specific filenames or method guards, so they do not reject
+non-`POST` requests even though the client calls them with `POST`.
 
-| Source handler                   | Registered route            | Consumer                                                                                      |
-| -------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
-| `api/exemptUsers.ts`             | `POST /api/exemptUsers`     | The AI suggestions flow checks whether a DID is exempt from the daily request limit.          |
-| `api/suggestions.ts`             | `POST /api/suggestions`     | The AI suggestions flow submits serialized follows and existing lists for Anthropic curation. |
-| `routes/client-metadata.json.ts` | `GET /client-metadata.json` | AT Protocol OAuth authorization servers retrieve public client metadata.                      |
+| Source handler                   | Registered route        | Client usage                                                                                |
+| -------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| `api/exemptUsers.ts`             | `/api/exemptUsers`      | The AI suggestions flow posts a DID to check its daily-limit exemption.                     |
+| `api/suggestions.ts`             | `/api/suggestions`      | The AI suggestions flow posts serialized follows and existing lists for Anthropic curation. |
+| `routes/client-metadata.json.ts` | `/client-metadata.json` | AT Protocol OAuth authorization servers retrieve public client metadata with `GET`.         |
 
 The `api/` prefix is supplied by the directory name. `routes/` contains
 non-API public paths, including the literal `.json` suffix in
@@ -64,9 +66,11 @@ flowchart LR
     O[AT Protocol OAuth server] -->|GET /client-metadata.json| M[client metadata handler]
 ```
 
-`api/suggestions.ts` validates its request before calling Anthropic and returns
-the generated response as a JSON string for the client-side orchestrator to
-parse. `api/exemptUsers.ts` returns an exemption result for the supplied DID.
+`api/suggestions.ts` checks required fields, JSON syntax, non-empty arrays, and
+prompt size before calling Anthropic; it does not currently validate parsed
+array element shape. It returns the generated response as a JSON string for the
+client-side orchestrator to parse. `api/exemptUsers.ts` returns an exemption
+result for the supplied DID.
 `routes/client-metadata.json.ts` publishes OAuth metadata using the request
 origin and the shared OAuth scope.
 

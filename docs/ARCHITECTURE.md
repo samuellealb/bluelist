@@ -194,18 +194,19 @@ flowchart LR
 - **Anthropic-only:** the server route calls Anthropic
   (`claude-haiku-4-5-20251001`); `NUXT_ANTHROPIC_API_KEY` is required.
 - **Daily limit:** 5 requests/user/day, tracked per-DID in `localStorage`.
-- **Exemption:** `POST /api/exemptUsers` checks `NUXT_EXEMPT_DIDS` and can bypass
-  the limit.
+- **Exemption:** the client posts to `/api/exemptUsers` to check
+  `NUXT_EXEMPT_DIDS` and can bypass the limit. The handler does not currently
+  enforce a `POST`-only contract.
 - **Prompt:** the curator system prompt is defined inline in
   [server/api/suggestions.ts](../server/api/suggestions.ts) and constrains the
   model to existing lists only, returning a strict JSON shape.
 
 ## Server API (`server/api/`)
 
-| Route              | Method | Body                             | Returns                                                    |
-| ------------------ | ------ | -------------------------------- | ---------------------------------------------------------- |
-| `/api/suggestions` | POST   | `{ users, lists }` (stringified) | JSON string `{ data: [{ name, did, lists: [{ name }] }] }` |
-| `/api/exemptUsers` | POST   | `{ did }`                        | `{ isExempt: boolean }`                                    |
+| Route              | Client method | Body                             | Returns                                                    |
+| ------------------ | ------------- | -------------------------------- | ---------------------------------------------------------- |
+| `/api/suggestions` | POST          | `{ users, lists }` (stringified) | JSON string `{ data: [{ name, did, lists: [{ name }] }] }` |
+| `/api/exemptUsers` | POST          | `{ did }`                        | `{ isExempt: boolean }`                                    |
 
 Secrets (`anthropicApiKey`, `exemptDids`) are read from
 `runtimeConfig` server-side only; never expose them to the client.
@@ -215,8 +216,10 @@ Secrets (`anthropicApiKey`, `exemptDids`) are read from
 [src/utils/slug-utils.ts](../src/utils/slug-utils.ts) maps human-readable list
 names to URL slugs and back, so routes like `/list/my-cool-list/posts` resolve to
 an AT-URI. Mappings live in a bidirectional `Map` and are persisted to
-`localStorage` (`bluelist_slug_mappings`). Call `addMapping(uri, name)` whenever
-lists are fetched so the slug is available for navigation.
+`localStorage` (`bluelist_slug_mappings`). `DataCard.vue` calls
+`addMapping(uri, name)` during list navigation. When a detail route has no
+mapping, it can recreate one from the legacy current-URI value if the matching
+list is already in the store; without either value, it redirects to `/lists`.
 
 ## Conventions At A Glance
 

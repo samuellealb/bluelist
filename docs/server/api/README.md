@@ -1,7 +1,8 @@
 # Server API Routes
 
 This directory contains Nitro API handlers. Each file name maps directly to an
-`/api/...` route.
+`/api/...` route. The client calls both routes with `POST`, but the current
+`.ts` filenames and handlers do not enforce an HTTP method.
 
 ## `/api/exemptUsers`
 
@@ -48,8 +49,9 @@ The handler reads a request body containing JSON-encoded strings for both
 }
 ```
 
-Only the `name` fields are used to build the output schema. Both decoded arrays
-must provide at least one name.
+Only the `name` fields are used to build the output schema. The handler rejects
+empty decoded arrays, but does not explicitly validate that decoded values are
+arrays or that each element has a usable `name`.
 
 ### Successful response
 
@@ -73,16 +75,18 @@ list name must be one of the supplied existing-list names.
 
 ### Validation and errors
 
-| Condition                                 | HTTP status | Error behavior                                 |
-| ----------------------------------------- | ----------- | ---------------------------------------------- |
-| Missing `users` or `lists`                | 400         | Reports that both fields are required.         |
-| Invalid JSON in either field              | 400         | Reports malformed users or lists JSON.         |
-| No usable follow or existing-list names   | 400         | Reports that at least one of each is required. |
-| Prompt exceeds 100,000 characters         | 400         | Asks the caller to reduce users or lists.      |
-| Anthropic returns `max_tokens`            | 500         | Reports a truncated response.                  |
-| Anthropic returns no text block           | 500         | Reports missing text content.                  |
-| Anthropic API error or a 400-status error | 400         | Logs the error and returns an H3 error.        |
-| Other server error                        | 500         | Logs the error and returns an H3 error.        |
+| Condition                                 | HTTP status | Error behavior                                                     |
+| ----------------------------------------- | ----------- | ------------------------------------------------------------------ |
+| Missing `users` or `lists`                | 400         | Reports that both fields are required.                             |
+| Invalid JSON in either field              | 400         | Reports malformed users or lists JSON.                             |
+| Empty decoded users or lists array        | 400         | Reports that at least one of each is required.                     |
+| Non-array decoded JSON                    | 500         | A `.map()` failure reaches the generic server-error handler.       |
+| Array entries without usable names        | Varies      | Not explicitly validated before names reach the downstream schema. |
+| Prompt exceeds 100,000 characters         | 400         | Asks the caller to reduce users or lists.                          |
+| Anthropic returns `max_tokens`            | 500         | Reports a truncated response.                                      |
+| Anthropic returns no text block           | 500         | Reports missing text content.                                      |
+| Anthropic API error or a 400-status error | 400         | Logs the error and returns an H3 error.                            |
+| Other server error                        | 500         | Logs the error and returns an H3 error.                            |
 
 ### Configuration and external service
 
